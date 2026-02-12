@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "yunosbosses",
+	"version": "${version}",
+	"name": "Yuno's Bosses",
+	"description": "This mod adds a variety of new extremely powerful bosses.",
+	"authors": [
+		"Yuno"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/yunosbosses/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.yuno.yunosbosses.YunosBosses"
+		],
+		"fabric-datagen": [
+			"com.yuno.yunosbosses.YunosBossesDataGenerator"
+		],
+		"client": [
+			"com.yuno.yunosbosses.yunosbossesClient"
+		]
+	},
+	"mixins": [
+		"yunosbosses.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
