@@ -22,7 +22,7 @@
 			"com.yuno.yunosbosses.YunosBossesDataGenerator"
 		],
 		"client": [
-			"com.yuno.yunosbosses.yunosbossesClient"
+			"com.yuno.yunosbosses.YunosBossesClient"
 		]
 	},
 	"mixins": [

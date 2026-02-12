@@ -1,0 +1,108 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"textures": {
+		"0": "yunosbosses:item/basic_magical_staff",
+		"particle": "yunosbosses:item/basic_magical_staff"
+	},
+	"elements": [
+		{
+			"name": "staff1",
+			"from": [8, 2, 7],
+			"to": [8.5, 27, 7.5],
+			"rotation": {"angle": 0, "axis": "y", "origin": [9, 2, 7]},
+			"faces": {
+				"north": {"uv": [0.5, 0, 1, 16], "texture": "#0"},
+				"east": {"uv": [1.5, 0, 2, 16], "texture": "#0"},
+				"south": {"uv": [1, 0, 1.5, 16], "texture": "#0"},
+				"west": {"uv": [0, 0, 0.5, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 0.5, 0.5], "rotation": 90, "texture": "#0"},
+				"down": {"uv": [1.5, 1, 2, 1.5], "rotation": 270, "texture": "#0"}
+			}
+		},
+		{
+			"name": "staff2",
+			"from": [7.5, 2, 7],
+			"to": [8, 27, 7.5],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 2, 8]},
+			"faces": {
+				"north": {"uv": [0, 0, 0.5, 16], "texture": "#0"},
+				"east": {"uv": [0.5, 0, 1, 16], "texture": "#0"},
+				"south": {"uv": [1.5, 0, 2, 16], "texture": "#0"},
+				"west": {"uv": [1, 0, 1.5, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 0.5, 0.5], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [1.5, 1, 2, 1.5], "rotation": 180, "texture": "#0"}
+			}
+		},
+		{
+			"name": "staff3",
+			"from": [7.5, 2, 7.5],
+			"to": [8, 27, 8],
+			"rotation": {"angle": 0, "axis": "y", "origin": [7, 2, 8]},
+			"faces": {
+				"north": {"uv": [1, 0, 1.5, 16], "texture": "#0"},
+				"east": {"uv": [0, 0, 0.5, 16], "texture": "#0"},
+				"south": {"uv": [0.5, 0, 1, 16], "texture": "#0"},
+				"west": {"uv": [1.5, 0, 2, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 0.5, 0.5], "rotation": 270, "texture": "#0"},
+				"down": {"uv": [1.5, 1, 2, 1.5], "rotation": 90, "texture": "#0"}
+			}
+		},
+		{
+			"name": "staff4",
+			"from": [8, 2, 7.5],
+			"to": [8.5, 27, 8],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 2, 7]},
+			"faces": {
+				"north": {"uv": [1.5, 0, 2, 16], "texture": "#0"},
+				"east": {"uv": [1, 0, 1.5, 16], "texture": "#0"},
+				"south": {"uv": [0, 0, 0.5, 16], "texture": "#0"},
+				"west": {"uv": [0.5, 0, 1, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 0.5, 0.5], "texture": "#0"},
+				"down": {"uv": [1.5, 1, 2, 1.5], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end bottom",
+			"from": [7, 1.683, 10.93369],
+			"to": [9, 3.683, 13.43369],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [8, 15, 8]},
+			"faces": {
+				"north": {"uv": [13, 0, 16, 3], "texture": "#0"},
+				"east": {"uv": [12.5, 3, 16, 6], "texture": "#0"},
+				"south": {"uv": [9.5, 3, 12.5, 6], "texture": "#0"},
+				"west": {"uv": [9.5, 0, 13, 3], "texture": "#0"},
+				"up": {"uv": [7.5, 0, 9.5, 2.5], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [7.5, 2.5, 9.5, 5], "rotation": 180, "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top",
+			"from": [6, 27, 5.5],
+			"to": [9.5, 31, 8.5],
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [9, 30, 8]},
+			"faces": {
+				"north": {"uv": [8.5, 8, 12, 12], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "texture": "#0"},
+				"south": {"uv": [12.5, 12, 16, 16], "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "texture": "#0"},
+				"up": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [5, 13, 8.5, 16], "rotation": 180, "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff middle part",
+			"from": [7, 24, 6.5],
+			"to": [9, 25, 8.5],
+			"rotation": {"angle": 0, "axis": "y", "origin": [9, 27, 8]},
+			"faces": {
+				"north": {"uv": [4, 6, 7, 8], "texture": "#0"},
+				"east": {"uv": [7, 6, 10, 8], "texture": "#0"},
+				"south": {"uv": [7, 6, 10, 8], "texture": "#0"},
+				"west": {"uv": [4, 8, 7, 10], "texture": "#0"},
+				"up": {"uv": [4, 0, 7, 3], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [4, 3, 7, 6], "rotation": 180, "texture": "#0"}
+			}
+		}
+	]
+}
