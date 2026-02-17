@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses;
 
 import com.yuno.yunosbosses.item.ModItems;
+import com.yuno.yunosbosses.spell.ModSpells;
 import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
@@ -21,5 +22,6 @@ public class YunosBosses implements ModInitializer {
 		// Proceed with mild caution.
 
 		ModItems.registerModItems();
+		ModSpells.registerModSpells();
 	}
 }

@@ -104,5 +104,16 @@
 				"down": {"uv": [4, 3, 7, 6], "rotation": 180, "texture": "#0"}
 			}
 		}
-	]
+	],
+	"gui_light": "front",
+	"display": {
+		"thirdperson_righthand": {
+			"translation": [0, -7.25, 0]
+		},
+		"gui": {
+			"rotation": [0, 0, 45],
+			"translation": [12.5, -12.25, 0],
+			"scale": [1.2, 1.2, 1.2]
+		}
+	}
 }
