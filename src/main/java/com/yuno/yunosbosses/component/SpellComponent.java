@@ -12,4 +12,6 @@ public interface SpellComponent extends Component {
     List<Spell> getKnownSpells();
 
     void learnSpell(Spell spell);
+
+    void cycleSpell();
 }

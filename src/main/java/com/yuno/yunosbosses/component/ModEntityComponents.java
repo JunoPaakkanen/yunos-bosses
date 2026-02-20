@@ -15,10 +15,6 @@ public class ModEntityComponents implements EntityComponentInitializer {
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
         registry.registerForPlayers(SPELL_DATA, player -> {
             PlayerSpellComponent component = new PlayerSpellComponent();
-
-            // Set Summon Spell as the Active Spell
-            component.setActiveSpell(ModSpells.SUMMON_SPELL);
-
             return component;
         }, RespawnCopyStrategy.ALWAYS_COPY);
     }

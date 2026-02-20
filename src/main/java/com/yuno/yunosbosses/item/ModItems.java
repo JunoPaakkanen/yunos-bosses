@@ -18,7 +18,7 @@ public class ModItems {
     public static final Item STRANGE_FRUIT = registerItem("strange_fruit", new Item(new Item.Settings().food(STRANGE_FRUIT_COMPONENT)));
 
     // Staff Items
-    public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", new StaffItem(new Item.Settings()));
+    public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", new StaffItem(new Item.Settings().maxCount(1)));
 
     // Helper method to register item
     private static Item registerItem(String name, Item item) {

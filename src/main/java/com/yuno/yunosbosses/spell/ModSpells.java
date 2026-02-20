@@ -1,7 +1,7 @@
 package com.yuno.yunosbosses.spell;
 
 import com.yuno.yunosbosses.YunosBosses;
-import com.yuno.yunosbosses.spell.implementation.SummonSpell;
+import com.yuno.yunosbosses.spell.implementation.summon.SummonSpell;
 import net.minecraft.util.Identifier;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,5 +22,10 @@ public class ModSpells {
 
     public static void registerModSpells() {
         YunosBosses.LOGGER.info("Registering Mod Spells for " + YunosBosses.MOD_ID);
+    }
+
+    public static Spell getSpellByName(String name) {
+        Identifier id = Identifier.of("yunosbosses", name);
+        return SPELLS.get(id);
     }
 }
