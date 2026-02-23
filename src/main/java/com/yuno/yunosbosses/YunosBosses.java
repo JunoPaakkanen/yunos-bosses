@@ -2,6 +2,7 @@ package com.yuno.yunosbosses;
 
 import com.yuno.yunosbosses.event.ModCommands;
 import com.yuno.yunosbosses.item.ModItems;
+import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.network.ModMessages;
 import com.yuno.yunosbosses.spell.ModSpells;
 import net.fabricmc.api.ModInitializer;
@@ -29,5 +30,6 @@ public class YunosBosses implements ModInitializer {
 
 		// Register payload types
 		ModMessages.registerC2SPackets();
+		BeamPayload.register();
 	}
 }
