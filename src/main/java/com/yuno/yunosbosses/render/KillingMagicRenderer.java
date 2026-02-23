@@ -37,22 +37,15 @@ public class KillingMagicRenderer {
         Vec3d up = new Vec3d(0, 1, 0);
         float beamRadius = 0.2f;
         // First perpendicular vector
-        Vec3d perpendicular = dir.crossProduct(up).normalize().multiply(beamRadius);
+        Vec3d perp1 = dir.crossProduct(up).normalize().multiply(beamRadius);
         // Second perpendicular vector
-        Vec3d perp2 = dir.crossProduct(perpendicular).normalize().multiply(beamRadius);
+        Vec3d perp2 = dir.crossProduct(perp1).normalize().multiply(beamRadius);
 
-        // Draw the first quad
         VertexConsumer buffer = context.consumers().getBuffer(RenderLayer.getLightning());
-        drawVertex(buffer, posMatrix, (float)-perpendicular.x, (float)-perpendicular.y, (float)-perpendicular.z, 0, 0, alpha);
-        drawVertex(buffer, posMatrix, (float)dir.x - (float)perpendicular.x, (float)dir.y - (float)perpendicular.y, (float)dir.z - (float)perpendicular.z, 0, 1, alpha);
-        drawVertex(buffer, posMatrix, (float)dir.x + (float)perpendicular.x, (float)dir.y + (float)perpendicular.y, (float)dir.z + (float)perpendicular.z, 1, 1, alpha);
-        drawVertex(buffer, posMatrix, (float)perpendicular.x, (float)perpendicular.y, (float)perpendicular.z, 1, 0, alpha);
-
+        // Draw the first quad
+        drawDoubleSidedQuad(buffer, posMatrix, perp1.multiply(-1), dir.add(perp1.multiply(-1)), dir.add(perp1), perp1, alpha);
         // Draw the second quad
-        drawVertex(buffer, posMatrix, (float)-perp2.x, (float)-perp2.y, (float)-perp2.z, 0, 0, alpha);
-        drawVertex(buffer, posMatrix, (float)dir.x - (float)perp2.x, (float)dir.y - (float)perp2.y, (float)dir.z - (float)perp2.z, 0, 1, alpha);
-        drawVertex(buffer, posMatrix, (float)dir.x + (float)perp2.x, (float)dir.y + (float)perp2.y, (float)dir.z + (float)perp2.z, 1, 1, alpha);
-        drawVertex(buffer, posMatrix, (float)perp2.x, (float)perp2.y, (float)perp2.z, 1, 0, alpha);
+        drawDoubleSidedQuad(buffer, posMatrix, perp2.multiply(-1), dir.add(perp2.multiply(-1)), dir.add(perp2), perp2, alpha);
 
         matrices.pop();
     }
@@ -64,9 +57,23 @@ public class KillingMagicRenderer {
         renderBeam(context, beam.getStart(), beam.getEnd(), lifeRatio);
     }
 
+    private static void drawDoubleSidedQuad(VertexConsumer buffer, Matrix4f posMatrix, Vec3d p1, Vec3d p2, Vec3d p3, Vec3d p4, int alpha) {
+        // Front side
+        drawVertex(buffer, posMatrix, (float)p1.x, (float)p1.y, (float)p1.z, 0, 0, alpha);
+        drawVertex(buffer, posMatrix, (float)p2.x, (float)p2.y, (float)p2.z, 0, 1, alpha);
+        drawVertex(buffer, posMatrix, (float)p3.x, (float)p3.y, (float)p3.z, 1, 1, alpha);
+        drawVertex(buffer, posMatrix, (float)p4.x, (float)p4.y, (float)p4.z, 1, 0, alpha);
+
+        // Back side (Reverse vertex order)
+        drawVertex(buffer, posMatrix, (float)p4.x, (float)p4.y, (float)p4.z, 1, 0, alpha);
+        drawVertex(buffer, posMatrix, (float)p3.x, (float)p3.y, (float)p3.z, 1, 1, alpha);
+        drawVertex(buffer, posMatrix, (float)p2.x, (float)p2.y, (float)p2.z, 0, 1, alpha);
+        drawVertex(buffer, posMatrix, (float)p1.x, (float)p1.y, (float)p1.z, 0, 0, alpha);
+    }
+
     private static void drawVertex(VertexConsumer buffer, Matrix4f matrix, float x, float y, float z, float u, float v, int alpha) {
         buffer.vertex(matrix, x, y, z)          // 1. Set Position
-                .color(255, 255, 255, alpha)        // 2. Set Color
+                .color(214, 227, 255, alpha)        // 2. Set Color
                 .texture(u, v)                    // 3. Set UV Mapping
                 .overlay(OverlayTexture.DEFAULT_UV) // 4. Set Overlay (Usually default)
                 .light(15728880)                  // 5. Set Light (Full brightness/Glow)

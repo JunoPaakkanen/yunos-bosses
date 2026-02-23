@@ -8,7 +8,9 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -65,8 +67,38 @@ public class KillingMagic extends Spell {
                     world.setBlockState(pos, Blocks.AIR.getDefaultState());
                 }
             }
-            // Pass the player eyeposition and final currentpoint to the renderer
-            ServerPlayNetworking.send((ServerPlayerEntity) player, new BeamPayload(player.getEyePos(), currentPoint));
+
+            Vec3d start = player.getEyePos().add(player.getRotationVector().multiply(0.1)); // Calculate start position and offset by 0.1 blocks
+            Vec3d dir = currentPoint.subtract(start);
+            double distance = dir.length();
+            Vec3d unitDir = dir.normalize();
+
+
+            if (world instanceof ServerWorld serverWorld) {
+                // Spawn particles
+                // Sonic boom at the start position
+                serverWorld.spawnParticles(
+                        ParticleTypes.SONIC_BOOM, start.x, start.y, start.z, 1, 0 ,0, 0, 0);
+
+                // Energy trail
+                for (double d = 0; d < distance; d += 0.3) {
+                    Vec3d pos = start.add(unitDir.multiply(d));
+
+                    // Core beam particles
+                    serverWorld.spawnParticles(
+                            ParticleTypes.END_ROD, pos.x, pos.y, pos.z, 2, 0.1 ,0.1, 0.1, 0.02);
+
+                    // Occasional blue sparks
+                    if (serverWorld.random.nextFloat() > 0.6f) {
+                        serverWorld.spawnParticles(
+                                ParticleTypes.ELECTRIC_SPARK, pos.x, pos.y, pos.z, 2, 0.2 ,0.2, 0.2, 0.1);
+                    }
+                }
+
+            }
+
+            // Pass the start position and final currentpoint to the renderer
+            ServerPlayNetworking.send((ServerPlayerEntity) player, new BeamPayload(start, currentPoint));
         }
     }
 }
