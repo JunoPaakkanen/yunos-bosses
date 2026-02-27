@@ -3,11 +3,14 @@ package com.yuno.yunosbosses.network;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Uuids;
 import net.minecraft.util.math.Vec3d;
+import java.util.UUID;
 
-public record BeamPayload(Vec3d start, Vec3d end) implements CustomPayload {
+public record BeamPayload(UUID ownerUuid, Vec3d start, int range) implements CustomPayload {
 
     public static final CustomPayload.Id<BeamPayload> ID =
             new CustomPayload.Id<>(Identifier.of("yunosbosses", "beam_payload"));
@@ -29,8 +32,9 @@ public record BeamPayload(Vec3d start, Vec3d end) implements CustomPayload {
 
     // Use custom VEC3D_CODEC for the start and end points
     public static final PacketCodec<RegistryByteBuf, BeamPayload> CODEC = PacketCodec.tuple(
+            Uuids.PACKET_CODEC, BeamPayload::ownerUuid,
             VEC3D_CODEC, BeamPayload::start,
-            VEC3D_CODEC, BeamPayload::end,
+            PacketCodecs.VAR_INT, BeamPayload::range,
             BeamPayload::new
     );
 

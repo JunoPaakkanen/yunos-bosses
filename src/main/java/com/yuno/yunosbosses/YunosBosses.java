@@ -5,8 +5,10 @@ import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.network.ModMessages;
 import com.yuno.yunosbosses.spell.ModSpells;
+import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,5 +33,9 @@ public class YunosBosses implements ModInitializer {
 		// Register payload types
 		ModMessages.registerC2SPackets();
 		BeamPayload.register();
+
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			DelayedServerEffects.tick();
+		});
 	}
 }

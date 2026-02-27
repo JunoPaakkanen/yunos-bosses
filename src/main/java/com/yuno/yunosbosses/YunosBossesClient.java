@@ -19,7 +19,7 @@ public class YunosBossesClient implements ClientModInitializer {
         // Register the Receiver for the BeamPayload packet sent from the server
         ClientPlayNetworking.registerGlobalReceiver(BeamPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
-                BeamManager.addBeam(payload.start(), payload.end(), 10);
+                BeamManager.addBeam(payload.ownerUuid(), payload.start(), payload.range(), 40);
             });
         });
         // Tick event that runs 20 times per second, used to age the beams
