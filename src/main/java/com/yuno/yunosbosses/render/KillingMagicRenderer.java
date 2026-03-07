@@ -85,10 +85,13 @@ public class KillingMagicRenderer {
             Vec3d perp2 = renderDir.crossProduct(perp1).normalize().multiply(beamRadius);
 
             VertexConsumer buffer = context.consumers().getBuffer(RenderLayer.getLightning());
+            // Draw the beam
             // Draw the first quad
-            drawDoubleSidedQuad(buffer, posMatrix, perp1.multiply(-1), renderDir.add(perp1.multiply(-1)), renderDir.add(perp1), perp1, beamAlpha);
+            drawDoubleSidedQuad(buffer, posMatrix, perp1.multiply(-1), renderDir.add(perp1.multiply(-1)), renderDir.add(perp1), perp1,
+                    214, 247, 251, beamAlpha);
             // Draw the second quad
-            drawDoubleSidedQuad(buffer, posMatrix, perp2.multiply(-1), renderDir.add(perp2.multiply(-1)), renderDir.add(perp2), perp2, beamAlpha);
+            drawDoubleSidedQuad(buffer, posMatrix, perp2.multiply(-1), renderDir.add(perp2.multiply(-1)), renderDir.add(perp2), perp2,
+                    214, 247, 251, beamAlpha);
         }
 
         matrices.push(); // Create a nested sandbox for the spin
@@ -104,7 +107,8 @@ public class KillingMagicRenderer {
         // Draw the magic circle
         drawDoubleSidedQuad(circleBuffer, matrices.peek().getPositionMatrix(),
                 circlePerp1.add(circlePerp2), circlePerp1.subtract(circlePerp2),
-                circlePerp1.multiply(-1).subtract(circlePerp2), circlePerp1.multiply(-1).add(circlePerp2), circleAlpha);
+                circlePerp1.multiply(-1).subtract(circlePerp2), circlePerp1.multiply(-1).add(circlePerp2),
+                163, 215, 242, circleAlpha);
 
         matrices.pop();
         matrices.pop();
@@ -124,23 +128,25 @@ public class KillingMagicRenderer {
         renderBeam(context, currentStart, beam.getRange(), beam);
     }
 
-    private static void drawDoubleSidedQuad(VertexConsumer buffer, Matrix4f posMatrix, Vec3d p1, Vec3d p2, Vec3d p3, Vec3d p4, int alpha) {
+    private static void drawDoubleSidedQuad(VertexConsumer buffer, Matrix4f posMatrix, Vec3d p1, Vec3d p2, Vec3d p3, Vec3d p4,
+                                            int red, int green, int blue, int alpha) {
         // Front side
-        drawVertex(buffer, posMatrix, (float)p1.x, (float)p1.y, (float)p1.z, 0, 0, alpha);
-        drawVertex(buffer, posMatrix, (float)p2.x, (float)p2.y, (float)p2.z, 0, 1, alpha);
-        drawVertex(buffer, posMatrix, (float)p3.x, (float)p3.y, (float)p3.z, 1, 1, alpha);
-        drawVertex(buffer, posMatrix, (float)p4.x, (float)p4.y, (float)p4.z, 1, 0, alpha);
+        drawVertex(buffer, posMatrix, (float)p1.x, (float)p1.y, (float)p1.z, 0, 0, red, green, blue, alpha);
+        drawVertex(buffer, posMatrix, (float)p2.x, (float)p2.y, (float)p2.z, 0, 1, red, green, blue, alpha);
+        drawVertex(buffer, posMatrix, (float)p3.x, (float)p3.y, (float)p3.z, 1, 1, red, green, blue, alpha);
+        drawVertex(buffer, posMatrix, (float)p4.x, (float)p4.y, (float)p4.z, 1, 0, red, green, blue, alpha);
 
         // Back side (Reverse vertex order)
-        drawVertex(buffer, posMatrix, (float)p4.x, (float)p4.y, (float)p4.z, 1, 0, alpha);
-        drawVertex(buffer, posMatrix, (float)p3.x, (float)p3.y, (float)p3.z, 1, 1, alpha);
-        drawVertex(buffer, posMatrix, (float)p2.x, (float)p2.y, (float)p2.z, 0, 1, alpha);
-        drawVertex(buffer, posMatrix, (float)p1.x, (float)p1.y, (float)p1.z, 0, 0, alpha);
+        drawVertex(buffer, posMatrix, (float)p4.x, (float)p4.y, (float)p4.z, 1, 0, red, green, blue, alpha);
+        drawVertex(buffer, posMatrix, (float)p3.x, (float)p3.y, (float)p3.z, 1, 1, red, green, blue, alpha);
+        drawVertex(buffer, posMatrix, (float)p2.x, (float)p2.y, (float)p2.z, 0, 1, red, green, blue, alpha);
+        drawVertex(buffer, posMatrix, (float)p1.x, (float)p1.y, (float)p1.z, 0, 0, red, green, blue, alpha);
     }
 
-    private static void drawVertex(VertexConsumer buffer, Matrix4f matrix, float x, float y, float z, float u, float v, int alpha) {
+    private static void drawVertex(VertexConsumer buffer, Matrix4f matrix, float x, float y, float z, float u, float v,
+                                   int red, int green, int blue, int alpha) {
         buffer.vertex(matrix, x, y, z)          // 1. Set Position
-                .color(214, 227, 255, alpha)        // 2. Set Color
+                .color(red, green, blue, alpha)        // 2. Set Color
                 .texture(u, v)                    // 3. Set UV Mapping
                 .overlay(OverlayTexture.DEFAULT_UV) // 4. Set Overlay (Usually default)
                 .light(15728880)                  // 5. Set Light (Full brightness/Glow)
