@@ -1,10 +1,14 @@
 package com.yuno.yunosbosses;
 
 import com.yuno.yunosbosses.event.ModKeybindings;
+import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.render.BeamManager;
+import com.yuno.yunosbosses.render.DefensiveMagicRenderer;
 import com.yuno.yunosbosses.render.KillingMagicRenderer;
+import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.ActiveBeam;
+import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -39,5 +43,14 @@ public class YunosBossesClient implements ClientModInitializer {
             }
         });
 
+        // Register the receiver for the BarrierPayload packet sent from the server
+        ClientPlayNetworking.registerGlobalReceiver(BarrierPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                // Add to a client-side list of barriers for the renderer to draw
+                BarrierManager.addBarrier(payload.ownerUuid(), payload.position(), payload.direction(), payload.maxTicks());
+            });
+        });
+        // Register DefensiveMagicRenderer
+        DefensiveMagicRenderer.register();
     }
 }
