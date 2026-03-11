@@ -29,7 +29,7 @@ public class DefensiveMagic extends Spell {
             Vec3d barrierPos = player.getEyePos().add(look.multiply(1.5));
 
             // Add to BarrierManager
-            BarrierManager.addBarrier(player.getUuid(), barrierPos, look, lifetime);
+            BarrierManager.addBarrier(player.getUuid(), barrierPos, look, lifetime, false);
 
             // Send Packet to Client for rendering
             ServerPlayNetworking.send(

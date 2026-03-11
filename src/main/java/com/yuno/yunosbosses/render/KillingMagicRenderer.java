@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.render;
 
 import com.yuno.yunosbosses.util.ActiveBeam;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -14,6 +15,15 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class KillingMagicRenderer {
+
+    public static void register() {
+        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+            for (ActiveBeam beam : BeamManager.ACTIVE_BEAMS) {
+                // Pass beam data to the renderer
+                KillingMagicRenderer.renderBeam(context, beam);
+            }
+        });
+    }
 
     public static void renderBeam(WorldRenderContext context, Vec3d start, int range, ActiveBeam beam) {
         MatrixStack matrices = context.matrixStack();

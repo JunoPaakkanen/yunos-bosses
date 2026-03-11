@@ -11,6 +11,7 @@ import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.server.world.ServerWorld;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +40,10 @@ public class YunosBosses implements ModInitializer {
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			DelayedServerEffects.tick();
-		});
 
-		ServerTickEvents.END_WORLD_TICK.register(world -> {
-			BarrierManager.tick(world);
+			for (ServerWorld world : server.getWorlds()) {
+				BarrierManager.tick(world);
+			}
 		});
 	}
 }

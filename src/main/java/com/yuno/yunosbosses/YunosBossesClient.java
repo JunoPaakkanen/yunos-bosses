@@ -20,37 +20,36 @@ public class YunosBossesClient implements ClientModInitializer {
         // Register keybindings
         ModKeybindings.register();
 
-        // Register the Receiver for the BeamPayload packet sent from the server
-        ClientPlayNetworking.registerGlobalReceiver(BeamPayload.ID, (payload, context) -> {
-            context.client().execute(() -> {
-                BeamManager.addBeam(payload.ownerUuid(), payload.start(), payload.range(), 40);
-            });
-        });
-        // Tick event that runs 20 times per second, used to age the beams
+        // Register Renderers
+        KillingMagicRenderer.register();
+        DefensiveMagicRenderer.register();
+
+        // Client tick event that runs 20 times per second
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.world != null) {
                 boolean isFrozen = client.world.getTickManager().isFrozen();
                 if (!isFrozen) {
                     BeamManager.tick();
+                    BarrierManager.tick(client.world);
                 }
             }
         });
-        // Render event that runs every single frame, used to draw the beams
-        WorldRenderEvents.AFTER_ENTITIES.register(context -> {
-            for (ActiveBeam beam : BeamManager.ACTIVE_BEAMS) {
-                // Pass beam data to the renderer
-                KillingMagicRenderer.renderBeam(context, beam);
-            }
+
+        // Receivers
+
+        // Receiver for Beams
+        ClientPlayNetworking.registerGlobalReceiver(BeamPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                BeamManager.addBeam(payload.ownerUuid(), payload.start(), payload.range(), 40);
+            });
         });
 
-        // Register the receiver for the BarrierPayload packet sent from the server
+        // Receiver for Barriers
         ClientPlayNetworking.registerGlobalReceiver(BarrierPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 // Add to a client-side list of barriers for the renderer to draw
-                BarrierManager.addBarrier(payload.ownerUuid(), payload.position(), payload.direction(), payload.maxTicks());
+                BarrierManager.addBarrier(payload.ownerUuid(), payload.position(), payload.direction(), payload.maxTicks(), true);
             });
         });
-        // Register DefensiveMagicRenderer
-        DefensiveMagicRenderer.register();
     }
 }

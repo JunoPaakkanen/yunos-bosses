@@ -27,14 +27,8 @@ public class DefensiveMagicRenderer {
             VertexConsumerProvider consumers = context.consumers();
             Vec3d cameraPos = context.camera().getPos();
 
-            // Prevent ConcurrentModificationException by creating a snapshot of the list
-            List<ActiveBarrier> barrierSnapshot;
-            synchronized (BarrierManager.ACTIVE_BARRIERS) {
-                barrierSnapshot = new ArrayList<>(BarrierManager.ACTIVE_BARRIERS);
-            }
-
             // Loop through all barriers stored in the Manager
-            for (ActiveBarrier barrier : barrierSnapshot) {
+            for (ActiveBarrier barrier : BarrierManager.ACTIVE_BARRIERS_CLIENT) {
                 renderBarrier(matrices, consumers, cameraPos, barrier, context);
             }
         });
