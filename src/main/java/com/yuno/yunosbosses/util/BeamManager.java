@@ -1,6 +1,5 @@
-package com.yuno.yunosbosses.render;
+package com.yuno.yunosbosses.util;
 
-import com.yuno.yunosbosses.util.ActiveBeam;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,6 +12,10 @@ public class BeamManager {
 
     public static void addBeam(UUID ownerUuid, Vec3d start, int range, int maxTicks) {
         ACTIVE_BEAMS.add(new ActiveBeam(ownerUuid, start, range, maxTicks, 0));
+    }
+
+    public static void addBeam(UUID ownerUuid, Vec3d start, int range, int maxTicks, boolean useCustomStart, Vec3d direction) {
+        ACTIVE_BEAMS.add(new ActiveBeam(ownerUuid, start, range, maxTicks, 0, useCustomStart, direction));
     }
 
     public static void tick() {

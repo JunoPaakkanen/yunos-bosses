@@ -3,16 +3,13 @@ package com.yuno.yunosbosses;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
-import com.yuno.yunosbosses.render.BeamManager;
+import com.yuno.yunosbosses.util.BeamManager;
 import com.yuno.yunosbosses.render.DefensiveMagicRenderer;
 import com.yuno.yunosbosses.render.KillingMagicRenderer;
-import com.yuno.yunosbosses.util.ActiveBarrier;
-import com.yuno.yunosbosses.util.ActiveBeam;
 import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 
 public class YunosBossesClient implements ClientModInitializer {
     @Override
@@ -40,7 +37,7 @@ public class YunosBossesClient implements ClientModInitializer {
         // Receiver for Beams
         ClientPlayNetworking.registerGlobalReceiver(BeamPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
-                BeamManager.addBeam(payload.ownerUuid(), payload.start(), payload.range(), 40);
+                BeamManager.addBeam(payload.ownerUuid(), payload.start(), payload.range(), 40, payload.useCustomStart(), payload.direction());
             });
         });
 

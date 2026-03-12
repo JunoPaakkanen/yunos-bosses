@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.render;
 
 import com.yuno.yunosbosses.util.ActiveBeam;
+import com.yuno.yunosbosses.util.BeamManager;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.render.OverlayTexture;
@@ -40,8 +41,15 @@ public class KillingMagicRenderer {
         if (!beam.isCharging()) {
             if (beam.getLockedStart() == null) {
                 // First frame of firing: Capture the snapshot
-                activeLookDir = owner.getRotationVector();
-                activeCurrentStart = owner.getEyePos();
+                // Check if beam has a pre-set direction (for barrage)
+                if (beam.getDirection() != null) {
+                    activeLookDir = beam.getDirection();
+                } else {
+                    activeLookDir = owner.getRotationVector();
+                }
+                
+                if (!beam.isUsingCustomStart()) { activeCurrentStart = owner.getEyePos(); }
+                else { activeCurrentStart = start; }
                 activeVisualStart = activeCurrentStart.add(activeLookDir.multiply(1.0));
                 beam.lock(activeVisualStart, activeLookDir);
             } else {
@@ -51,10 +59,23 @@ public class KillingMagicRenderer {
                 activeCurrentStart = activeVisualStart.subtract(activeLookDir.multiply(1.0));
             }
         } else {
-            activeLookDir = owner.getRotationVector();
-            activeCurrentStart = owner.getEyePos();
-            activeVisualStart = activeCurrentStart.add(activeLookDir.multiply(1.0));
+            // During charging phase
+            // Check if beam has a pre-set direction (for barrage)
+            if (beam.getDirection() != null) {
+                activeLookDir = beam.getDirection();
+            } else {
+                activeLookDir = owner.getRotationVector();
+            }
+
+            if (beam.isUsingCustomStart()) {
+                activeVisualStart = start;
+                activeCurrentStart = activeVisualStart.subtract(activeLookDir.multiply(1.0));
+            } else {
+                activeCurrentStart = owner.getEyePos();
+                activeVisualStart = activeCurrentStart.add(activeLookDir.multiply(1.0));
+            }
         }
+        
         matrices.push();
 
         matrices.translate(
@@ -127,13 +148,9 @@ public class KillingMagicRenderer {
     public static void renderBeam(WorldRenderContext context, ActiveBeam beam) {
         // Look for the player who owns this beam
         PlayerEntity owner = context.world().getPlayerByUuid(beam.getOwnerUuid());
+        if (owner == null) return;
 
-        Vec3d currentStart;
-        if (owner != null) {
-            currentStart = owner.getEyePos();
-        } else {
-            currentStart = beam.getStart();
-        }
+        Vec3d currentStart = beam.getStart();
 
         renderBeam(context, currentStart, beam.getRange(), beam);
     }

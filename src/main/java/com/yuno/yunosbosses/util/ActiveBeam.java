@@ -12,6 +12,8 @@ public class ActiveBeam {
     private final int chargeTicks = 20;
     private Vec3d lockedStart = null;
     private Vec3d lockedDir = null;
+    private final boolean useCustomStart;
+    private final Vec3d direction;
 
     public ActiveBeam(UUID ownerUuid, Vec3d start, int range, int maxTicks, int currentTicks) {
         this.ownerUuid = ownerUuid;
@@ -19,6 +21,18 @@ public class ActiveBeam {
         this.range = range;
         this.maxTicks = maxTicks;
         this.currentTicks = currentTicks;
+        this.useCustomStart = true;
+        this.direction = null;
+    }
+
+    public ActiveBeam(UUID ownerUuid, Vec3d start, int range, int maxTicks, int currentTicks, boolean useCustomStart, Vec3d direction) {
+        this.ownerUuid = ownerUuid;
+        this.start = start;
+        this.range = range;
+        this.maxTicks = maxTicks;
+        this.currentTicks = currentTicks;
+        this.useCustomStart = useCustomStart;
+        this.direction = direction;
     }
 
     public void incrementAge() {
@@ -53,4 +67,6 @@ public class ActiveBeam {
     public UUID getOwnerUuid() { return ownerUuid; }
     public Vec3d getLockedStart() { return lockedStart; }
     public Vec3d getLockedDir() { return lockedDir; }
+    public boolean isUsingCustomStart() { return useCustomStart; }
+    public Vec3d getDirection() { return direction; }
 }

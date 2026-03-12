@@ -10,7 +10,7 @@ import net.minecraft.util.Uuids;
 import net.minecraft.util.math.Vec3d;
 import java.util.UUID;
 
-public record BeamPayload(UUID ownerUuid, Vec3d start, int range) implements CustomPayload {
+public record BeamPayload(UUID ownerUuid, Vec3d start, int range, boolean useCustomStart, Vec3d direction) implements CustomPayload {
 
     public static final CustomPayload.Id<BeamPayload> ID =
             new CustomPayload.Id<>(Identifier.of("yunosbosses", "beam_payload"));
@@ -30,11 +30,37 @@ public record BeamPayload(UUID ownerUuid, Vec3d start, int range) implements Cus
         }
     };
 
-    // Use custom VEC3D_CODEC for the start and end points
+    // Nullable Vec3d codec
+    public static final PacketCodec<RegistryByteBuf, Vec3d> NULLABLE_VEC3D_CODEC = new PacketCodec<>() {
+        @Override
+        public Vec3d decode(RegistryByteBuf buf) {
+            boolean hasDirection = buf.readBoolean();
+            if (hasDirection) {
+                return new Vec3d(buf.readDouble(), buf.readDouble(), buf.readDouble());
+            }
+            return null;
+        }
+
+        @Override
+        public void encode(RegistryByteBuf buf, Vec3d value) {
+            if (value != null) {
+                buf.writeBoolean(true);
+                buf.writeDouble(value.x);
+                buf.writeDouble(value.y);
+                buf.writeDouble(value.z);
+            } else {
+                buf.writeBoolean(false);
+            }
+        }
+    };
+
+    // Use custom VEC3D_CODEC for the start and NULLABLE_VEC3D_CODEC for direction
     public static final PacketCodec<RegistryByteBuf, BeamPayload> CODEC = PacketCodec.tuple(
             Uuids.PACKET_CODEC, BeamPayload::ownerUuid,
             VEC3D_CODEC, BeamPayload::start,
             PacketCodecs.VAR_INT, BeamPayload::range,
+            PacketCodecs.BOOL, BeamPayload::useCustomStart,
+            NULLABLE_VEC3D_CODEC, BeamPayload::direction,
             BeamPayload::new
     );
 
