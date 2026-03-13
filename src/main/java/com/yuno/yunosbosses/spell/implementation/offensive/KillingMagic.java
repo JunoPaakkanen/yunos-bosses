@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
@@ -70,8 +71,10 @@ public class KillingMagic extends Spell {
                         currentPoint.x + damageRadius, currentPoint.y + damageRadius, currentPoint.z + damageRadius
                     );
 
+                    // Damage entities
                     world.getOtherEntities(player, attackHitbox, Entity::isAlive).forEach(entity -> {
                     if (hitEntities.contains(entity)) return;
+                    if (entity instanceof ItemEntity) return;
                     entity.damage(world.getDamageSources().indirectMagic(player, player), baseDamage);
                     hitEntities.add(entity);
                 });
@@ -140,8 +143,10 @@ public class KillingMagic extends Spell {
                     currentPoint.x + damageRadius, currentPoint.y + damageRadius, currentPoint.z + damageRadius
                 );
 
+                // Damage entities
                 world.getOtherEntities(player, attackHitbox, Entity::isAlive).forEach(entity -> {
                     if (hitEntities.contains(entity)) return;
+                    if (entity instanceof ItemEntity) return;
                     entity.damage(world.getDamageSources().indirectMagic(player, player), baseDamage);
                     hitEntities.add(entity);
                 });
