@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses;
 
+import com.yuno.yunosbosses.entity.ModEntities;
+import com.yuno.yunosbosses.entity.client.UbelRenderer;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
@@ -10,6 +12,7 @@ import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
 public class YunosBossesClient implements ClientModInitializer {
     @Override
@@ -20,6 +23,9 @@ public class YunosBossesClient implements ClientModInitializer {
         // Register Renderers
         KillingMagicRenderer.register();
         DefensiveMagicRenderer.register();
+
+        // Register Entity Renderers
+        EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
 
         // Client tick event that runs 20 times per second
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

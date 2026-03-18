@@ -20,6 +20,10 @@ repositories {
 		name = "Ladysnake Mods"
 		url = "https://maven.ladysnake.org/releases"
 	}
+	// Geckolib repository
+	maven { url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
+
+	mavenCentral()
 }
 
 fabricApi {
@@ -42,7 +46,8 @@ dependencies {
 	modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-entity:6.1.1"
 	include "org.ladysnake.cardinal-components-api:cardinal-components-base:6.1.1"
 	include "org.ladysnake.cardinal-components-api:cardinal-components-entity:6.1.1"
-	
+
+	modImplementation "software.bernie.geckolib:geckolib-fabric-1.21.1:4.8.4"
 }
 
 processResources {

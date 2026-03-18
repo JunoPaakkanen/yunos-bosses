@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses;
 
+import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.event.ModCommands;
 import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.network.BarrierPayload;
@@ -11,6 +12,7 @@ import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.server.world.ServerWorld;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,8 @@ public class YunosBosses implements ModInitializer {
 		ModItems.registerModItems();
 		ModSpells.registerModSpells();
 		ModCommands.register();
+		ModEntities.registerAttributes();
+		ModEntities.registerModEntities();
 
 		// Register payload types
 		ModMessages.registerC2SPackets();
