@@ -1,9 +1,11 @@
 package com.yuno.yunosbosses.entity.character;
 
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.PathAwareEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -23,7 +25,35 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         return PathAwareEntity.createMobAttributes()
                 .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0D)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25f)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 5.0D);
+                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 500.0D)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 10.0D);
+    }
+
+    // initGoals defines the entity's goals and priorities.
+    @Override
+    protected void initGoals() {
+        // If she's in water, she MUST swim to stay alive.
+        this.goalSelector.add(0, new SwimGoal(this));
+
+        // Wander around the world so she doesn't just stand still.
+        this.goalSelector.add(3, new WanderAroundFarGoal(this, 1.0D));
+
+        // Look at the player when they are nearby.
+        this.goalSelector.add(4, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
+
+        // Just look around randomly while standing still.
+        this.goalSelector.add(5, new LookAroundGoal(this));
+
+        // Get revenge on the player if she gets hit.
+        this.targetSelector.add(1, new RevengeGoal(this));
+
+        // Move towards her targets to melee attack them.
+        this.goalSelector.add(2, new MeleeAttackGoal(this, 1.6D, false));
+    }
+
+    @Override
+    public boolean cannotDespawn() {
+        return true; // She will stay in the world forever until killed.
     }
 
     @Override
