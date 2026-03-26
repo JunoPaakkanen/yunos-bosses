@@ -5,6 +5,9 @@ import com.yuno.yunosbosses.entity.client.UbelRenderer;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
+import com.yuno.yunosbosses.particle.ModParticles;
+import com.yuno.yunosbosses.particle.SlashImpactScissorsParticle;
+import com.yuno.yunosbosses.render.SlashProjectileRenderer;
 import com.yuno.yunosbosses.util.BeamManager;
 import com.yuno.yunosbosses.render.DefensiveMagicRenderer;
 import com.yuno.yunosbosses.render.KillingMagicRenderer;
@@ -12,6 +15,7 @@ import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
 public class YunosBossesClient implements ClientModInitializer {
@@ -26,6 +30,10 @@ public class YunosBossesClient implements ClientModInitializer {
 
         // Register Entity Renderers
         EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
+        EntityRendererRegistry.register(ModEntities.SLASH_PROJECTILE, SlashProjectileRenderer::new);
+
+        // Register particle factories
+        ParticleFactoryRegistry.getInstance().register(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, SlashImpactScissorsParticle.Factory::new);
 
         // Client tick event that runs 20 times per second
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

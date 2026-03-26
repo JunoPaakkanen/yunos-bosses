@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.spell;
 
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.spell.implementation.defensive.DefensiveMagic;
+import com.yuno.yunosbosses.spell.implementation.offensive.CuttingMagicReelseiden;
 import com.yuno.yunosbosses.spell.implementation.offensive.KillingMagic;
 import com.yuno.yunosbosses.spell.implementation.offensive.KillingMagicBarrage;
 import com.yuno.yunosbosses.spell.implementation.summon.SummonSpell;
@@ -14,9 +15,12 @@ public class ModSpells {
 
     // Summon spells
     public static final Spell SUMMON_SPELL = registerSpell(new SummonSpell(Identifier.of("yunosbosses", "summonspell")));
+
     // Offensive spells
     public static final Spell KILLING_MAGIC = registerSpell(new KillingMagic(Identifier.of("yunosbosses", "killingmagic")));
     public static final Spell KILLING_MAGIC_BARRAGE = registerSpell(new KillingMagicBarrage(Identifier.of("yunosbosses", "killingmagicbarrage")));
+    public static final Spell CUTTING_MAGIC_REELSEIDEN = registerSpell(new CuttingMagicReelseiden(Identifier.of("yunosbosses", "cuttingmagicreelseiden")));
+
     // Defensive spells
     public static final Spell DEFENSIVE_MAGIC = registerSpell(new DefensiveMagic(Identifier.of("yunosbosses", "defensivemagic")));
 

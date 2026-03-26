@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.entity;
 
 import com.yuno.yunosbosses.entity.character.UbelEntity;
+import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
@@ -14,6 +15,14 @@ public class ModEntities {
             Identifier.of("yunosbosses", "ubel"),
             EntityType.Builder.create(UbelEntity::new, SpawnGroup.CREATURE)
                     .dimensions(0.6f, 1.8f)
+                    .build()
+    );
+
+    public static final EntityType<SlashProjectileEntity> SLASH_PROJECTILE = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier.of("yunosbosses", "slash_projectile"),
+            EntityType.Builder.<SlashProjectileEntity>create(SlashProjectileEntity::new, SpawnGroup.MISC)
+                    .dimensions(0.25f, 0.25f)
                     .build()
     );
 
