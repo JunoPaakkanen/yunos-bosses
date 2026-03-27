@@ -58,14 +58,12 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        /*
         controllers.add(new AnimationController<>(this, "controller", 5, event -> {
             if (event.isMoving()) {
                 return event.setAndContinue(RawAnimation.begin().thenLoop("walk"));
             }
-            return event.setAndContinue(RawAnimation.begin().thenLoop("idle"));
+            return event.setAndContinue(RawAnimation.begin().thenLoop("animation.ubel.idle"));
         }));
-         */
     }
 
     @Override
