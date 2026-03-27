@@ -8,7 +8,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -28,11 +28,11 @@ public class KillingMagic extends Spell {
     }
 
     @Override
-    public void cast(World world, PlayerEntity player, ItemStack staff) {
+    public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
             // Spell implementation
-            Vec3d playerLookVector = player.getRotationVector();
-            Vec3d start = player.getEyePos().add(playerLookVector.multiply(1.0));
+            Vec3d playerLookVector = caster.getRotationVector();
+            Vec3d start = caster.getEyePos().add(playerLookVector.multiply(1.0));
 
             int maxRange = 20;
             int delay = 20;
@@ -41,25 +41,25 @@ public class KillingMagic extends Spell {
             float baseDamage = 30.0F;
             float cooldown = 15.0F;
             
-            fireBeam(world, player, start, maxRange, delay, stepDistance, damageRadius, baseDamage, false);
+            fireBeam(world, caster, start, maxRange, delay, stepDistance, damageRadius, baseDamage, false);
         }
     }
 
-    protected void fireBeam(World world, PlayerEntity player, Vec3d start, int maxRange, int delay, float stepDistance,
+    protected void fireBeam(World world, LivingEntity caster, Vec3d start, int maxRange, int delay, float stepDistance,
                             float damageRadius, float baseDamage, boolean useCustomStart) {
-        Vec3d playerLookVector = player.getRotationVector();
+        Vec3d playerLookVector = caster.getRotationVector();
 
-        // Pass the player UUID and start position to the renderer.
-        ServerPlayNetworking.send((ServerPlayerEntity) player, new BeamPayload(player.getUuid(), start, maxRange, useCustomStart, null));
+        // Pass the caster UUID and start position to the renderer.
+        ServerPlayNetworking.send((ServerPlayerEntity) caster, new BeamPayload(caster.getUuid(), start, maxRange, useCustomStart, null));
 
         // Create a runnable to be executed later
         DelayedServerEffects.delay(delay, () -> {
 
             HashSet<Entity> hitEntities = new HashSet<>();
-            Vec3d playerLookVectorFinal = player.getRotationVector(); // Final player look vector for when the beam is fired
+            Vec3d playerLookVectorFinal = caster.getRotationVector(); // Final caster look vector for when the beam is fired
             Vec3d firingOrigin;
             if (useCustomStart) { firingOrigin = start; }
-            else { firingOrigin = player.getEyePos().add(playerLookVectorFinal.multiply(1.0)); }
+            else { firingOrigin = caster.getEyePos().add(playerLookVectorFinal.multiply(1.0)); }
             Vec3d currentPoint = firingOrigin;
 
             for (int i = 0; i < maxRange; i++) {
@@ -72,10 +72,10 @@ public class KillingMagic extends Spell {
                     );
 
                     // Damage entities
-                    world.getOtherEntities(player, attackHitbox, Entity::isAlive).forEach(entity -> {
+                    world.getOtherEntities(caster, attackHitbox, Entity::isAlive).forEach(entity -> {
                     if (hitEntities.contains(entity)) return;
                     if (entity instanceof ItemEntity) return;
-                    entity.damage(world.getDamageSources().indirectMagic(player, player), baseDamage);
+                    entity.damage(world.getDamageSources().indirectMagic(caster, caster), baseDamage);
                     hitEntities.add(entity);
                 });
 
@@ -121,10 +121,10 @@ public class KillingMagic extends Spell {
         });
     }
 
-    protected void fireBeamTowardTarget(World world, PlayerEntity player, Vec3d start, Vec3d direction, 
+    protected void fireBeamTowardTarget(World world, LivingEntity caster, Vec3d start, Vec3d direction,
                                        int maxRange, int delay, float stepDistance, float damageRadius, float baseDamage) {
-        // Pass the player UUID and start position to the renderer.
-        ServerPlayNetworking.send((ServerPlayerEntity) player, new BeamPayload(player.getUuid(), start, maxRange, true, direction));
+        // Pass the caster UUID and start position to the renderer.
+        ServerPlayNetworking.send((ServerPlayerEntity) caster, new BeamPayload(caster.getUuid(), start, maxRange, true, direction));
 
         // Create a runnable to be executed later
         DelayedServerEffects.delay(delay, () -> {
@@ -144,10 +144,10 @@ public class KillingMagic extends Spell {
                 );
 
                 // Damage entities
-                world.getOtherEntities(player, attackHitbox, Entity::isAlive).forEach(entity -> {
+                world.getOtherEntities(caster, attackHitbox, Entity::isAlive).forEach(entity -> {
                     if (hitEntities.contains(entity)) return;
                     if (entity instanceof ItemEntity) return;
-                    entity.damage(world.getDamageSources().indirectMagic(player, player), baseDamage);
+                    entity.damage(world.getDamageSources().indirectMagic(caster, caster), baseDamage);
                     hitEntities.add(entity);
                 });
 

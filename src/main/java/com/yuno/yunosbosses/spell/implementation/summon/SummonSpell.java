@@ -5,7 +5,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.VexEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Scoreboard;
@@ -32,13 +31,13 @@ public class SummonSpell extends Spell {
     }
 
     @Override
-    public void cast(World world, PlayerEntity player, ItemStack staff) {
+    public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
-            // Raycast to find the entity the player is looking at and set them as target.
-            Entity target = Objects.requireNonNull(ProjectileUtil.raycast(player,
-                    player.getCameraPosVec(1.0f),
-                    player.getCameraPosVec(1.0f).add(player.getRotationVec(1.0f).multiply(30.0D)),
-                    player.getBoundingBox().stretch(player.getRotationVec(1.0f).multiply(30.0D)).expand(1.0D, 1.0D, 1.0D),
+            // Raycast to find the entity the caster is looking at and set them as target.
+            Entity target = Objects.requireNonNull(ProjectileUtil.raycast(caster,
+                    caster.getCameraPosVec(1.0f),
+                    caster.getCameraPosVec(1.0f).add(caster.getRotationVec(1.0f).multiply(30.0D)),
+                    caster.getBoundingBox().stretch(caster.getRotationVec(1.0f).multiply(30.0D)).expand(1.0D, 1.0D, 1.0D),
                     entity -> !entity.isSpectator() && entity.canHit(),
                     900.0D
             )).getEntity();
@@ -50,12 +49,12 @@ public class SummonSpell extends Spell {
             Team vexTeam = getOrCreateVexTeam(scoreboard);
 
             // Add Player and Vex to the team
-            scoreboard.addScoreHolderToTeam(player.getNameForScoreboard(), vexTeam);
+            scoreboard.addScoreHolderToTeam(caster.getNameForScoreboard(), vexTeam);
             scoreboard.addScoreHolderToTeam(vex.getUuidAsString(), vexTeam);
 
             vex.setLifeTicks(1200);
 
-            vex.refreshPositionAndAngles(player.getX(), player.getY(), player.getZ(), 0, 0);
+            vex.refreshPositionAndAngles(caster.getX(), caster.getY(), caster.getZ(), 0, 0);
 
             if (target instanceof LivingEntity livingTarget) {
                 vex.setTarget(livingTarget);

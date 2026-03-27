@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.spell.implementation.offensive;
 
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
@@ -17,19 +18,19 @@ public class KillingMagicBarrage extends KillingMagic {
     }
 
     @Override
-    public void cast(World world, PlayerEntity player, ItemStack staff) {
+    public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
             // Calculate the convergence point where all beams will aim
-            Vec3d playerLookVector = player.getRotationVector();
+            Vec3d playerLookVector = caster.getRotationVector();
             double convergenceDistance = 12.0; // Distance to the focal point
-            Vec3d targetPoint = player.getEyePos().add(playerLookVector.multiply(convergenceDistance));
+            Vec3d targetPoint = caster.getEyePos().add(playerLookVector.multiply(convergenceDistance));
             
             // Fire multiple beams with staggered delays
             for (int beamIndex = 0; beamIndex < BEAM_COUNT; beamIndex++) {
                 int delayForThisBeam = beamIndex * DELAY_BETWEEN_BEAMS;
             
                 DelayedServerEffects.delay(delayForThisBeam, () -> {
-                    // Randomize the beam origin around the player
+                    // Randomize the beam origin around the caster
                     double angleOffset = world.random.nextDouble() * Math.PI * 2;
                     double radiusOffset = 2.0 + world.random.nextDouble() * 1.5;
                 
@@ -39,13 +40,13 @@ public class KillingMagicBarrage extends KillingMagic {
                         Math.sin(angleOffset) * radiusOffset
                     );
                 
-                    Vec3d start = player.getEyePos().add(offset);
+                    Vec3d start = caster.getEyePos().add(offset);
                     
                     // Calculate direction from start position to target point
                     Vec3d direction = targetPoint.subtract(start).normalize();
                 
                     // Fire beam toward the convergence point
-                    fireBeamTowardTarget(world, player, start, direction, 12, 15, 1.0F, 0.6F, 15.0F);
+                    fireBeamTowardTarget(world, caster, start, direction, 12, 15, 1.0F, 0.6F, 15.0F);
                 });
             }
         }

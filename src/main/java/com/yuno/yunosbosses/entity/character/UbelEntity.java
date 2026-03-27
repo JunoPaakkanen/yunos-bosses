@@ -1,11 +1,15 @@
 package com.yuno.yunosbosses.entity.character;
 
+import com.yuno.yunosbosses.entity.goal.UbelAttackGoal;
+import com.yuno.yunosbosses.item.ModItems;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -19,6 +23,9 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
 
     public UbelEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
+        // Equip Ubel with her staff
+        this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(ModItems.BASIC_MAGICAL_STAFF));
+        this.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.0f);
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
@@ -48,7 +55,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         this.targetSelector.add(1, new RevengeGoal(this));
 
         // Move towards her targets to melee attack them.
-        this.goalSelector.add(2, new MeleeAttackGoal(this, 1.6D, false));
+        this.goalSelector.add(2, new UbelAttackGoal(this, 2D));
     }
 
     @Override
@@ -60,7 +67,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "controller", 5, event -> {
             if (event.isMoving()) {
-                return event.setAndContinue(RawAnimation.begin().thenLoop("walk"));
+                return event.setAndContinue(RawAnimation.begin().thenLoop("animation.ubel.walk"));
             }
             return event.setAndContinue(RawAnimation.begin().thenLoop("animation.ubel.idle"));
         }));
@@ -70,4 +77,11 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return this.cache;
     }
+
+    @Override
+    public boolean shouldRender(double distance) {
+        double d = 128.0 * 5;
+        return distance < d * d;
+    }
+
 }

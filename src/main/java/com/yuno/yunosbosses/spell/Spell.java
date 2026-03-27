@@ -1,6 +1,6 @@
 package com.yuno.yunosbosses.spell;
 
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import net.minecraft.util.Identifier;
@@ -12,7 +12,7 @@ public abstract class Spell {
         this.id = id;
     }
 
-    public abstract void cast(World world, PlayerEntity player, ItemStack staff);
+    public abstract void cast(World world, LivingEntity caster, ItemStack staff);
 
     public Identifier getId() {
         return id;

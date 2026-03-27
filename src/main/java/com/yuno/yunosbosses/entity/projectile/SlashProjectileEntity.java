@@ -7,6 +7,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -17,9 +18,15 @@ public class SlashProjectileEntity extends ProjectileEntity {
     private Vec3d startPos;
     private static final double MAX_RANGE = 5.0; // 5 block range
     public final float randomRoll = (float) (Math.random() * 360.0);
+    private float baseDamage;
 
     public SlashProjectileEntity(EntityType<? extends ProjectileEntity> entityType, World world) {
         super(entityType, world);
+    }
+
+    public SlashProjectileEntity(EntityType<? extends ProjectileEntity> entityType, World world, float baseDamage) {
+        super(entityType, world);
+        this.baseDamage = baseDamage;
     }
 
     @Override
@@ -71,7 +78,7 @@ public class SlashProjectileEntity extends ProjectileEntity {
         if (target != owner && target instanceof LivingEntity) {
             if (owner != null) {
                 // Apply damage to the target
-                target.damage(this.getWorld().getDamageSources().indirectMagic(this, owner), 20.0F);
+                target.damage(this.getWorld().getDamageSources().indirectMagic(this, owner), baseDamage);
                 // Spawn particles on hit
                 spawnImpactParticles(hitPos);
 
@@ -104,4 +111,15 @@ public class SlashProjectileEntity extends ProjectileEntity {
         );
     }
 
+    @Override
+    public void writeCustomDataToNbt(NbtCompound nbt) {
+        super.writeCustomDataToNbt(nbt);
+        nbt.putFloat("BaseDamage", this.baseDamage);
+    }
+
+    @Override
+    public void readCustomDataFromNbt(NbtCompound nbt) {
+        super.readCustomDataFromNbt(nbt);
+        this.baseDamage = nbt.getFloat("BaseDamage");
+    }
 }
