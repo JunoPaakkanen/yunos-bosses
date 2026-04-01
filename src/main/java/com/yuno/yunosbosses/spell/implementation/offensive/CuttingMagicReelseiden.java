@@ -19,7 +19,7 @@ public class CuttingMagicReelseiden extends Spell {
         if (!world.isClient) {
             // Spell implementation
             int maxRange = 5;
-            float baseDamage = 20.0F;
+            float baseDamage = 10.0F;
             float cooldown = 15.0F;
 
             Vec3d look = caster.getRotationVector();
