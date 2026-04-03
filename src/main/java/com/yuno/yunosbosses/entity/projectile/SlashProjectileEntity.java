@@ -1,9 +1,11 @@
 package com.yuno.yunosbosses.entity.projectile;
 
+import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.particle.ModParticles;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
@@ -78,7 +80,8 @@ public class SlashProjectileEntity extends ProjectileEntity {
         if (target != owner && target instanceof LivingEntity) {
             if (owner != null) {
                 // Apply damage to the target
-                target.damage(this.getWorld().getDamageSources().indirectMagic(this, owner), baseDamage);
+                DamageSource source = ModDamageTypes.of(this.getWorld(), ModDamageTypes.CUTTING_MAGIC, owner);
+                target.damage(source, baseDamage);
                 // Spawn particles on hit
                 spawnImpactParticles(hitPos);
 
