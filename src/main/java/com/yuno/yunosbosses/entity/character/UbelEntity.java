@@ -7,9 +7,13 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.boss.BossBar;
+import net.minecraft.entity.boss.ServerBossBar;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -30,11 +34,18 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 20.0D)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 250.0D)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25f)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 500.0D)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 10.0D);
     }
+
+    // BOSS HEALTH BAR
+    private final ServerBossBar bossBar = (ServerBossBar) new ServerBossBar(
+            this.getDisplayName(),
+            BossBar.Color.GREEN,
+            BossBar.Style.NOTCHED_6
+    );
 
     // initGoals defines the entity's goals and priorities.
     @Override
@@ -84,4 +95,28 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         return distance < d * d;
     }
 
+    @Override
+    public void onStartedTrackingBy(ServerPlayerEntity player) {
+        super.onStartedTrackingBy(player);
+        this.bossBar.addPlayer(player);
+    }
+
+    @Override
+    public void onStoppedTrackingBy(ServerPlayerEntity player) {
+        super.onStoppedTrackingBy(player);
+        this.bossBar.removePlayer(player);
+    }
+
+    @Override
+    protected void mobTick() {
+        super.mobTick();
+        // Sets the progress to health percentage (0.0 to 1.0)
+        this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+    }
+
+    @Override
+    public void onDeath(DamageSource damageSource) {
+        super.onDeath(damageSource);
+        this.bossBar.clearPlayers();
+    }
 }
