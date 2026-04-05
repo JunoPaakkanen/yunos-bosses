@@ -14,6 +14,7 @@ public class UbelAttackGoal extends Goal {
 
     private int attackDurationTimer; // Ticks for the current attack animation
     private int cooldownTimer; // Ticks to wait between attacks
+    private int teleportCooldown;
     private final double speed; // Movement speed
     private int currentAttackType = 0; // 0: Cutting Magic Reelseiden, 1: Melee
 
@@ -56,7 +57,34 @@ public class UbelAttackGoal extends Goal {
             this.ubel.getLookControl().lookAt(this.target, 30.0F, 30.0F);
         }
 
-        double distanceSq = this.ubel.squaredDistanceTo(this.target);
+        // --- TELEPORT LOGIC ---
+        if (this.teleportCooldown > 0) {
+            this.teleportCooldown--;
+        }
+
+        double distanceSq = this.ubel.squaredDistanceTo(this.target); // Squared distance
+        double directDistance = this.ubel.distanceTo(this.target); // Straight line distance
+
+        var path = this.ubel.getNavigation().findPathTo(this.target, 0);
+        boolean shouldTeleport = false;
+
+        if (path == null || !path.reachesTarget()) {
+            // Condition A: No path to target exists
+            if (directDistance > 5.0) {
+                shouldTeleport = true;
+            }
+        } else {
+            // Condition B: Path exists, but it's too long
+            double pathLength = path.getLength();
+            if (pathLength > directDistance * 2.0 && directDistance > 8.0) {
+                shouldTeleport = true;
+            }
+        }
+
+        if (shouldTeleport && this.teleportCooldown <= 0) {
+            this.teleportToTarget();
+            this.teleportCooldown = 100; // 5 second cooldown
+        }
 
         // --- COOLDOWN LOGIC ---
         if (this.cooldownTimer > 0) {
@@ -141,5 +169,22 @@ public class UbelAttackGoal extends Goal {
                 SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP,
                 this.ubel.getSoundCategory(), 1.0F, 1.0F);
 
+    }
+
+    private void teleportToTarget() {
+        // Attempt to find a valid ground position near the target
+        // Look in a 3-block radius around the target
+        double tx = this.target.getX() + (this.ubel.getRandom().nextDouble() - 0.5) * 4.0;
+        double ty = this.target.getY() + 0.1;
+        double tz = this.target.getZ() + (this.ubel.getRandom().nextDouble() - 0.5) * 4.0;
+
+        // Move her
+        this.ubel.refreshPositionAndAngles(tx, ty, tz, this.ubel.getYaw(), this.ubel.getPitch());
+
+        // Clear the current (bad) path so she recalculates from her new spot
+        this.ubel.getNavigation().stop();
+
+        // Immediate snap-look at player
+        this.ubel.getLookControl().lookAt(this.target, 360.0F, 360.0F);
     }
 }
