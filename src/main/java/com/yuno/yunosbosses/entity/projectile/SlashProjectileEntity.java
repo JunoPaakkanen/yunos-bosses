@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.entity.projectile;
 
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.particle.ModParticles;
+import com.yuno.yunosbosses.sound.ModSounds;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -11,6 +12,7 @@ import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
@@ -79,6 +81,9 @@ public class SlashProjectileEntity extends ProjectileEntity {
 
         if (target != owner && target instanceof LivingEntity) {
             if (owner != null) {
+                // Play sound
+                this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(),
+                        ModSounds.REELSEIDEN_HIT, SoundCategory.NEUTRAL, 1.0f, 1.0f + (this.random.nextFloat() * 0.2f - 0.1f));
                 // Apply damage to the target
                 DamageSource source = ModDamageTypes.of(this.getWorld(), ModDamageTypes.CUTTING_MAGIC, owner);
                 target.damage(source, baseDamage);

@@ -7,6 +7,7 @@ import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.network.ModMessages;
 import com.yuno.yunosbosses.particle.ModParticles;
+import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
@@ -38,6 +39,7 @@ public class YunosBosses implements ModInitializer {
 		ModEntities.registerAttributes();
 		ModEntities.registerModEntities();
 		ModParticles.registerParticles();
+		ModSounds.registerSounds();
 
 		// Register payload types
 		ModMessages.registerC2SPackets();
