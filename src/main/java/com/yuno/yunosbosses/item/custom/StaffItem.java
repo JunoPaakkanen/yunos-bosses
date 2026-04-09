@@ -11,8 +11,12 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 public class StaffItem extends Item {
-    public StaffItem(Settings settings) {
+    // Properties
+    private final float powerMultiplier;
+
+    public StaffItem(Settings settings, float powerMultiplier) {
         super(settings);
+        this.powerMultiplier = powerMultiplier;
     }
 
     @Override
@@ -27,5 +31,9 @@ public class StaffItem extends Item {
             }
         }
         return super.use(world, user, hand);
+    }
+
+    public float getPowerMultiplier() {
+        return powerMultiplier;
     }
 }

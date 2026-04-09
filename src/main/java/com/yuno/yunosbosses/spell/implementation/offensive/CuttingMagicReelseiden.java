@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.spell.implementation.offensive;
 
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,6 +22,12 @@ public class CuttingMagicReelseiden extends Spell {
             int maxRange = 5;
             float baseDamage = 10.0F;
             float cooldown = 15.0F;
+            float multiplier = 1.0F;
+            // Apply power multiplier
+            if (staff.getItem() instanceof StaffItem staffItem) {
+                multiplier = staffItem.getPowerMultiplier();
+            }
+            float trueDamage = baseDamage * multiplier;
 
             Vec3d look = caster.getRotationVector();
             Vec3d start = caster.getEyePos().add(look.multiply(0.1));
@@ -28,7 +35,7 @@ public class CuttingMagicReelseiden extends Spell {
             SlashProjectileEntity projectile = new SlashProjectileEntity(
                     ModEntities.SLASH_PROJECTILE,
                     world,
-                    baseDamage
+                    trueDamage
             );
 
             projectile.setPosition(start);
