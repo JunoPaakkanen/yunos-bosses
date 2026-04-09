@@ -19,6 +19,7 @@ public class ModItems {
 
     // Staff Items
     public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", new StaffItem(new Item.Settings().maxCount(1)));
+    public static final Item UBEL_STAFF = registerItem("ubel_staff", new StaffItem(new Item.Settings().maxCount(1)));
 
     // Helper method to register item
     private static Item registerItem(String name, Item item) {
@@ -27,9 +28,14 @@ public class ModItems {
     public static void registerModItems() {
         YunosBosses.LOGGER.info("Registering Mod Items for " + YunosBosses.MOD_ID);
 
+        // COMBAT ITEMS
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             entries.add(BASIC_MAGICAL_STAFF);
         });
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
+            entries.add(UBEL_STAFF);
+        });
+        // FOOD ITEMS
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FOOD_AND_DRINK).register(entries -> {
             entries.add(STRANGE_FRUIT);
         });

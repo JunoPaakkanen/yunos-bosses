@@ -1,0 +1,287 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"textures": {
+		"0": "yunosbosses:item/ubel_staff",
+		"particle": "yunosbosses:item/ubel_staff"
+	},
+	"elements": [
+		{
+			"name": "staff1",
+			"from": [8, 3.6, 7],
+			"to": [8.5, 27.2, 7.5],
+			"rotation": {"angle": 0, "axis": "y", "origin": [9, 3, 7]},
+			"faces": {
+				"north": {"uv": [0.5, 0, 1, 16], "texture": "#0"},
+				"east": {"uv": [1.5, 0, 2, 16], "texture": "#0"},
+				"south": {"uv": [1, 0, 1.5, 16], "texture": "#0"},
+				"west": {"uv": [0, 0, 0.5, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 0.5, 0.5], "rotation": 90, "texture": "#0"},
+				"down": {"uv": [1.5, 1, 2, 1.5], "rotation": 270, "texture": "#0"}
+			}
+		},
+		{
+			"name": "staff2",
+			"from": [7.5, 3.6, 7],
+			"to": [8, 27.2, 7.5],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 3, 8]},
+			"faces": {
+				"north": {"uv": [0, 0, 0.5, 16], "texture": "#0"},
+				"east": {"uv": [0.5, 0, 1, 16], "texture": "#0"},
+				"south": {"uv": [1.5, 0, 2, 16], "texture": "#0"},
+				"west": {"uv": [1, 0, 1.5, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 0.5, 0.5], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [1.5, 1, 2, 1.5], "rotation": 180, "texture": "#0"}
+			}
+		},
+		{
+			"name": "staff3",
+			"from": [7.5, 3.6, 7.5],
+			"to": [8, 27.2, 8],
+			"rotation": {"angle": 0, "axis": "y", "origin": [7, 3, 8]},
+			"faces": {
+				"north": {"uv": [1, 0, 1.5, 16], "texture": "#0"},
+				"east": {"uv": [0, 0, 0.5, 16], "texture": "#0"},
+				"south": {"uv": [0.5, 0, 1, 16], "texture": "#0"},
+				"west": {"uv": [1.5, 0, 2, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 0.5, 0.5], "rotation": 270, "texture": "#0"},
+				"down": {"uv": [1.5, 1, 2, 1.5], "rotation": 90, "texture": "#0"}
+			}
+		},
+		{
+			"name": "staff4",
+			"from": [8, 3.6, 7.5],
+			"to": [8.5, 27.2, 8],
+			"rotation": {"angle": 0, "axis": "y", "origin": [8, 3, 7]},
+			"faces": {
+				"north": {"uv": [1.5, 0, 2, 16], "texture": "#0"},
+				"east": {"uv": [1, 0, 1.5, 16], "texture": "#0"},
+				"south": {"uv": [0, 0, 0.5, 16], "texture": "#0"},
+				"west": {"uv": [0.5, 0, 1, 16], "texture": "#0"},
+				"up": {"uv": [0, 0, 0.5, 0.5], "texture": "#0"},
+				"down": {"uv": [1.5, 1, 2, 1.5], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end bottom0",
+			"from": [7.78, 2.4, 6.9],
+			"to": [8.23, 3.6, 8.1],
+			"rotation": {"angle": 0, "axis": "x", "origin": [8.1, 2.6, 7.5]},
+			"faces": {
+				"north": {"uv": [13, 0, 16, 3], "rotation": 270, "texture": "#0"},
+				"east": {"uv": [7.5, 0, 9.5, 2.5], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [9.5, 3, 12.5, 6], "rotation": 90, "texture": "#0"},
+				"west": {"uv": [7.5, 2.5, 9.5, 5], "rotation": 270, "texture": "#0"},
+				"up": {"uv": [9.5, 0, 13, 3], "rotation": 90, "texture": "#0"},
+				"down": {"uv": [12.5, 3, 16, 6], "rotation": 90, "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end bottom1",
+			"from": [7.8, 1.7, 7.1],
+			"to": [8.2, 2.65, 8],
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 2.3, 7.6]},
+			"faces": {
+				"north": {"uv": [13, 0, 16, 3], "rotation": 270, "texture": "#0"},
+				"east": {"uv": [7.5, 0, 9.5, 2.5], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [9.5, 3, 12.5, 6], "rotation": 90, "texture": "#0"},
+				"west": {"uv": [7.5, 2.5, 9.5, 5], "rotation": 270, "texture": "#0"},
+				"up": {"uv": [9.5, 0, 13, 3], "rotation": 90, "texture": "#0"},
+				"down": {"uv": [12.5, 3, 16, 6], "rotation": 90, "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end bottom2",
+			"from": [7.82, 0.9, 7.6],
+			"to": [8.17, 2.5, 8.3],
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 1.5, 7.9]},
+			"faces": {
+				"north": {"uv": [13, 0, 16, 3], "rotation": 270, "texture": "#0"},
+				"east": {"uv": [7.5, 0, 9.5, 2.5], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [9.5, 3, 12.5, 6], "rotation": 90, "texture": "#0"},
+				"west": {"uv": [7.5, 2.5, 9.5, 5], "rotation": 270, "texture": "#0"},
+				"up": {"uv": [9.5, 0, 13, 3], "rotation": 90, "texture": "#0"},
+				"down": {"uv": [12.5, 3, 16, 6], "rotation": 90, "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end bottom3",
+			"from": [7.85, 0.3, 8],
+			"to": [8.15, 1.1, 8.4],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8, 1.1, 8]},
+			"faces": {
+				"north": {"uv": [13, 0, 16, 3], "rotation": 270, "texture": "#0"},
+				"east": {"uv": [7.5, 0, 9.5, 2.5], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [9.5, 3, 12.5, 6], "rotation": 90, "texture": "#0"},
+				"west": {"uv": [7.5, 2.5, 9.5, 5], "rotation": 270, "texture": "#0"},
+				"up": {"uv": [9.5, 0, 13, 3], "rotation": 90, "texture": "#0"},
+				"down": {"uv": [12.5, 3, 16, 6], "rotation": 90, "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end bottom4",
+			"from": [7.875, 0.8, 8.6],
+			"to": [8.125, 1, 9.1],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [8, 0.7, 8.3]},
+			"faces": {
+				"north": {"uv": [9.5, 0, 13, 3], "rotation": 270, "texture": "#0"},
+				"east": {"uv": [7.5, 0, 9.5, 2.5], "texture": "#0"},
+				"south": {"uv": [12.5, 3, 16, 6], "rotation": 90, "texture": "#0"},
+				"west": {"uv": [7.5, 2.5, 9.5, 5], "rotation": 180, "texture": "#0"},
+				"up": {"uv": [9.5, 3, 12.5, 6], "rotation": 90, "texture": "#0"},
+				"down": {"uv": [13, 0, 16, 3], "rotation": 90, "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top0",
+			"from": [7.41005, 26.49584, 6.5],
+			"to": [8.61005, 28.69584, 8.6],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8.01005, 27.59584, 7.3]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top1",
+			"from": [7.55, 27.49584, 6],
+			"to": [8.45, 29.69584, 7.1],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8.01005, 28.59584, 6.3]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top2",
+			"from": [7.55, 27.89584, 7.9],
+			"to": [8.45, 30.09584, 9],
+			"rotation": {"angle": 45, "axis": "x", "origin": [8.01005, 28.99584, 8.2]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top3",
+			"from": [7.56, 29.19584, 8.8],
+			"to": [8.46, 30.99584, 9.4],
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8.01005, 30.29584, 8.6]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top4",
+			"from": [7.76, 28.79584, 6.85],
+			"to": [8.26, 29.99584, 8.05],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8.01005, 29.59584, 6.9]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [4.5, 6, 8.5, 10], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [4.5, 6, 8.5, 10], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top5",
+			"from": [7.66, 30.39584, 7.05],
+			"to": [8.36, 31.19584, 7.85],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8.01005, 30.99584, 6.9]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top6",
+			"from": [7.61, 29.89584, 7.05],
+			"to": [8.41, 30.69584, 7.85],
+			"rotation": {"angle": -45, "axis": "x", "origin": [8.01005, 30.49584, 6.9]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top2",
+			"from": [7.56, 29.39584, 5.5],
+			"to": [8.46, 31.19584, 6.1],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [8.01005, 30.49584, 5.8]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top4",
+			"from": [7.51005, 28.79584, 8.6],
+			"to": [8.51005, 30.39584, 9.4],
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8.01005, 29.69584, 8.6]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		},
+		{
+			"name": "Staff end top3",
+			"from": [7.51005, 28.99584, 5.5],
+			"to": [8.51005, 30.59584, 6.3],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [8.01005, 29.89584, 5.8]},
+			"faces": {
+				"north": {"uv": [5, 13, 8.5, 16], "texture": "#0"},
+				"east": {"uv": [12, 8, 16, 12], "rotation": 270, "texture": "#0"},
+				"south": {"uv": [5, 10, 8.5, 13], "rotation": 180, "texture": "#0"},
+				"west": {"uv": [8.5, 12, 12.5, 16], "rotation": 90, "texture": "#0"},
+				"up": {"uv": [8.5, 8, 12, 12], "rotation": 180, "texture": "#0"},
+				"down": {"uv": [12.5, 12, 16, 16], "texture": "#0"}
+			}
+		}
+	],
+	"gui_light": "front",
+	"display": {
+		"thirdperson_righthand": {
+			"translation": [0, -7.25, 0]
+		},
+		"gui": {
+			"rotation": [0, 0, 45],
+			"translation": [12.5, -12.25, 0],
+			"scale": [1.2, 1.2, 1.2]
+		}
+	}
+}

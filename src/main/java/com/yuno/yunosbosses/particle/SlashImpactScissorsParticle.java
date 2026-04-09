@@ -11,6 +11,11 @@ public class SlashImpactScissorsParticle extends SpriteBillboardParticle {
                                        SpriteProvider spriteProvider, double xSpeed, double ySpeed, double zSpeed) {
         super(clientWorld, x, y, z, 0.0, 0.0, 0.0);
 
+        // Add a tiny random offset to the start position
+        this.x += (this.random.nextDouble() - 0.5) * 0.4;
+        this.y += (this.random.nextDouble() - 0.5) * 0.4;
+        this.z += (this.random.nextDouble() - 0.5) * 0.4;
+
         this.maxAge = 20;
         this.setSpriteForAge(spriteProvider);
 
@@ -18,10 +23,11 @@ public class SlashImpactScissorsParticle extends SpriteBillboardParticle {
         this.green = 1.0F;
         this.blue = 1.0F;
 
-        // Explicitly kill any velocity just in case
-        this.velocityX = 0.0;
-        this.velocityY = 0.0;
-        this.velocityZ = 0.0;
+        this.velocityX = (this.random.nextDouble() - 0.5) * 0.02;
+        this.velocityY = (this.random.nextDouble() - 0.5) * 0.02;
+        this.velocityZ = (this.random.nextDouble() - 0.5) * 0.02;
+
+        this.gravityStrength = 0.0f;
 
         this.scale = 0.5f;
     }

@@ -28,7 +28,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
     public UbelEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
         // Equip Ubel with her staff
-        this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(ModItems.BASIC_MAGICAL_STAFF));
+        this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(ModItems.UBEL_STAFF));
         this.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.0f);
     }
 
