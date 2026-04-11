@@ -39,7 +39,8 @@
 	},
 	"custom": {
 		"cardinal-components": [
-			"yunosbosses:spells"
+			"yunosbosses:spells",
+			"yunosbosses:transformation"
 		]
 	}
 }

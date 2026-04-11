@@ -5,6 +5,8 @@
 
   "entity.yunosbosses.ubel": "Ubel",
 
+  "effect.yunosbosses.gojobindingvow": "Binding Vow: Gojo",
+
   "death.attack.cutting_magic": "%1$s was sliced apart by %2$s",
   "death.attack.cutting_magic.item": "%1$s was sliced apart by %2$s using %3$s"
 }

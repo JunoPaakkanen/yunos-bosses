@@ -3,7 +3,10 @@
 	"package": "com.yuno.yunosbosses.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+		"DeathInterceptionMixin",
+		"MilkBucketMixin",
+		"PlayerLegsModelMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
