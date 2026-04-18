@@ -20,6 +20,11 @@ repositories {
 		name = "Ladysnake Mods"
 		url = "https://maven.ladysnake.org/releases"
 	}
+	// Player Animation Library (PAL) repository
+	maven {
+		name = "RedlanceMinecraft"
+		url = "https://repo.redlance.org/public"
+	}
 	// Geckolib repository
 	maven { url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
 
@@ -47,6 +52,10 @@ dependencies {
 	include "org.ladysnake.cardinal-components-api:cardinal-components-base:6.1.1"
 	include "org.ladysnake.cardinal-components-api:cardinal-components-entity:6.1.1"
 
+	// PlayerAnimationLibrary for complex player animations
+	modImplementation "com.zigythebird.playeranim:PlayerAnimationLibFabric:1.1.4+mc.1.21.1"
+
+	// Geckolib for complex entity animations
 	modImplementation "software.bernie.geckolib:geckolib-fabric-1.21.1:4.8.4"
 }
 

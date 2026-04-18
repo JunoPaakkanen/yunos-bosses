@@ -2,5 +2,10 @@
   "reelseiden_hit": {
     "subtitle": "subtitles.yunosbosses.reelseiden_hit",
     "sounds": [ "yunosbosses:reelseiden_hit" ]
+  },
+
+  "still_alive": {
+    "subtitle": "subtitles.yunosbosses.still_alive",
+    "sounds": [ "yunosbosses:still_alive" ]
   }
 }

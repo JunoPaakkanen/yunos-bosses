@@ -8,6 +8,7 @@ import net.minecraft.util.Identifier;
 
 public class ModSounds {
     public static final SoundEvent REELSEIDEN_HIT = registerSoundEvent("reelseiden_hit");
+    public static final SoundEvent STILL_ALIVE = registerSoundEvent("still_alive");
 
     private static SoundEvent registerSoundEvent(String name) {
         Identifier id = Identifier.of("yunosbosses", name);

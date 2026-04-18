@@ -5,8 +5,11 @@
 	"mixins": [
 		"ExampleMixin",
 		"DeathInterceptionMixin",
-		"MilkBucketMixin",
-		"PlayerLegsModelMixin"
+		"MilkBucketMixin"
+	],
+	"client": [
+		"PlayerLegsModelMixin",
+		"PlayerAttackAnimationMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

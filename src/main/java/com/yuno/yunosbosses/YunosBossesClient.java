@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses;
 
+import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.client.SeveredTorsoRenderer;
 import com.yuno.yunosbosses.entity.client.UbelRenderer;
@@ -36,6 +37,9 @@ public class YunosBossesClient implements ClientModInitializer {
 
         // Register particle factories
         ParticleFactoryRegistry.getInstance().register(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, SlashImpactScissorsParticle.Factory::new);
+
+        // Register animations
+        ModAnimations.registerAnimations();
 
         // Client tick event that runs 20 times per second
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
