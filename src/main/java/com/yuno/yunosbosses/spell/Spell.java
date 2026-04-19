@@ -14,6 +14,10 @@ public abstract class Spell {
 
     public abstract void cast(World world, LivingEntity caster, ItemStack staff);
 
+    public float getManaCost() {
+        return 10.0F;
+    }
+
     public Identifier getId() {
         return id;
     }
