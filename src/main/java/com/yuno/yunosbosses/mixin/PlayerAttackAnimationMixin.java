@@ -20,6 +20,7 @@ public abstract class PlayerAttackAnimationMixin {
         if ((Object) this instanceof AbstractClientPlayerEntity player) {
             var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
 
+            // If the player is transformed (Legs), play the kick animation
             if (transformData.isTransformed()) {
                 var layer = (PlayerAnimationController) PlayerAnimationAccess.getPlayerAnimationLayer(player, ModAnimations.ANIM_SLOT);
 
