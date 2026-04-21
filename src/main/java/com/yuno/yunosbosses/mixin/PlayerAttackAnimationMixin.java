@@ -5,28 +5,60 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationAccess;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.Hand;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(LivingEntity.class)
+@Mixin(ClientPlayerEntity.class)
 public abstract class PlayerAttackAnimationMixin {
 
-    @Inject(method = "swingHand(Lnet/minecraft/util/Hand;)V", at = @At("HEAD"))
+    @Unique
+    private int kickCooldown = 0;
+    @Unique
+    private boolean useSecondKick = false;
+
+    // Count the timer down every tick
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void onTick(CallbackInfo ci) {
+        if (this.kickCooldown > 0) {
+            this.kickCooldown--;
+        }
+    }
+
+    // Attack interceptor
+    @Inject(method = "swingHand(Lnet/minecraft/util/Hand;)V", at = @At("HEAD"), cancellable = true)
     private void onSwingHand(Hand hand, CallbackInfo ci) {
-        if ((Object) this instanceof AbstractClientPlayerEntity player) {
-            var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
+        ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
+        var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
 
-            // If the player is transformed (Legs), play the kick animation
-            if (transformData.isTransformed()) {
-                var layer = (PlayerAnimationController) PlayerAnimationAccess.getPlayerAnimationLayer(player, ModAnimations.ANIM_SLOT);
+        // If the player is transformed (Legs), play the kick animation
+        if (transformData.isTransformed()) {
 
-                if (layer instanceof PlayerAnimationController controller) {
+            // If the cooldown is not yet over, cancel the kick
+            if (this.kickCooldown > 0) {
+                ci.cancel();
+                return;
+            }
+
+            var layer = (PlayerAnimationController) PlayerAnimationAccess.getPlayerAnimationLayer(player, ModAnimations.ANIM_SLOT);
+
+            if (layer instanceof PlayerAnimationController controller) {
+                // --- THE ATTACK ---
+                if (!useSecondKick) {
                     controller.triggerAnimation(ModAnimations.KICK_ANIM);
+                    this.kickCooldown = 12;
+                    useSecondKick = true;
+                } else {
+                    controller.triggerAnimation(ModAnimations.KICK_ANIM_2);
+                    this.kickCooldown = 16;
+                    useSecondKick = false;
                 }
+                player.resetLastAttackedTicks();
             }
         }
     }
