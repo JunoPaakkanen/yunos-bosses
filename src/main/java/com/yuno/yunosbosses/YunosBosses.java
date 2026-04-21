@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses;
 
+import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.event.ModCommands;
@@ -15,8 +16,11 @@ import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.ActionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +58,24 @@ public class YunosBosses implements ModInitializer {
 			for (ServerWorld world : server.getWorlds()) {
 				BarrierManager.tick(world);
 			}
+		});
+
+		// Stop block breaking when transformed
+		AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+			var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
+			if (transformData.isTransformed()) {
+				return ActionResult.FAIL; // Cancels the block break
+			}
+			return ActionResult.PASS;
+		});
+
+		// Stop entity attacks when transformed
+		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+			var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
+			if (transformData.isTransformed()) {
+				return ActionResult.FAIL; // Cancels the vanilla hit
+			}
+			return ActionResult.PASS;
 		});
 	}
 }

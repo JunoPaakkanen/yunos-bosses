@@ -2,8 +2,10 @@ package com.yuno.yunosbosses.mixin;
 
 import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.network.KickAttackPayload;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationAccess;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
@@ -21,12 +23,23 @@ public abstract class PlayerAttackAnimationMixin {
     private int kickCooldown = 0;
     @Unique
     private boolean useSecondKick = false;
+    @Unique
+    private int impactTimer = 0;
 
     // Count the timer down every tick
     @Inject(method = "tick", at = @At("HEAD"))
     private void onTick(CallbackInfo ci) {
         if (this.kickCooldown > 0) {
             this.kickCooldown--;
+        }
+
+        if (this.impactTimer > 0) {
+            this.impactTimer--;
+
+            if (this.impactTimer == 0) {
+                ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
+                ClientPlayNetworking.send(new KickAttackPayload());
+            }
         }
     }
 
@@ -52,10 +65,12 @@ public abstract class PlayerAttackAnimationMixin {
                 if (!useSecondKick) {
                     controller.triggerAnimation(ModAnimations.KICK_ANIM);
                     this.kickCooldown = 12;
+                    this.impactTimer = 8;
                     useSecondKick = true;
                 } else {
                     controller.triggerAnimation(ModAnimations.KICK_ANIM_2);
                     this.kickCooldown = 16;
+                    this.impactTimer = 12;
                     useSecondKick = false;
                 }
                 player.resetLastAttackedTicks();
