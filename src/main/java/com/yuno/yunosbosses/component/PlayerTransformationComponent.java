@@ -1,10 +1,18 @@
 package com.yuno.yunosbosses.component;
 
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.DustParticleEffect;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.particle.ShriekParticleEffect;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.Vec3d;
+import org.joml.Vector3f;
 
 public class PlayerTransformationComponent implements TransformationComponent {
     private final PlayerEntity player;
@@ -22,6 +30,25 @@ public class PlayerTransformationComponent implements TransformationComponent {
         this.transformed = transformed;
         // Syncs the change to all players nearby so they see the model change
         ModEntityComponents.TRANSFORMATION_DATA.sync(player);
+
+        // Drop items upon transformation
+        if (transformed && !this.player.getWorld().isClient()) {
+
+            // Forcefully drop Chestplate
+            ItemStack chest = this.player.getEquippedStack(EquipmentSlot.CHEST);
+            if (!chest.isEmpty()) {
+                this.player.dropItem(chest, true, false);
+                this.player.equipStack(EquipmentSlot.CHEST, ItemStack.EMPTY);
+            }
+            // Forcefully drop Helmet
+            ItemStack head = this.player.getEquippedStack(EquipmentSlot.HEAD);
+            if (!head.isEmpty()) {
+                this.player.dropItem(head, true, false);
+                this.player.equipStack(EquipmentSlot.HEAD, ItemStack.EMPTY);
+            }
+            // Drop absolutely everything in the standard inventory/hotbar
+            this.player.getInventory().dropAll();
+        }
     }
 
     @Override
@@ -32,11 +59,65 @@ public class PlayerTransformationComponent implements TransformationComponent {
         var offset = rotationVector.multiply(1.5);
         var hitbox = player.getBoundingBox().offset(offset).expand(1.0);
 
-        var targets = player.getWorld().getOtherEntities(player, hitbox);
+        // Calculate the center of the hitbox for particle effects
+        double effectX = player.getX() + offset.x;
+        double effectY = player.getY() + 1.0;
+        double effectZ = player.getZ() + offset.z;
 
-        for (var target : targets) {
-            if (target instanceof LivingEntity livingTarget) {
-                livingTarget.damage(player.getDamageSources().playerAttack(player), 10.0f);
+        // Play sound
+        player.getWorld().playSound(
+                null,
+                effectX, effectY, effectZ,
+                net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, // The sound
+                net.minecraft.sound.SoundCategory.PLAYERS,
+                1.0f, // Volume
+                0.8f  // Pitch (Less than 1.0 makes it sound deeper and heavier!)
+        );
+
+        // Spawn particles
+        if (player.getWorld() instanceof ServerWorld serverWorld) {
+            // Big sweep curve particle
+            serverWorld.spawnParticles(
+                    ParticleTypes.SWEEP_ATTACK,
+                    effectX, effectY, effectZ,
+                    1,
+                    0.0, 0.0, 0.0,
+                    0.0
+            );
+            // Dust effect for extra impact for the regular variant
+            if (player.getInventory().selectedSlot == 0) {
+                serverWorld.spawnParticles(
+                        ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                        effectX, player.getY(), effectZ,
+                        5,
+                        0.3, 0.1, 0.3,
+                        0.02
+                );
+            }
+            // Spawn blue particles for the blue variant
+            if (player.getInventory().selectedSlot == 1) {
+                serverWorld.spawnParticles(
+                        ParticleTypes.SMALL_GUST,
+                        effectX, effectY, effectZ,
+                        5,
+                        0.3, 0.1, 0.3,
+                        0.02
+                );
+            }
+            // Spawn red particles in a line for the red variant
+            if (player.getInventory().selectedSlot == 2) {
+                Vector3f pureRed = new Vector3f(1.0f, 0.0f, 0.0f); // Red color
+                DustParticleEffect redDust = new DustParticleEffect(pureRed, 1.2f);
+
+                serverWorld.spawnParticles(redDust, effectX, effectY, effectZ, 5, 0.3, 0.1, 0.3, 0.04);
+            }
+
+            // Deal damage
+            var targets = player.getWorld().getOtherEntities(player, hitbox);
+            for (var target : targets) {
+                if (target instanceof LivingEntity livingTarget) {
+                    livingTarget.damage(player.getDamageSources().playerAttack(player), 10.0f);
+                }
             }
         }
     }

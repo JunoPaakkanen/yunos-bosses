@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.mixin;
 
+import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.render.ManaHudRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -24,6 +25,17 @@ public abstract class InGameHudMixin {
             int height = this.client.getWindow().getScaledHeight();
 
             ManaHudRenderer.renderManaBar(context, width, height, this.client.player);
+        }
+    }
+
+    @Inject(method = "renderHotbar", at = @At("HEAD"), cancellable = true)
+    private void hideHotbar(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
+        if (this.client.player != null) {
+            var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(this.client.player);
+            if (transformData.isTransformed()) {
+                // If transformed, cancel the drawing of the hotbar
+                ci.cancel();
+            }
         }
     }
 }

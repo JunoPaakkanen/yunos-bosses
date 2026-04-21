@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.client.SeveredTorsoRenderer;
 import com.yuno.yunosbosses.entity.client.UbelRenderer;
+import com.yuno.yunosbosses.entity.client.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
@@ -43,6 +44,9 @@ public class YunosBossesClient implements ClientModInitializer {
 
         // Register animations
         ModAnimations.registerAnimations();
+
+        // Register custom HUD
+        HudRenderCallback.EVENT.register(new AbilityHudOverlay());
 
         // Client tick event that runs 20 times per second
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
