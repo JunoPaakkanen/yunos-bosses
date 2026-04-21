@@ -24,20 +24,8 @@ public class ModMessages {
         // Kicking
         ServerPlayNetworking.registerGlobalReceiver(KickAttackPayload.ID, (payload, context) -> {
             context.server().execute(() -> {
-                    ServerPlayerEntity player = context.player();
-                    if (player == null) return;
-
-                    var rotationVector = player.getRotationVector();
-                    var offset = rotationVector.multiply(1.5);
-                    var hitbox = player.getBoundingBox().offset(offset).expand(1.0);
-
-                    var targets = player.getWorld().getOtherEntities(player, hitbox);
-
-                    for (var target : targets) {
-                        if (target instanceof LivingEntity livingTarget) {
-                            livingTarget.damage(player.getDamageSources().playerAttack(player), 10.0f);
-                        }
-                    }
+                var component = ModEntityComponents.TRANSFORMATION_DATA.get(context.player());
+                component.kick();
             });
         });
     }
