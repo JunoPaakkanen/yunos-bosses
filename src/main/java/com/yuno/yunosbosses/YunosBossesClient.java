@@ -8,6 +8,7 @@ import com.yuno.yunosbosses.entity.client.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
+import com.yuno.yunosbosses.particle.LapseBlueParticle;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.particle.SlashImpactScissorsParticle;
 import com.yuno.yunosbosses.render.ManaHudRenderer;
@@ -41,6 +42,7 @@ public class YunosBossesClient implements ClientModInitializer {
 
         // Register particle factories
         ParticleFactoryRegistry.getInstance().register(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, SlashImpactScissorsParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.LAPSE_BLUE_PARTICLE, LapseBlueParticle.Factory::new);
 
         // Register animations
         ModAnimations.registerAnimations();

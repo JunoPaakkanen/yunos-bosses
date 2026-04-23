@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.component;
 
+import com.yuno.yunosbosses.particle.ModParticles;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -58,6 +59,7 @@ public class PlayerTransformationComponent implements TransformationComponent {
         var rotationVector = player.getRotationVector();
         var offset = rotationVector.multiply(1.5);
         var hitbox = player.getBoundingBox().offset(offset).expand(1.0);
+        var enlargedHitbox = hitbox.expand(1.0);
 
         // Calculate the center of the hitbox for particle effects
         double effectX = player.getX() + offset.x;
@@ -84,8 +86,9 @@ public class PlayerTransformationComponent implements TransformationComponent {
                     0.0, 0.0, 0.0,
                     0.0
             );
-            // Dust effect for extra impact for the regular variant
+            // --- NORMAL VARIANT PARTICLES ---
             if (player.getInventory().selectedSlot == 0) {
+                // Dust effect for extra impact for the regular variant
                 serverWorld.spawnParticles(
                         ParticleTypes.CAMPFIRE_COSY_SMOKE,
                         effectX, player.getY(), effectZ,
@@ -94,22 +97,37 @@ public class PlayerTransformationComponent implements TransformationComponent {
                         0.02
                 );
             }
-            // Spawn blue particles for the blue variant
+            // --- BLUE VARIANT PARTICLES ---
             if (player.getInventory().selectedSlot == 1) {
+                // Spawn small gust particles
                 serverWorld.spawnParticles(
                         ParticleTypes.SMALL_GUST,
                         effectX, effectY, effectZ,
-                        5,
-                        0.3, 0.1, 0.3,
-                        0.02
+                        8,
+                        0.5, 0.3, 0.5,
+                        0.04
+                );
+                // Spawn custom lapse blue particle
+                serverWorld.spawnParticles(
+                        ModParticles.LAPSE_BLUE_PARTICLE,
+                        effectX, effectY, effectZ,
+                        1,
+                         0.0, 0.0, 0.0,
+                         0.0
                 );
             }
-            // Spawn red particles in a line for the red variant
+            // --- RED VARIANT PARTICLES ---
             if (player.getInventory().selectedSlot == 2) {
+                // Spawn red particles for the red variant
                 Vector3f pureRed = new Vector3f(1.0f, 0.0f, 0.0f); // Red color
                 DustParticleEffect redDust = new DustParticleEffect(pureRed, 1.2f);
-
-                serverWorld.spawnParticles(redDust, effectX, effectY, effectZ, 5, 0.3, 0.1, 0.3, 0.04);
+                serverWorld.spawnParticles(
+                        redDust,
+                        effectX, effectY, effectZ,
+                        5,
+                        0.3, 0.1, 0.3,
+                        0.04
+                );
             }
 
             // Deal damage
@@ -117,6 +135,25 @@ public class PlayerTransformationComponent implements TransformationComponent {
             for (var target : targets) {
                 if (target instanceof LivingEntity livingTarget) {
                     livingTarget.damage(player.getDamageSources().playerAttack(player), 10.0f);
+                }
+            }
+            // --- BLUE VARIANT EFFECT ---
+            if (player.getInventory().selectedSlot == 1) {
+                // Pull targets towards the player
+                var targetsToPull = player.getWorld().getOtherEntities(player, enlargedHitbox);
+                for (var target : targetsToPull) {
+                    if (target instanceof LivingEntity livingTarget) {
+                        // Calculate the vector pointing from the target to the player
+                        Vec3d pullDirection = player.getPos().subtract(target.getPos()).normalize();
+                        double pullStrength = 0.5;
+
+                        double pullX = pullDirection.x * pullStrength;
+                        double pullZ = pullDirection.z * pullStrength;
+                        double liftY = 0.6;
+
+                        livingTarget.setVelocity(pullX, liftY, pullZ);
+                        livingTarget.velocityModified = true;
+                    }
                 }
             }
         }

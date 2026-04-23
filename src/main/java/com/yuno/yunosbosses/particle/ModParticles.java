@@ -10,6 +10,8 @@ import net.minecraft.util.Identifier;
 public class ModParticles {
     public static final SimpleParticleType SLASH_IMPACT_SCISSORS_PARTICLE =
             registerParticle("slash_impact_scissors_particle", FabricParticleTypes.simple(true));
+    public static final SimpleParticleType LAPSE_BLUE_PARTICLE =
+            registerParticle("lapse_blue_particle", FabricParticleTypes.simple(true));
 
     private static SimpleParticleType registerParticle(String name, SimpleParticleType particleType) {
         return Registry.register(Registries.PARTICLE_TYPE, Identifier.of(YunosBosses.MOD_ID, name), particleType);
