@@ -1,6 +1,5 @@
 package com.yuno.yunosbosses.entity.character;
 
-import com.yuno.yunosbosses.entity.goal.UbelAttackGoal;
 import com.yuno.yunosbosses.item.ModItems;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
@@ -22,12 +21,12 @@ import software.bernie.geckolib.animation.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class UbelEntity extends PathAwareEntity implements GeoEntity {
+public class MethodeEntity extends PathAwareEntity implements GeoEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
-    public UbelEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
+    public MethodeEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
-        // Equip Ubel with her staff
+        // Equip Methode with her staff
         this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(ModItems.UBEL_STAFF));
         this.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.0f);
     }
@@ -43,7 +42,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
     // BOSS HEALTH BAR
     private final ServerBossBar bossBar = new ServerBossBar(
             this.getDisplayName(),
-            BossBar.Color.GREEN,
+            BossBar.Color.RED,
             BossBar.Style.NOTCHED_6
     );
 
@@ -66,7 +65,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         this.targetSelector.add(1, new RevengeGoal(this));
 
         // Move towards her targets to melee attack them.
-        this.goalSelector.add(2, new UbelAttackGoal(this, 2D));
+        this.goalSelector.add(2, new MeleeAttackGoal(this, 2D, true));
     }
 
     @Override

@@ -11,7 +11,7 @@ public class LapseBlueParticle extends SpriteBillboardParticle {
         super(world, x, y, z, velocityX, velocityY, velocityZ);
         this.spriteProvider = spriteProvider;
 
-        this.maxAge = 10;
+        this.maxAge = 14;
         this.scale = 0.6F;
         this.gravityStrength = 0.0F;
 

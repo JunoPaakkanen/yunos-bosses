@@ -41,7 +41,6 @@ public class YunosBosses implements ModInitializer {
 		ModItems.registerModItems();
 		ModSpells.registerModSpells();
 		ModCommands.register();
-		ModEntities.registerAttributes();
 		ModEntities.registerModEntities();
 		ModParticles.registerParticles();
 		ModSounds.registerSounds();

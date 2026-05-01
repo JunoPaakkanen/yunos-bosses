@@ -2,6 +2,7 @@ package com.yuno.yunosbosses;
 
 import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.entity.ModEntities;
+import com.yuno.yunosbosses.entity.client.MethodeRenderer;
 import com.yuno.yunosbosses.entity.client.SeveredTorsoRenderer;
 import com.yuno.yunosbosses.entity.client.UbelRenderer;
 import com.yuno.yunosbosses.entity.client.gui.AbilityHudOverlay;
@@ -37,6 +38,7 @@ public class YunosBossesClient implements ClientModInitializer {
 
         // Register Entity Renderers
         EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
+        EntityRendererRegistry.register(ModEntities.METHODE, MethodeRenderer::new);
         EntityRendererRegistry.register(ModEntities.SLASH_PROJECTILE, SlashProjectileRenderer::new);
         EntityRendererRegistry.register(ModEntities.SEVERED_TORSO, SeveredTorsoRenderer::new);
 

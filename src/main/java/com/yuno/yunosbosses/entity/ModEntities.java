@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.entity;
 
+import com.yuno.yunosbosses.entity.character.MethodeEntity;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
@@ -15,6 +16,14 @@ public class ModEntities {
             Registries.ENTITY_TYPE,
             Identifier.of("yunosbosses", "ubel"),
             EntityType.Builder.create(UbelEntity::new, SpawnGroup.CREATURE)
+                    .dimensions(0.6f, 1.8f)
+                    .build()
+    );
+
+    public static final EntityType<MethodeEntity> METHODE = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier.of("yunosbosses", "methode"),
+            EntityType.Builder.create(MethodeEntity::new, SpawnGroup.CREATURE)
                     .dimensions(0.6f, 1.8f)
                     .build()
     );
@@ -37,10 +46,7 @@ public class ModEntities {
 
     public static void registerModEntities() {
         FabricDefaultAttributeRegistry.register(UBEL, UbelEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(METHODE, MethodeEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(SEVERED_TORSO, SeveredTorsoEntity.setAttributes());
-    }
-
-    public static void registerAttributes() {
-        FabricDefaultAttributeRegistry.register(ModEntities.UBEL, UbelEntity.setAttributes());
     }
 }
