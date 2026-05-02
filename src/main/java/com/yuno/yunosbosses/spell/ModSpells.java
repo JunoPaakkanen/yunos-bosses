@@ -5,7 +5,8 @@ import com.yuno.yunosbosses.spell.implementation.defensive.DefensiveMagic;
 import com.yuno.yunosbosses.spell.implementation.offensive.CuttingMagicReelseiden;
 import com.yuno.yunosbosses.spell.implementation.offensive.KillingMagic;
 import com.yuno.yunosbosses.spell.implementation.offensive.KillingMagicBarrage;
-import com.yuno.yunosbosses.spell.implementation.summon.SummonSpell;
+import com.yuno.yunosbosses.spell.implementation.summon.SummonUselessChicken;
+import com.yuno.yunosbosses.spell.implementation.summon.SummonVexSpell;
 import net.minecraft.util.Identifier;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,8 @@ public class ModSpells {
     public static final Map<Identifier, Spell> SPELLS = new HashMap<>();
 
     // Summon spells
-    public static final Spell SUMMON_SPELL = registerSpell(new SummonSpell(Identifier.of("yunosbosses", "summonspell")));
+    public static final Spell SUMMON_VEX_SPELL = registerSpell(new SummonVexSpell(Identifier.of("yunosbosses", "summonvexspell")));
+    public static final Spell SUMMON_USELESS_CHICKEN = registerSpell(new SummonUselessChicken(Identifier.of("yunosbosses", "summonuselesschicken")));
 
     // Offensive spells
     public static final Spell KILLING_MAGIC = registerSpell(new KillingMagic(Identifier.of("yunosbosses", "killingmagic")));

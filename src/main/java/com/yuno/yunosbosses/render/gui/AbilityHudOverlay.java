@@ -1,4 +1,4 @@
-package com.yuno.yunosbosses.entity.client.gui;
+package com.yuno.yunosbosses.render.gui;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;

@@ -5,14 +5,13 @@ import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.client.MethodeRenderer;
 import com.yuno.yunosbosses.entity.client.SeveredTorsoRenderer;
 import com.yuno.yunosbosses.entity.client.UbelRenderer;
-import com.yuno.yunosbosses.entity.client.gui.AbilityHudOverlay;
+import com.yuno.yunosbosses.render.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.particle.LapseBlueParticle;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.particle.SlashImpactScissorsParticle;
-import com.yuno.yunosbosses.render.ManaHudRenderer;
 import com.yuno.yunosbosses.render.SlashProjectileRenderer;
 import com.yuno.yunosbosses.util.BeamManager;
 import com.yuno.yunosbosses.render.DefensiveMagicRenderer;
@@ -24,7 +23,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.entity.ChickenEntityRenderer;
 
 public class YunosBossesClient implements ClientModInitializer {
     @Override
@@ -41,6 +40,7 @@ public class YunosBossesClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.METHODE, MethodeRenderer::new);
         EntityRendererRegistry.register(ModEntities.SLASH_PROJECTILE, SlashProjectileRenderer::new);
         EntityRendererRegistry.register(ModEntities.SEVERED_TORSO, SeveredTorsoRenderer::new);
+        EntityRendererRegistry.register(ModEntities.USELESS_CHICKEN, ChickenEntityRenderer::new);
 
         // Register particle factories
         ParticleFactoryRegistry.getInstance().register(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, SlashImpactScissorsParticle.Factory::new);

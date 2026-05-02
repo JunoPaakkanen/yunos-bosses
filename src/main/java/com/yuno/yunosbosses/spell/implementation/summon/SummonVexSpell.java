@@ -13,9 +13,9 @@ import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import java.util.Objects;
 
-public class SummonSpell extends Spell {
+public class SummonVexSpell extends Spell {
 
-    public SummonSpell(Identifier id) {
+    public SummonVexSpell(Identifier id) {
         super(id);
     }
 

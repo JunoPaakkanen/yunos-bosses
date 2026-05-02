@@ -77,9 +77,9 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "controller", 5, event -> {
             if (event.isMoving()) {
-                return event.setAndContinue(RawAnimation.begin().thenLoop("animation.ubel.walk"));
+                return event.setAndContinue(RawAnimation.begin().thenLoop("animation.methode.walk"));
             }
-            return event.setAndContinue(RawAnimation.begin().thenLoop("animation.ubel.idle"));
+            return event.setAndContinue(RawAnimation.begin().thenLoop("animation.methode.idle"));
         }));
     }
 

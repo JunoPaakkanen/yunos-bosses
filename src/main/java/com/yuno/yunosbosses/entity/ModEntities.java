@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.entity;
 
 import com.yuno.yunosbosses.entity.character.MethodeEntity;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
+import com.yuno.yunosbosses.entity.character.modified.UselessChickenEntity;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
@@ -24,7 +25,7 @@ public class ModEntities {
             Registries.ENTITY_TYPE,
             Identifier.of("yunosbosses", "methode"),
             EntityType.Builder.create(MethodeEntity::new, SpawnGroup.CREATURE)
-                    .dimensions(0.6f, 1.8f)
+                    .dimensions(0.8f, 2.4f)
                     .build()
     );
 
@@ -44,9 +45,18 @@ public class ModEntities {
                     .build()
     );
 
+    public static final EntityType<UselessChickenEntity> USELESS_CHICKEN = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier.of("yunosbosses", "useless_chicken"),
+            EntityType.Builder.create(UselessChickenEntity::new, SpawnGroup.CREATURE)
+                    .dimensions(1f, 1f)
+                    .build()
+    );
+
     public static void registerModEntities() {
         FabricDefaultAttributeRegistry.register(UBEL, UbelEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(METHODE, MethodeEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(SEVERED_TORSO, SeveredTorsoEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(USELESS_CHICKEN, UselessChickenEntity.setAttributes());
     }
 }
