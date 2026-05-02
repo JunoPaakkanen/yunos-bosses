@@ -7,5 +7,17 @@
   "still_alive": {
     "subtitle": "subtitles.yunosbosses.still_alive",
     "sounds": [ "yunosbosses:still_alive" ]
+  },
+
+  "angry_chicken_ambient": {
+    "subtitle": "subtitles.yunosbosses.angry_chicken_ambient",
+    "sounds": [
+      "yunosbosses:angry_chicken_ambient_1",
+      "yunosbosses:angry_chicken_ambient_2"
+    ]
+  },
+
+  "angry_chicken_hurt": {
+    "sounds": [ "yunosbosses:angry_chicken_hurt" ]
   }
 }
