@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.render;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import net.minecraft.client.gui.DrawContext;
@@ -18,6 +19,12 @@ public class ManaHudRenderer {
 
         float mana = manaComponent.getMana();
         float maxMana = manaComponent.getMaxMana();
+        float spellCost;
+        if (ModEntityComponents.SPELL_DATA.get(player).getActiveSpell() != null) {
+            spellCost = ModEntityComponents.SPELL_DATA.get(player).getActiveSpell().getManaCost();
+        } else {
+            spellCost = 0;
+        }
 
         int x = screenWidth / 2 - BAR_WIDTH / 2;
         int y = screenHeight - 55;
@@ -26,7 +33,33 @@ public class ManaHudRenderer {
         guiGraphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, 0xFF000000);
 
         // Draw mana bar
+        // Mana bar is purple if transformed, blue otherwise
+        boolean isTransformed = ModEntityComponents.TRANSFORMATION_DATA.get(player).isTransformed();
+        int manaBarColor = isTransformed ? 0xFFAA00FF : 0xFF0066FF;
         int filledWidth = (int) ((mana / maxMana) * (BAR_WIDTH - 2));
-        guiGraphics.fill(x + 1, y + 1, x + 1 + filledWidth, y + BAR_HEIGHT - 1, 0xFF0066FF);
+        guiGraphics.fill(x + 1, y + 1, x + 1 + filledWidth, y + BAR_HEIGHT - 1, manaBarColor);
+
+        float effectiveCost = Math.min(spellCost, mana);
+        int costWidth = (int) ((effectiveCost / maxMana) * (BAR_WIDTH - 2));
+
+        if (costWidth > 0) {
+            // The bar starts at the current mana level (right) and extends left (x - costWidth)
+            int costXStart = x + 1 + filledWidth - costWidth;
+            int costXEnd = x + 1 + filledWidth;
+
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+
+            // Render mana cost preview
+            if (spellCost > mana) {
+                // Red if not enough mana
+                guiGraphics.fill(costXStart, y + 1, costXEnd, y + BAR_HEIGHT - 1, 0xFFFF4444);
+            } else {
+                // Lighter overlay color if enough mana
+                guiGraphics.fill(costXStart, y + 1, costXEnd, y + BAR_HEIGHT - 1, 0xAAADD8E6);
+            }
+
+            RenderSystem.disableBlend();
+        }
     }
 }

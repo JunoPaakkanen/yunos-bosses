@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:entity",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "yunosbosses:ubel_staff",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

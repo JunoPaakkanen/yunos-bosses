@@ -8,10 +8,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.particle.ShriekParticleEffect;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
@@ -59,7 +59,7 @@ public class PlayerTransformationComponent implements TransformationComponent {
         var rotationVector = player.getRotationVector();
         var offset = rotationVector.multiply(1.5);
         var hitbox = player.getBoundingBox().offset(offset).expand(1.0);
-        var enlargedHitbox = hitbox.expand(1.0);
+        var enlargedHitbox = hitbox.expand(1.25);
 
         // Calculate the center of the hitbox for particle effects
         double effectX = player.getX() + offset.x;
@@ -70,15 +70,15 @@ public class PlayerTransformationComponent implements TransformationComponent {
         player.getWorld().playSound(
                 null,
                 effectX, effectY, effectZ,
-                net.minecraft.sound.SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, // The sound
-                net.minecraft.sound.SoundCategory.PLAYERS,
+                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, // The sound
+                SoundCategory.PLAYERS,
                 1.0f, // Volume
                 0.8f  // Pitch (Less than 1.0 makes it sound deeper and heavier!)
         );
 
         // Spawn particles
         if (player.getWorld() instanceof ServerWorld serverWorld) {
-            // Big sweep curve particle
+            // Big sweep curve particle (All variants)
             serverWorld.spawnParticles(
                     ParticleTypes.SWEEP_ATTACK,
                     effectX, effectY, effectZ,
@@ -97,8 +97,9 @@ public class PlayerTransformationComponent implements TransformationComponent {
                         0.02
                 );
             }
-            // --- BLUE VARIANT PARTICLES ---
+            // --- BLUE VARIANT ---
             if (player.getInventory().selectedSlot == 1) {
+                // --- BLUE VARIANT PARTICLES ---
                 // Spawn small gust particles
                 serverWorld.spawnParticles(
                         ParticleTypes.SMALL_GUST,
@@ -115,30 +116,7 @@ public class PlayerTransformationComponent implements TransformationComponent {
                          0.0, 0.0, 0.0,
                          0.0
                 );
-            }
-            // --- RED VARIANT PARTICLES ---
-            if (player.getInventory().selectedSlot == 2) {
-                // Spawn red particles for the red variant
-                Vector3f pureRed = new Vector3f(1.0f, 0.0f, 0.0f); // Red color
-                DustParticleEffect redDust = new DustParticleEffect(pureRed, 1.2f);
-                serverWorld.spawnParticles(
-                        redDust,
-                        effectX, effectY, effectZ,
-                        5,
-                        0.3, 0.1, 0.3,
-                        0.04
-                );
-            }
-
-            // Deal damage
-            var targets = player.getWorld().getOtherEntities(player, hitbox);
-            for (var target : targets) {
-                if (target instanceof LivingEntity livingTarget) {
-                    livingTarget.damage(player.getDamageSources().playerAttack(player), 10.0f);
-                }
-            }
-            // --- BLUE VARIANT EFFECT ---
-            if (player.getInventory().selectedSlot == 1) {
+                // --- BLUE VARIANT EFFECT ---
                 // Pull targets towards the player
                 var targetsToPull = player.getWorld().getOtherEntities(player, enlargedHitbox);
                 for (var target : targetsToPull) {
@@ -154,6 +132,49 @@ public class PlayerTransformationComponent implements TransformationComponent {
                         livingTarget.setVelocity(pullX, liftY, pullZ);
                         livingTarget.velocityModified = true;
                     }
+                }
+            }
+            // --- RED VARIANT ---
+            if (player.getInventory().selectedSlot == 2) {
+                // --- RED VARIANT PARTICLES ---
+                // Spawn red particles for the red variant
+                Vector3f pureRed = new Vector3f(1.0f, 0.0f, 0.0f); // Red color
+                DustParticleEffect redDust = new DustParticleEffect(pureRed, 1.2f);
+                serverWorld.spawnParticles(
+                        redDust,
+                        effectX, effectY, effectZ,
+                        5,
+                        0.3, 0.1, 0.3,
+                        0.04
+                );
+                // Spawn custom reversal red particle
+                serverWorld.spawnParticles(
+                        ModParticles.REVERSAL_RED_PARTICLE,
+                        effectX, effectY, effectZ,
+                        1,
+                         0.0, 0.0, 0.0,
+                         0.0
+                );
+                // --- RED VARIANT EFFECT ---
+                // Push targets away from the player
+                var targetsToPush = player.getWorld().getOtherEntities(player, hitbox);
+                for (var target : targetsToPush) {
+                    if (target instanceof LivingEntity livingTarget) {
+                        // Calculate the vector pointing from the player to the target
+                        Vec3d pushDirection = target.getPos().subtract(player.getPos()).normalize();
+                        double pushStrength = 4.0;
+
+                        livingTarget.setVelocity(pushDirection.x * pushStrength, 0.0, pushDirection.z * pushStrength);
+                        livingTarget.velocityModified = true;
+                    }
+                }
+            }
+
+            // Deal damage
+            var targets = player.getWorld().getOtherEntities(player, hitbox);
+            for (var target : targets) {
+                if (target instanceof LivingEntity livingTarget) {
+                    livingTarget.damage(player.getDamageSources().playerAttack(player), 10.0f);
                 }
             }
         }

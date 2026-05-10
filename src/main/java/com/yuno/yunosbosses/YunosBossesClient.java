@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.entity.client.MethodeRenderer;
 import com.yuno.yunosbosses.entity.client.SeveredTorsoRenderer;
 import com.yuno.yunosbosses.entity.client.UbelRenderer;
 import com.yuno.yunosbosses.entity.client.UselessChickenRenderer;
+import com.yuno.yunosbosses.particle.ReversalRedParticle;
 import com.yuno.yunosbosses.render.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
@@ -45,6 +46,7 @@ public class YunosBossesClient implements ClientModInitializer {
         // Register particle factories
         ParticleFactoryRegistry.getInstance().register(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, SlashImpactScissorsParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.LAPSE_BLUE_PARTICLE, LapseBlueParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.REVERSAL_RED_PARTICLE, ReversalRedParticle.Factory::new);
 
         // Register animations
         ModAnimations.registerAnimations();
