@@ -10,7 +10,7 @@ import net.minecraft.world.World;
 
 public class SummonUselessChicken extends Spell {
 
-    public SummonUselessChicken(Identifier id) { super(id); }
+    public SummonUselessChicken(Identifier id) { super(id, true); }
 
     float manaCost = 90.0F;
 

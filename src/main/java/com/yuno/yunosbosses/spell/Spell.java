@@ -8,8 +8,16 @@ import net.minecraft.util.Identifier;
 public abstract class Spell {
     private final Identifier id;
 
+    private final boolean canCastWithoutStaff;
+
     public Spell(Identifier id) {
         this.id = id;
+        canCastWithoutStaff = false;
+    }
+
+    public Spell(Identifier id, boolean canCastWithoutStaff) {
+        this.id = id;
+        this.canCastWithoutStaff = canCastWithoutStaff;
     }
 
     public abstract void cast(World world, LivingEntity caster, ItemStack staff);
@@ -21,4 +29,6 @@ public abstract class Spell {
     public Identifier getId() {
         return id;
     }
+
+    public boolean canCastWithoutStaff() { return canCastWithoutStaff; }
 }
