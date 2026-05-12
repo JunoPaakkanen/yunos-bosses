@@ -19,5 +19,10 @@
 
   "angry_chicken_hurt": {
     "sounds": [ "yunosbosses:angry_chicken_hurt" ]
+  },
+
+  "honored_one": {
+    "subtitle": "subtitles.yunosbosses.honored_one",
+    "sounds": [ "yunosbosses:honored_one" ]
   }
 }

@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
 import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.ModSpells;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -51,6 +52,13 @@ public abstract class DeathInterceptionMixin {
 
                 // Set the new data
                 transformData.setTransformed(true);
+
+                // Grant Reverse Cursed Technique spell if not unlocked, set it as the active spell
+                var spellComponent = ModEntityComponents.SPELL_DATA.get(player);
+                spellComponent.setCanChangeSpell(false); // Disable the ability to change spell
+                spellComponent.learnSpell(ModSpells.REVERSE_CURSED_TECHNIQUE);
+                spellComponent.setActiveSpell(ModSpells.REVERSE_CURSED_TECHNIQUE);
+                ModEntityComponents.SPELL_DATA.sync(player);
 
                 // Return true to stop death
                 cir.setReturnValue(true);

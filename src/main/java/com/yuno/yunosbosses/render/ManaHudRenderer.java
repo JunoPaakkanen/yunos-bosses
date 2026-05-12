@@ -3,13 +3,14 @@ package com.yuno.yunosbosses.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class ManaHudRenderer {
-    private static final Identifier MANA_BAR_TEXTURE =
-            Identifier.of(YunosBosses.MOD_ID, "textures/gui/mana_bar.png");
+    private static final Identifier MANA_BAR_TEXTURE = Identifier.of(YunosBosses.MOD_ID, "textures/gui/mana_bar.png");
 
     private static final int BAR_WIDTH = 182;
     private static final int BAR_HEIGHT = 5;
@@ -60,6 +61,23 @@ public class ManaHudRenderer {
             }
 
             RenderSystem.disableBlend();
+
+            // Variables for text rendering
+            String manaString = (int)mana + "/" + (int)maxMana;
+            String transformedString = "Reversed cursed technique (V)";
+            var textRenderer = MinecraftClient.getInstance().textRenderer;
+
+            // Calculate the text position
+            int textX = x + BAR_WIDTH / 2;
+            int textY = y -10;
+
+            // Render the text
+            if (isTransformed) {
+                guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(transformedString), textX, textY, 0xFFFF0000);
+            } else {
+                guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(manaString), textX, textY, 0xFFFFFFFF);
+            }
+
         }
     }
 }

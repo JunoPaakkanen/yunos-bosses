@@ -16,4 +16,8 @@ public interface SpellComponent extends Component, AutoSyncedComponent {
     void learnSpell(Spell spell);
 
     void cycleSpell();
+
+    void setCanChangeSpell(boolean value);
+
+    boolean canChangeSpell();
 }

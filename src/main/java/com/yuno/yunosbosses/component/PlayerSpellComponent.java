@@ -15,6 +15,7 @@ import java.util.List;
 public class PlayerSpellComponent implements SpellComponent{
     private Spell activeSpell;
     private final List<Spell> knownSpells = new ArrayList<>();
+    private boolean canChangeSpell = true;
 
     // Logic methods
 
@@ -42,7 +43,7 @@ public class PlayerSpellComponent implements SpellComponent{
 
     @Override
     public void cycleSpell() {
-        if (knownSpells.isEmpty()) return;
+        if (!canChangeSpell || knownSpells.isEmpty()) return;
 
         int currentIndex = knownSpells.indexOf(this.activeSpell);
         int nextIndex = (currentIndex + 1) % knownSpells.size();
@@ -81,4 +82,10 @@ public class PlayerSpellComponent implements SpellComponent{
             tag.putString("ActiveSpellId", activeSpell.getId().toString());
         }
     }
+
+    @Override
+    public void setCanChangeSpell(boolean value) { this.canChangeSpell = value;}
+
+    @Override
+    public boolean canChangeSpell() { return this.canChangeSpell; }
 }
