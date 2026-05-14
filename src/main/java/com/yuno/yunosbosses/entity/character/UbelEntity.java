@@ -81,7 +81,9 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
                 return event.setAndContinue(RawAnimation.begin().thenLoop("animation.ubel.walk"));
             }
             return event.setAndContinue(RawAnimation.begin().thenLoop("animation.ubel.idle"));
-        }));
+        })
+        // Melee animation
+        .triggerableAnim("melee_attack", RawAnimation.begin().thenPlay("animation.ubel.melee")));
     }
 
     @Override
@@ -118,5 +120,9 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
     public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);
         this.bossBar.clearPlayers();
+    }
+
+    public void triggerMeleeAnim() {
+        this.triggerAnim("controller", "melee_attack");
     }
 }

@@ -20,6 +20,10 @@ public class PlayerTransformationComponent implements TransformationComponent {
     private final PlayerEntity player;
     private boolean transformed = false;
 
+    // The chance of a Black Flash is 3% by default
+    float chance = 0.05f;
+    int blackFlashChain = 0;
+
     public PlayerTransformationComponent(PlayerEntity player) {
         this.player = player;
     }
@@ -103,7 +107,24 @@ public class PlayerTransformationComponent implements TransformationComponent {
                 var targets = player.getWorld().getOtherEntities(player, hitbox);
                 for (var target : targets) {
                     if (target instanceof LivingEntity livingTarget) {
-                        BlackFlash.blackFlash(player, livingTarget);
+
+                        if (blackFlashChain >= 4) {
+                            // After 4 consecutive Black Flashes, apply the finisher
+                            BlackFlash.blackFlashFinisher(player, livingTarget);
+                            blackFlashChain = 0;
+                        } else {
+                            // Try Black Flash
+                            boolean successfulBlackFlash = BlackFlash.blackFlashChance(player, livingTarget, chance);
+
+                            // Calculate the chance of the next Black Flash
+                            if (successfulBlackFlash) {
+                                chance = 0.90f;
+                                blackFlashChain++;
+                            } else {
+                                chance = 0.03f;
+                                blackFlashChain = 0;
+                            }
+                        }
                     }
                 }
             }

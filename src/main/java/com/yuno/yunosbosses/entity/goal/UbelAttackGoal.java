@@ -109,6 +109,11 @@ public class UbelAttackGoal extends Goal {
         if (this.attackDurationTimer > 0) {
             this.attackDurationTimer--;
 
+            // Trigger attack animation
+            if (this.attackDurationTimer == 15) {
+                this.ubel.triggerMeleeAnim();
+            }
+
             // Attack halfway through the attack phase (at tick 10)
             if (this.attackDurationTimer == 10) {
                 // Check if the target is within melee range

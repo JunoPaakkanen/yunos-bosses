@@ -33,7 +33,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 250.0D)
+                .add(EntityAttributes.GENERIC_MAX_HEALTH, 350.0D)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25f)
                 .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 500.0D)
                 .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 10.0D);
