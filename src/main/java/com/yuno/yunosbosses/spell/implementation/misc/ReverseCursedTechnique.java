@@ -17,19 +17,13 @@ public class ReverseCursedTechnique extends Spell {
 
     public ReverseCursedTechnique(Identifier id) { super(id, true); }
 
-    private LivingEntity currentCaster;
-
     @Override
-    public float getManaCost() {
-        if (currentCaster != null && currentCaster instanceof ServerPlayerEntity serverPlayer) {
-            return ModEntityComponents.MANA.get(serverPlayer).getMaxMana();
-        }
-        return 80f;
+    public float getManaCost(LivingEntity caster) {
+        return ModEntityComponents.MANA.get(caster).getMaxMana();
     }
 
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
-        this.currentCaster = caster;
         if (!world.isClient) {
             // Heal the caster to full health
             caster.heal(caster.getMaxHealth());
@@ -63,6 +57,11 @@ public class ReverseCursedTechnique extends Spell {
                 // Play voice line
                 caster.getWorld().playSound(null, caster.getX(), caster.getY(), caster.getZ(),
                         ModSounds.HONORED_ONE, SoundCategory.NEUTRAL, 1.0f, 1.0f + (caster.getRandom().nextFloat() * 0.2f - 0.1f));
+
+                // Allow mana regeneration
+                var manaComponent = ModEntityComponents.MANA.get(caster);
+                manaComponent.setManaRegen(0.5f);
+                ModEntityComponents.MANA.sync(caster);
             }
         }
     }

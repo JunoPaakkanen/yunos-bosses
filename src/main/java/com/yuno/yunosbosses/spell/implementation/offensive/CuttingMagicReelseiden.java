@@ -18,7 +18,7 @@ public class CuttingMagicReelseiden extends Spell {
     float manaCost = 15.0F;
 
     @Override
-    public float getManaCost() {return manaCost;}
+    public float getManaCost(LivingEntity caster) {return manaCost;}
 
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {

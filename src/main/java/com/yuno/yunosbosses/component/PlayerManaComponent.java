@@ -11,7 +11,7 @@ public class PlayerManaComponent implements ManaComponent, AutoSyncedComponent, 
     private final PlayerEntity player;
     private float mana;
     private float maxMana = 100f;
-    private static final float MANA_REGEN = 0.5f; // per tick
+    private static float MANA_REGEN = 0.5f; // per tick
 
     public PlayerManaComponent(PlayerEntity player) {
         this.player = player;
@@ -61,6 +61,16 @@ public class PlayerManaComponent implements ManaComponent, AutoSyncedComponent, 
     @Override
     public void addMana(float amount) {
         setMana(mana + amount);
+    }
+
+    @Override
+    public void setManaRegen(float regen) {
+        MANA_REGEN = regen;
+    }
+
+    @Override
+    public float getManaRegen() {
+        return MANA_REGEN;
     }
 
     @Override

@@ -22,7 +22,7 @@ public class ManaHudRenderer {
         float maxMana = manaComponent.getMaxMana();
         float spellCost;
         if (ModEntityComponents.SPELL_DATA.get(player).getActiveSpell() != null) {
-            spellCost = ModEntityComponents.SPELL_DATA.get(player).getActiveSpell().getManaCost();
+            spellCost = ModEntityComponents.SPELL_DATA.get(player).getActiveSpell().getManaCost(player);
         } else {
             spellCost = 0;
         }
@@ -61,23 +61,22 @@ public class ManaHudRenderer {
             }
 
             RenderSystem.disableBlend();
+        }
 
-            // Variables for text rendering
-            String manaString = (int)mana + "/" + (int)maxMana;
-            String transformedString = "Reversed cursed technique (V)";
-            var textRenderer = MinecraftClient.getInstance().textRenderer;
+        // Variables for text rendering
+        String manaString = (int)mana + "/" + (int)maxMana;
+        String transformedString = "Reversed cursed technique (V)";
+        var textRenderer = MinecraftClient.getInstance().textRenderer;
 
-            // Calculate the text position
-            int textX = x + BAR_WIDTH / 2;
-            int textY = y -10;
+        // Calculate the text position
+        int textX = x + BAR_WIDTH / 2;
+        int textY = y -10;
 
-            // Render the text
-            if (isTransformed) {
-                guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(transformedString), textX, textY, 0xFFFF0000);
-            } else {
-                guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(manaString), textX, textY, 0xFFFFFFFF);
-            }
-
+        // Render the text
+        if (isTransformed) {
+            guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(transformedString), textX, textY, 0xFFFF0000);
+        } else {
+            guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(manaString), textX, textY, 0xFFFFFFFF);
         }
     }
 }

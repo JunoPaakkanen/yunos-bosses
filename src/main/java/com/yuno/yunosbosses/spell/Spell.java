@@ -22,7 +22,7 @@ public abstract class Spell {
 
     public abstract void cast(World world, LivingEntity caster, ItemStack staff);
 
-    public float getManaCost() {
+    public float getManaCost(LivingEntity caster) {
         return 10.0F;
     }
 

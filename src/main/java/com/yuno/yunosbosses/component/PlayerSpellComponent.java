@@ -43,7 +43,7 @@ public class PlayerSpellComponent implements SpellComponent{
 
     @Override
     public void cycleSpell() {
-        if (!canChangeSpell || knownSpells.isEmpty()) return;
+        if (!canChangeSpell() || knownSpells.isEmpty()) return;
 
         int currentIndex = knownSpells.indexOf(this.activeSpell);
         int nextIndex = (currentIndex + 1) % knownSpells.size();

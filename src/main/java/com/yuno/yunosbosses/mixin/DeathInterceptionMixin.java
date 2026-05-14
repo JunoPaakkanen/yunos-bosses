@@ -24,7 +24,13 @@ public abstract class DeathInterceptionMixin {
         LivingEntity entity = (LivingEntity) (Object) this;
 
         if (entity instanceof PlayerEntity player) {
+
             var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
+
+            // If the player dies while transformed, resume mana regeneration
+            if (transformData.isTransformed()) {
+                ModEntityComponents.MANA.get(player).setManaRegen(0.5f);
+            }
 
             // Transform if the player has the effect and hasn't yet been transformed
             // --- BINDING VOW: GOJO ---
@@ -59,6 +65,13 @@ public abstract class DeathInterceptionMixin {
                 spellComponent.learnSpell(ModSpells.REVERSE_CURSED_TECHNIQUE);
                 spellComponent.setActiveSpell(ModSpells.REVERSE_CURSED_TECHNIQUE);
                 ModEntityComponents.SPELL_DATA.sync(player);
+
+                var manaComponent = ModEntityComponents.MANA.get(player);
+                // Reset mana
+                manaComponent.setMana(0f);
+                ModEntityComponents.MANA.sync(player);
+                // Halt mana regeneration
+                manaComponent.setManaRegen(0f);
 
                 // Return true to stop death
                 cir.setReturnValue(true);

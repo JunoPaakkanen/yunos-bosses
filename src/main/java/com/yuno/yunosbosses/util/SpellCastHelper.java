@@ -13,7 +13,7 @@ public class SpellCastHelper {
         }
 
         var manaComponent = ModEntityComponents.MANA.get(caster);
-        float manaCost = spell.getManaCost();
+        float manaCost = spell.getManaCost(caster);
 
         if (manaComponent.useMana(manaCost)) {
             // Mana consumed successfully, cast the spell

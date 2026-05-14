@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.component;
 
 import com.yuno.yunosbosses.particle.ModParticles;
+import com.yuno.yunosbosses.util.BlackFlash;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -86,8 +87,9 @@ public class PlayerTransformationComponent implements TransformationComponent {
                     0.0, 0.0, 0.0,
                     0.0
             );
-            // --- NORMAL VARIANT PARTICLES ---
+            // --- NORMAL VARIANT ---
             if (player.getInventory().selectedSlot == 0) {
+                // --- NORMAL VARIANT PARTICLES ---
                 // Dust effect for extra impact for the regular variant
                 serverWorld.spawnParticles(
                         ParticleTypes.CAMPFIRE_COSY_SMOKE,
@@ -96,6 +98,14 @@ public class PlayerTransformationComponent implements TransformationComponent {
                         0.3, 0.1, 0.3,
                         0.02
                 );
+                // --- NORMAL VARIANT EFFECT ---
+                // Apply Black Flash
+                var targets = player.getWorld().getOtherEntities(player, hitbox);
+                for (var target : targets) {
+                    if (target instanceof LivingEntity livingTarget) {
+                        BlackFlash.blackFlash(player, livingTarget);
+                    }
+                }
             }
             // --- BLUE VARIANT ---
             if (player.getInventory().selectedSlot == 1) {
