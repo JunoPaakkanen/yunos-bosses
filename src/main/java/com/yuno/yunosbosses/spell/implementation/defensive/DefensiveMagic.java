@@ -16,6 +16,8 @@ public class DefensiveMagic extends Spell {
 
     public DefensiveMagic(Identifier id) { super(id); }
 
+    Identifier hexTexture = Identifier.of("yunosbosses", "textures/effect/magical_hexagon.png");
+
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
@@ -35,7 +37,7 @@ public class DefensiveMagic extends Spell {
             // Send Packet to Client for rendering
             ServerPlayNetworking.send(
                     (ServerPlayerEntity) caster,
-                    new BarrierPayload(caster.getUuid(), barrierPos, look, lifetime)
+                    new BarrierPayload(caster.getUuid(), barrierPos, look, lifetime, hexTexture)
             );
         }
     }

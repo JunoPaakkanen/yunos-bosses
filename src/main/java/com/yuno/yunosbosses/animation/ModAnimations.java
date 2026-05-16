@@ -13,6 +13,7 @@ public class ModAnimations {
     // Animations
     public static final Identifier KICK_ANIM = Identifier.of("yunosbosses", "kick");
     public static final Identifier KICK_ANIM_2 = Identifier.of("yunosbosses", "kick_2");
+    public static final Identifier DOMAIN_EXPANSION_SHRINE_ANIM = Identifier.of("yunosbosses", "domain_expansion");
 
     public static void registerAnimations() {
         PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(

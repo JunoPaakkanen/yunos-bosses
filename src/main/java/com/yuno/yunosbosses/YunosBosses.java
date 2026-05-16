@@ -8,6 +8,7 @@ import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.network.ModMessages;
+import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
@@ -50,6 +51,7 @@ public class YunosBosses implements ModInitializer {
 		ModMessages.registerC2SPackets();
 		BeamPayload.register();
 		BarrierPayload.register();
+		PlayerAnimationPayload.register();
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			DelayedServerEffects.tick();

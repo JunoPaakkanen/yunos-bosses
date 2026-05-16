@@ -10,7 +10,7 @@ import net.minecraft.util.Uuids;
 import net.minecraft.util.math.Vec3d;
 import java.util.UUID;
 
-public record BarrierPayload(UUID ownerUuid, Vec3d position, Vec3d direction, int maxTicks) implements CustomPayload {
+public record BarrierPayload(UUID ownerUuid, Vec3d position, Vec3d direction, int maxTicks, Identifier texture) implements CustomPayload {
     public static final Id<BarrierPayload> ID = new Id<>(Identifier.of("yunosbosses", "barrier_packet"));
 
     public static final PacketCodec<RegistryByteBuf, Vec3d> VEC3D_CODEC = PacketCodec.tuple(
@@ -25,6 +25,7 @@ public record BarrierPayload(UUID ownerUuid, Vec3d position, Vec3d direction, in
             VEC3D_CODEC, BarrierPayload::position,
             VEC3D_CODEC, BarrierPayload::direction,
             PacketCodecs.VAR_INT, BarrierPayload::maxTicks,
+            Identifier.PACKET_CODEC, BarrierPayload::texture,
             BarrierPayload::new
     );
 

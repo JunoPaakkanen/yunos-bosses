@@ -1,9 +1,12 @@
 package com.yuno.yunosbosses.util;
 
+import net.minecraft.entity.Entity;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class ActiveBarrier {
     private final UUID ownerUuid;
@@ -12,12 +15,17 @@ public class ActiveBarrier {
     private int maxTicks;
     private int currentTicks;
 
-    public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration) {
+    private final Identifier texture;
+    private final Consumer<Entity> domainEffect;
+
+    public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration, Identifier texture, Consumer<Entity> domainEffect) {
         this.ownerUuid = ownerUuid;
         this.position = position;
         this.direction = direction;
         this.maxTicks = duration;
         this.currentTicks = 0;
+        this.texture = texture;
+        this.domainEffect = domainEffect;
     }
 
     public void tick() {
@@ -32,4 +40,6 @@ public class ActiveBarrier {
     public int getMaxTicks() { return this.maxTicks; }
     public int getCurrentTicks() { return this.currentTicks; }
     public UUID getOwnerUuid() { return this.ownerUuid; }
+    public Identifier getTexture() { return this.texture; }
+    public Consumer<Entity> getDomainEffect() { return this.domainEffect; }
 }

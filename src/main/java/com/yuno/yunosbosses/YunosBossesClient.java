@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.entity.client.MethodeRenderer;
 import com.yuno.yunosbosses.entity.client.SeveredTorsoRenderer;
 import com.yuno.yunosbosses.entity.client.UbelRenderer;
 import com.yuno.yunosbosses.entity.client.UselessChickenRenderer;
+import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.particle.ReversalRedParticle;
 import com.yuno.yunosbosses.render.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
@@ -19,12 +20,18 @@ import com.yuno.yunosbosses.util.BeamManager;
 import com.yuno.yunosbosses.render.DefensiveMagicRenderer;
 import com.yuno.yunosbosses.render.KillingMagicRenderer;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.zigythebird.playeranim.animation.PlayerAnimationController;
+import com.zigythebird.playeranim.api.PlayerAnimationAccess;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Identifier;
 
 public class YunosBossesClient implements ClientModInitializer {
     @Override
@@ -78,7 +85,26 @@ public class YunosBossesClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(BarrierPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 // Add to a client-side list of barriers for the renderer to draw
-                BarrierManager.addBarrier(payload.ownerUuid(), payload.position(), payload.direction(), payload.maxTicks(), true);
+                BarrierManager.addBarrier(payload.ownerUuid(), payload.position(), payload.direction(), payload.maxTicks(), payload.texture(), true);
+            });
+        });
+
+        // Receiver for Player Animations
+        ClientPlayNetworking.registerGlobalReceiver(PlayerAnimationPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                if (context.client().world != null) {
+                    PlayerEntity player = context.client().world.getPlayerByUuid(payload.playerUuid());
+
+                    if (player != null) {
+                        // Get the animation identifier sent by the server
+                        Identifier animId = payload.animationId();
+
+                        var layer = (PlayerAnimationController) PlayerAnimationAccess.getPlayerAnimationLayer((AbstractClientPlayerEntity) player, ModAnimations.ANIM_SLOT);
+                        if (layer instanceof PlayerAnimationController controller) {
+                            controller.triggerAnimation(animId);
+                        }
+                    }
+                }
             });
         });
     }
