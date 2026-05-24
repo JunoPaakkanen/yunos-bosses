@@ -27,7 +27,7 @@ public class BarrierManager {
         if (isClient) {
             ACTIVE_BARRIERS_CLIENT.add(new ActiveBarrier(ownerUuid, position, direction, maxTicks, texture, null));
         } else {
-            ACTIVE_BARRIERS.add(new ActiveBarrier(ownerUuid, position, direction, maxTicks, texture, entity -> {}));
+            ACTIVE_BARRIERS.add(new ActiveBarrier(ownerUuid, position, direction, maxTicks, texture, (entity, barrier) -> {}));
         }
     }
 
@@ -47,12 +47,17 @@ public class BarrierManager {
                 barrier.tick();
             }
 
-            // Blocking logic (Server-side)
+            // Blocking, Physics and Domain logic (Server-side)
             if (!world.isClient && world instanceof ServerWorld serverWorld) {
                 if (barrier.getDirection().equals(Vec3d.ZERO)) {
-                    double radius = 12.0;
-                    // Apply the spherical pushing physics
+                    double radius = 20.0;
+                    // Apply the spherical pushing physics and Domain Effect on entities
                     SpherePhysics.apply(world, barrier, radius);
+
+                    // Apply the domain expansion logic each tick (if applicable)
+                    if (barrier.getDomainExpansion() != null) {
+                        barrier.getDomainExpansion().onGlobalTick(world, barrier);
+                    }
 
                     // Projectile logic for SPHERE
                     Box sphereBox = new Box(barrier.getPosition().subtract(radius, radius, radius),

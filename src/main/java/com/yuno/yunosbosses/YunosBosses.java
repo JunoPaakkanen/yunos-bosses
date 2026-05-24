@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses;
 
+import com.yuno.yunosbosses.block.ModBlocks;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.ModEntities;
@@ -46,6 +47,7 @@ public class YunosBosses implements ModInitializer {
 		ModParticles.registerParticles();
 		ModSounds.registerSounds();
 		ModEffects.registerEffects();
+		ModBlocks.registerModBlocks();
 
 		// Register payload types
 		ModMessages.registerC2SPackets();

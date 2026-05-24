@@ -24,5 +24,15 @@
   "honored_one": {
     "subtitle": "subtitles.yunosbosses.honored_one",
     "sounds": [ "yunosbosses:honored_one" ]
+  },
+
+  "domain_expansion_shrine_1": {
+    "subtitle": "subtitles.yunosbosses.domain_expansion_shrine_1",
+    "sounds": [ "yunosbosses:domain_expansion_shrine_1" ]
+  },
+
+  "domain_expansion_shrine_2": {
+    "subtitle": "subtitles.yunosbosses.domain_expansion_shrine_2",
+    "sounds": [ "yunosbosses:domain_expansion_shrine_2" ]
   }
 }

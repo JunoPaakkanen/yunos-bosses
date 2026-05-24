@@ -1,24 +1,27 @@
 package com.yuno.yunosbosses.spell.implementation.misc;
 
-import com.yuno.yunosbosses.animation.ModAnimations;
+import com.yuno.yunosbosses.block.ModBlocks;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
-import com.zigythebird.playeranim.animation.PlayerAnimationController;
-import com.zigythebird.playeranim.api.PlayerAnimationAccess;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public abstract class DomainExpansion extends Spell {
 
@@ -29,7 +32,7 @@ public abstract class DomainExpansion extends Spell {
     public abstract Identifier getBarrierTexture();
     public abstract int getLifetimeTicks();
     public abstract float getRadius();
-    public abstract void onDomainEffect(Entity affectedEntity);
+    public abstract void onDomainEffect(Entity affectedEntity, ActiveBarrier barrier);
 
     // Default mana cost
     public float manaCost = 100.0F;
@@ -37,29 +40,88 @@ public abstract class DomainExpansion extends Spell {
     @Override
     public float getManaCost(LivingEntity caster) {return manaCost;}
 
-    @Override
-    public void cast(World world, LivingEntity caster, ItemStack staff) {
-        if (!world.isClient) {
-            double radius = 12.0; // Currently hardcoded in multiple places, change later
-            Vec3d pos = caster.getPos().add(0, 1, 0); // Center of the sphere
 
+    public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff, PlayerAnimationPayload animPayload) {
+        if (!world.isClient) {
+            Vec3d pos = caster.getPos().add(0, 2, 0); // Center of the sphere
+
+            double radius = getRadius();
             Identifier texture = getBarrierTexture();
             int lifetime = getLifetimeTicks();
 
-            // --- PLAYER ANIMATION ---
-            PlayerAnimationPayload animPayload = new PlayerAnimationPayload(
-                    caster.getUuid(),
-                    ModAnimations.DOMAIN_EXPANSION_SHRINE_ANIM
-            );
+            // Create the floor
+            createDomainFloor(world, caster, radius);
 
+            // Create the barrier
             BarrierManager.ACTIVE_BARRIERS.add(
-                    new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture, this::onDomainEffect)
+                    new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture, this::onDomainEffect, this)
             );
 
             // Broadcast to ALL nearby players so they can see the barrier and animation
-            for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld)world, pos, 64)) {
+            for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, pos, 64)) {
                 ServerPlayNetworking.send(player, new BarrierPayload(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture));
                 ServerPlayNetworking.send(player, animPayload);
+            }
+        }
+    }
+
+    public void onGlobalTick(World world, ActiveBarrier barrier) {
+        // Implement this method to perform any global tick logic, for entity-specific logic use onDomainEffect() instead
+    }
+
+    public void createDomainFloor(World world, LivingEntity caster, double radius) {
+        // --- DOMAIN FLOOR ---
+        // Establish the Center and the fixed Floor Height
+        BlockPos centerPos = caster.getBlockPos();
+        int floorY = centerPos.getY() - 1;
+
+        double blockRadiusSq = (radius + 0.5) * (radius + 0.5);
+        int loopRadius = (int) Math.ceil(radius + 1);
+
+        // BlockState definitions
+        var floorState = ModBlocks.DOMAIN_FLOOR.getDefaultState();
+        var airState = Blocks.AIR.getDefaultState();
+
+        // --- PASS 1: BLOCK MODIFICATION PIPELINE ---
+        for (int x = -loopRadius; x <= loopRadius; x++) {
+            for (int z = -loopRadius; z <= loopRadius; z++) {
+                double distanceSq = (x * x) + (z * z);
+
+                if (distanceSq <= blockRadiusSq) {
+                    int targetX = centerPos.getX() + x;
+                    int targetZ = centerPos.getZ() + z;
+                    BlockPos floorPos = new BlockPos(targetX, floorY, targetZ);
+
+                    // OPTIMIZATION: Block.NOTIFY_LISTENERS | Block.FORCE_STATE prevents
+                    // lighting recalculations from stacking up and lagging the server tick.
+                    world.setBlockState(floorPos, floorState, Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
+
+                    // Clear columns efficiently
+                    for (int h = 1; h <= 8; h++) {
+                        world.setBlockState(floorPos.up(h), airState, Block.NOTIFY_LISTENERS);
+                    }
+                }
+            }
+        }
+
+        // --- PASS 2: ENTITY HANDLING ---
+        // Expand the box slightly to catch entities transitioning near the border
+        Box domainBounds = new Box(centerPos).expand(radius + 1.0).withMinY(floorY - 1).withMaxY(floorY + 9);
+        List<Entity> entitiesInDomain = world.getOtherEntities(null, domainBounds);
+
+        for (Entity entity : entitiesInDomain) {
+            double dx = entity.getX() - centerPos.getX();
+            double dz = entity.getZ() - centerPos.getZ();
+
+            // Check if the entity is genuinely inside the smooth horizontal sphere
+            if ((dx * dx) + (dz * dz) <= (radius * radius)) {
+                double targetSpawnY = floorY + 1.0;
+
+                entity.setVelocity(entity.getVelocity().x, 0, entity.getVelocity().z);
+                entity.velocityModified = true;
+
+                entity.teleport((ServerWorld) world, entity.getX(), targetSpawnY, entity.getZ(),
+                        java.util.Collections.emptySet(), entity.getYaw(), entity.getPitch());
             }
         }
     }

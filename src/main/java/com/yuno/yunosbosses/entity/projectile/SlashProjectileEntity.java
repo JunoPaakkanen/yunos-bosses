@@ -8,6 +8,8 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.nbt.NbtCompound;
@@ -22,7 +24,8 @@ public class SlashProjectileEntity extends ProjectileEntity {
     private Vec3d startPos;
     private static final double MAX_RANGE = 5.0; // 5 block range
     public final float randomRoll = (float) (Math.random() * 360.0);
-    private float baseDamage;
+
+    private static final TrackedData<Float> DAMAGE = DataTracker.registerData(SlashProjectileEntity.class, TrackedDataHandlerRegistry.FLOAT);
 
     public SlashProjectileEntity(EntityType<? extends ProjectileEntity> entityType, World world) {
         super(entityType, world);
@@ -30,11 +33,16 @@ public class SlashProjectileEntity extends ProjectileEntity {
 
     public SlashProjectileEntity(EntityType<? extends ProjectileEntity> entityType, World world, float baseDamage) {
         super(entityType, world);
-        this.baseDamage = baseDamage;
+        this.setDamage(baseDamage);
     }
 
     @Override
-    protected void initDataTracker(DataTracker.Builder builder) {}
+    protected void initDataTracker(DataTracker.Builder builder) {
+        builder.add(DAMAGE, 0.0f);
+    }
+
+    public float getDamage() { return this.dataTracker.get(DAMAGE); }
+    public void setDamage(float damage) { this.dataTracker.set(DAMAGE, damage); }
 
     @Override
     public void tick() {
@@ -86,7 +94,7 @@ public class SlashProjectileEntity extends ProjectileEntity {
                         ModSounds.REELSEIDEN_HIT, SoundCategory.NEUTRAL, 1.0f, 1.0f + (this.random.nextFloat() * 0.2f - 0.1f));
                 // Apply damage to the target
                 DamageSource source = ModDamageTypes.of(this.getWorld(), ModDamageTypes.CUTTING_MAGIC, owner);
-                target.damage(source, baseDamage);
+                target.damage(source, this.getDamage());
                 // Spawn particles on hit
                 spawnImpactParticles(hitPos);
 
@@ -97,12 +105,16 @@ public class SlashProjectileEntity extends ProjectileEntity {
 
     @Override
     protected boolean canHit(Entity entity) {
+        // If the projectile is marked as cosmetic, ignore all collisions
+        if (this.getCommandTags().contains("domain_cosmetic")) {
+            return false;
+        }
         // Don't hit the owner
         if (entity == this.getOwner()) {
             return false;
         }
         // Only hit living entities
-        return entity instanceof LivingEntity && super.canHit(entity);
+        return entity instanceof LivingEntity;
     }
 
     private void spawnImpactParticles(Vec3d pos) {
@@ -122,12 +134,12 @@ public class SlashProjectileEntity extends ProjectileEntity {
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
-        nbt.putFloat("BaseDamage", this.baseDamage);
+        nbt.putFloat("BaseDamage", this.getDamage());
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
-        this.baseDamage = nbt.getFloat("BaseDamage");
+        this.setDamage(nbt.getFloat("BaseDamage"));
     }
 }

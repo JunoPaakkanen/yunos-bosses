@@ -17,7 +17,7 @@ public class SpherePhysics {
 
             // --- DOMAIN EFFECT ---
             if (dist < radius && !entity.getUuid().equals(barrier.getOwnerUuid())) {
-                barrier.getDomainEffect().accept(entity);
+                barrier.getDomainEffect().accept(entity, barrier);
             }
 
             // If entity is crossing the boundary (adjust 0.4 for thickness/buffer)

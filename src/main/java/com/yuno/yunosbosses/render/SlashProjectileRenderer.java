@@ -41,7 +41,7 @@ public class SlashProjectileRenderer extends EntityRenderer<SlashProjectileEntit
         // Calculate alpha fade
         int alpha = (int) ((1.0f - ageProgress) * 255);
 
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(TEXTURE));
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(TEXTURE));
         Matrix4f posMatrix = matrices.peek().getPositionMatrix();
 
         // Draw the slash arc as a curved ribbon
