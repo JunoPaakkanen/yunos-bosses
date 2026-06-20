@@ -64,7 +64,7 @@ public class DefensiveMagicRenderer {
         int alpha = 255;
 
         // --- PASS 1: OUTER SPHERE ---
-        VertexConsumer outerBuffer = consumers.getBuffer(RenderLayer.getEntityCutoutNoCull(DOMAIN_EXTERIOR));
+        VertexConsumer outerBuffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(DOMAIN_EXTERIOR));
 
         for (int i = 0; i < segments; i++) {
             float lat0 = (float) Math.PI * (-0.5f + (float) i / segments);
