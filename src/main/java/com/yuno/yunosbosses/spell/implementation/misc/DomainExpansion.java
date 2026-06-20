@@ -12,6 +12,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -42,6 +44,11 @@ public abstract class DomainExpansion extends Spell {
     @Override
     public float getManaCost(LivingEntity caster) {return manaCost;}
 
+    public void playCastAnimation(World world, LivingEntity caster) {
+        for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
+            ServerPlayNetworking.send(player, getDomainCastAnimation(caster, castAnimation));
+        }
+    }
 
     public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
@@ -62,7 +69,6 @@ public abstract class DomainExpansion extends Spell {
             // Broadcast to ALL nearby players so they can see the barrier and animation
             for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, pos, 64)) {
                 ServerPlayNetworking.send(player, new BarrierPayload(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture));
-                ServerPlayNetworking.send(player, getDomainCastAnimation(caster, castAnimation));
             }
         }
     }
@@ -94,8 +100,6 @@ public abstract class DomainExpansion extends Spell {
                     int targetZ = centerPos.getZ() + z;
                     BlockPos floorPos = new BlockPos(targetX, floorY, targetZ);
 
-                    // OPTIMIZATION: Block.NOTIFY_LISTENERS | Block.FORCE_STATE prevents
-                    // lighting recalculations from stacking up and lagging the server tick.
                     world.setBlockState(floorPos, floorState, Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
 
                     // Clear columns efficiently

@@ -15,6 +15,7 @@ public class ModBlocks {
             .strength(-1.0f, 3600000.0f)
             .dropsNothing()
             .nonOpaque()
+            .luminance(state -> 9)
     ));
 
     private static Block registerBlock(String name, Block block) {

@@ -7,10 +7,15 @@ import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.util.ActiveBarrier;
+import com.yuno.yunosbosses.util.DelayedServerEffects;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.Identifier;
@@ -33,7 +38,15 @@ public class DomainExpansionShrine extends DomainExpansion {
         caster.getWorld().playSound(null, caster.getX(), caster.getY(), caster.getZ(),
                 ModSounds.DOMAIN_EXPANSION_SHRINE_1, SoundCategory.NEUTRAL, 1.2f, 1.0f);
 
-        finishDomainExpansionCast(world, caster, staff);
+        // Apply a brief darkness effect to players
+        for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 120, 1));
+        }
+
+        // Play cast animation
+        playCastAnimation(world, caster);
+
+        DelayedServerEffects.delay(80, () -> finishDomainExpansionCast(world, caster, staff));
     }
 
     @Override
