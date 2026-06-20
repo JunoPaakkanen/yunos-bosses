@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses.util;
 
+import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -8,29 +10,64 @@ public class SpherePhysics {
 
     public static void apply(World world, ActiveBarrier barrier, double radius) {
         Vec3d center = barrier.getPosition();
-        // Expand box to cover the whole sphere
-        Box searchBox = new Box(center.subtract(radius + 1, radius + 1, radius + 1),
-                center.add(radius + 1, radius + 1, radius + 1));
+        double padding = 30.0;
+        Box searchBox = new Box(center.subtract(radius + padding, radius + padding, radius + padding),
+                center.add(radius + padding, radius + padding, radius + padding));
 
         world.getOtherEntities(null, searchBox).forEach(entity -> {
-            double dist = entity.getPos().distanceTo(center);
+            if (entity.isSpectator()) return;
+
+            Vec3d currPos = entity.getPos();
+            double currDist = currPos.distanceTo(center);
 
             // --- DOMAIN EFFECT ---
-            if (dist < radius && !entity.getUuid().equals(barrier.getOwnerUuid())) {
+            if (currDist < radius && !entity.getUuid().equals(barrier.getOwnerUuid())) {
                 barrier.getDomainEffect().accept(entity, barrier);
             }
 
-            // If entity is crossing the boundary (adjust 0.4 for thickness/buffer)
-            if (Math.abs(dist - radius) < 0.5) {
-                Vec3d pushDir = entity.getPos().subtract(center).normalize();
+            Vec3d prevPos = new Vec3d(entity.prevX, entity.prevY, entity.prevZ);
+            if (prevPos.equals(Vec3d.ZERO)) prevPos = currPos;
+            double prevDist = prevPos.distanceTo(center);
 
-                // Stop entities from entering or leaving
-                if (dist < radius) {
-                    // Inside: Push back towards center
-                    entity.setVelocity(pushDir.multiply(-0.4));
+            // Determine which side this entity belongs on based on where it was last tick
+            boolean belongsInside = prevDist <= radius;
+            boolean wrongSide = (belongsInside && currDist > radius)
+                             || (!belongsInside && currDist <= radius);
+
+            if (wrongSide) {
+                Vec3d radialDir = currPos.subtract(center).normalize();
+
+                // Snap back to the correct side with a firm offset
+                double safeRadius = belongsInside ? radius - 0.5 : radius + 0.5;
+                Vec3d snapPos = center.add(radialDir.multiply(safeRadius));
+
+                Vec3d vel = entity.getVelocity();
+                double radialComponent = vel.dotProduct(radialDir);
+                entity.setVelocity(vel.subtract(radialDir.multiply(radialComponent)));
+                entity.velocityModified = true;
+
+                if (entity instanceof ServerPlayerEntity serverPlayer) {
+                    serverPlayer.networkHandler.requestTeleport(
+                            snapPos.x, snapPos.y, snapPos.z,
+                            serverPlayer.getYaw(), serverPlayer.getPitch()
+                    );
                 } else {
-                    // Outside: Push away from center
-                    entity.setVelocity(pushDir.multiply(0.4));
+                    entity.setPosition(snapPos);
+                }
+
+                if (entity instanceof ProjectileEntity) {
+                    entity.setVelocity(Vec3d.ZERO);
+                }
+            }
+            // Soft repulsion zone: continuously push away from the wall when near it
+            else if (Math.abs(currDist - radius) < 1.0) {
+                Vec3d pushDir = currPos.subtract(center).normalize();
+                double pushStrength = 0.4 * (1.0 - Math.abs(currDist - radius));
+
+                if (currDist < radius) {
+                    entity.setVelocity(entity.getVelocity().add(pushDir.multiply(-pushStrength)));
+                } else {
+                    entity.setVelocity(entity.getVelocity().add(pushDir.multiply(pushStrength)));
                 }
                 entity.velocityModified = true;
             }
