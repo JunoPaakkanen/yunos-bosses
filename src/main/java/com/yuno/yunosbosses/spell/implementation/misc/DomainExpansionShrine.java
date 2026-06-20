@@ -4,7 +4,6 @@ import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
-import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.util.ActiveBarrier;
@@ -22,23 +21,19 @@ import net.minecraft.world.World;
 public class DomainExpansionShrine extends DomainExpansion {
 
     public DomainExpansionShrine(Identifier id) {
-        super(id);
+        super(id, castAnimation);
     }
+
+    public static final Identifier castAnimation = ModAnimations.DOMAIN_EXPANSION_SHRINE_ANIM;
 
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
-
-        // --- PLAYER DOMAIN EXPANSION CAST ANIMATION ---
-        PlayerAnimationPayload animPayload = new PlayerAnimationPayload(
-                caster.getUuid(),
-                ModAnimations.DOMAIN_EXPANSION_SHRINE_ANIM
-        );
 
         // --- VOICE LINE ---
         caster.getWorld().playSound(null, caster.getX(), caster.getY(), caster.getZ(),
                 ModSounds.DOMAIN_EXPANSION_SHRINE_1, SoundCategory.NEUTRAL, 1.2f, 1.0f);
 
-        finishDomainExpansionCast(world, caster, staff, animPayload);
+        finishDomainExpansionCast(world, caster, staff);
     }
 
     @Override
@@ -110,7 +105,7 @@ public class DomainExpansionShrine extends DomainExpansion {
             double theta = u * 2.0 * Math.PI;
             double phi = Math.acos(2.0 * v - 1.0);
 
-            // Choose a random distance from center up to the maximum radius boundary
+            // Choose a random distance from the center up to the maximum radius boundary
             double r = rand.nextDouble() * (radius - 1.0);
 
             // Convert spherical points into standard cartesian space (X, Y, Z offsets)

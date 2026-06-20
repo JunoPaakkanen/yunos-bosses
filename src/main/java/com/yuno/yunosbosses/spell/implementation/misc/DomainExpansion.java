@@ -25,8 +25,9 @@ import java.util.List;
 
 public abstract class DomainExpansion extends Spell {
 
-    public DomainExpansion(Identifier id) {
+    public DomainExpansion(Identifier id, Identifier castAnimation) {
         super(id, true);
+        this.castAnimation = castAnimation;
     }
 
     public abstract Identifier getBarrierTexture();
@@ -36,12 +37,13 @@ public abstract class DomainExpansion extends Spell {
 
     // Default mana cost
     public float manaCost = 100.0F;
+    protected Identifier castAnimation;
 
     @Override
     public float getManaCost(LivingEntity caster) {return manaCost;}
 
 
-    public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff, PlayerAnimationPayload animPayload) {
+    public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
             Vec3d pos = caster.getPos().add(0, 2, 0); // Center of the sphere
 
@@ -60,7 +62,7 @@ public abstract class DomainExpansion extends Spell {
             // Broadcast to ALL nearby players so they can see the barrier and animation
             for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, pos, 64)) {
                 ServerPlayNetworking.send(player, new BarrierPayload(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture));
-                ServerPlayNetworking.send(player, animPayload);
+                ServerPlayNetworking.send(player, getDomainCastAnimation(caster, castAnimation));
             }
         }
     }
@@ -106,7 +108,7 @@ public abstract class DomainExpansion extends Spell {
 
         // --- PASS 2: ENTITY HANDLING ---
         // Expand the box slightly to catch entities transitioning near the border
-        Box domainBounds = new Box(centerPos).expand(radius + 1.0).withMinY(floorY - 1).withMaxY(floorY + 9);
+        Box domainBounds = new Box(centerPos).expand(radius + 1.0).withMaxY(floorY + 5.0);
         List<Entity> entitiesInDomain = world.getOtherEntities(null, domainBounds);
 
         for (Entity entity : entitiesInDomain) {
@@ -122,8 +124,17 @@ public abstract class DomainExpansion extends Spell {
 
                 entity.teleport((ServerWorld) world, entity.getX(), targetSpawnY, entity.getZ(),
                         java.util.Collections.emptySet(), entity.getYaw(), entity.getPitch());
+
+                System.out.println("Teleported " + entity.getName().getString() + " to " + targetSpawnY);
             }
         }
+    }
+
+    public PlayerAnimationPayload getDomainCastAnimation(LivingEntity caster, Identifier castAnimation) {
+        return new PlayerAnimationPayload(
+                caster.getUuid(),
+                castAnimation
+        );
     }
 
 }
