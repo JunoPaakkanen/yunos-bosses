@@ -17,6 +17,7 @@ public class UbelAttackGoal extends Goal {
     private int teleportCooldown;
     private final double speed; // Movement speed
     private int currentAttackType = 0; // 0: Cutting Magic Reelseiden, 1: Melee
+    private boolean usedDomainExpansion = false;
 
     public UbelAttackGoal(UbelEntity ubel, double speed) {
         this.ubel = ubel;
@@ -68,6 +69,7 @@ public class UbelAttackGoal extends Goal {
         var path = this.ubel.getNavigation().findPathTo(this.target, 0);
         boolean shouldTeleport = false;
 
+        // --- TELEPORT LOGIC ---
         if (path == null || !path.reachesTarget()) {
             // Condition A: No path to target exists
             if (directDistance > 5.0) {
@@ -84,6 +86,15 @@ public class UbelAttackGoal extends Goal {
         if (shouldTeleport && this.teleportCooldown <= 0) {
             this.teleportToTarget();
             this.teleportCooldown = 100; // 5 second cooldown
+        }
+
+        // --- DOMAIN EXPANSION ---
+        if (this.ubel.getHealth() <= 150.0 && !this.usedDomainExpansion) {
+            this.teleportToTarget();
+            this.domainExpansion();
+            this.ubel.triggerDomainAnim();
+            this.usedDomainExpansion = true;
+            attackDurationTimer = 80;
         }
 
         // --- COOLDOWN LOGIC ---
@@ -169,11 +180,19 @@ public class UbelAttackGoal extends Goal {
         double deltaX = this.target.getX() - this.ubel.getX();
         double deltaZ = this.target.getZ() - this.ubel.getZ();
         this.target.takeKnockback(knockbackStrength, -deltaX, -deltaZ);
-        // Play hit sound and swing animation
+        // Play hit sound
         this.ubel.getWorld().playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
                 SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP,
                 this.ubel.getSoundCategory(), 1.0F, 1.0F);
 
+    }
+
+    public void domainExpansion() {
+        ModSpells.DOMAIN_EXPANSION_SHRINE.cast(
+                this.ubel.getWorld(),
+                this.ubel,
+                this.ubel.getMainHandStack()
+        );
     }
 
     private void teleportToTarget() {

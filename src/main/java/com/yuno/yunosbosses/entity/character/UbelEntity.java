@@ -83,7 +83,9 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
             return event.setAndContinue(RawAnimation.begin().thenLoop("animation.ubel.idle"));
         })
         // Melee animation
-        .triggerableAnim("melee_attack", RawAnimation.begin().thenPlay("animation.ubel.melee")));
+        .triggerableAnim("melee_attack", RawAnimation.begin().thenPlay("animation.ubel.melee"))
+        // Domain cast animation
+        .triggerableAnim("domain", RawAnimation.begin().thenPlay("animation.ubel.domain")));
     }
 
     @Override
@@ -124,5 +126,9 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
 
     public void triggerMeleeAnim() {
         this.triggerAnim("controller", "melee_attack");
+    }
+
+    public void triggerDomainAnim() {
+        this.triggerAnim("controller", "domain");
     }
 }
