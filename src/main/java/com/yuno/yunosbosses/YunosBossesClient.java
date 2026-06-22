@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.entity.client.MethodeRenderer;
 import com.yuno.yunosbosses.entity.client.SeveredTorsoRenderer;
 import com.yuno.yunosbosses.entity.client.UbelRenderer;
 import com.yuno.yunosbosses.entity.client.UselessChickenRenderer;
+import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.particle.ReversalRedParticle;
 import com.yuno.yunosbosses.render.gui.AbilityHudOverlay;
@@ -16,6 +17,8 @@ import com.yuno.yunosbosses.particle.LapseBlueParticle;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.particle.SlashImpactScissorsParticle;
 import com.yuno.yunosbosses.render.SlashProjectileRenderer;
+import com.yuno.yunosbosses.render.gui.DomainCutsceneManager;
+import com.yuno.yunosbosses.render.gui.DomainCutsceneOverlay;
 import com.yuno.yunosbosses.util.BeamManager;
 import com.yuno.yunosbosses.render.DefensiveMagicRenderer;
 import com.yuno.yunosbosses.render.KillingMagicRenderer;
@@ -60,6 +63,7 @@ public class YunosBossesClient implements ClientModInitializer {
 
         // Register custom HUD
         HudRenderCallback.EVENT.register(new AbilityHudOverlay());
+        HudRenderCallback.EVENT.register(new DomainCutsceneOverlay());
 
         // Client tick event that runs 20 times per second
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -68,6 +72,7 @@ public class YunosBossesClient implements ClientModInitializer {
                 if (!isFrozen) {
                     BeamManager.tick();
                     BarrierManager.tick(client.world);
+                    DomainCutsceneManager.tick();
                 }
             }
         });
@@ -105,6 +110,13 @@ public class YunosBossesClient implements ClientModInitializer {
                         }
                     }
                 }
+            });
+        });
+
+        // Receiver for Domain Cutscenes
+        ClientPlayNetworking.registerGlobalReceiver(DomainCutscenePayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                DomainCutsceneManager.startCutscene(payload.casterUuid(), payload.domainName(), payload.durationTicks());
             });
         });
     }

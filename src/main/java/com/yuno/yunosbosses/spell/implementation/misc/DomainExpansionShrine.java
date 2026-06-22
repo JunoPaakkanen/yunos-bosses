@@ -40,7 +40,7 @@ public class DomainExpansionShrine extends DomainExpansion {
 
         // Apply a brief darkness effect to players
         for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 120, 1));
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 110, 1));
         }
 
         // Play cast animation

@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.block.ModBlocks;
 import com.yuno.yunosbosses.network.BarrierPayload;
+import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.ActiveBarrier;
@@ -12,8 +13,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -46,7 +45,16 @@ public abstract class DomainExpansion extends Spell {
 
     public void playCastAnimation(World world, LivingEntity caster) {
         for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
+            // 3D Player Animation
             ServerPlayNetworking.send(player, getDomainCastAnimation(caster, castAnimation));
+
+            int durationTicks;
+            // 2-second cast duration for players, 3-seconds for bosses
+            if (caster.isPlayer()) {durationTicks = 40;}
+            else {durationTicks = 60;}
+
+            // 2D Cutscene (Pass ticks and Domain name as parameters for playcastanimation, also refactor it to startDomainExpansionCast()
+            ServerPlayNetworking.send(player, new DomainCutscenePayload(caster.getUuid(), "Malevolent Shrine", durationTicks));
         }
     }
 

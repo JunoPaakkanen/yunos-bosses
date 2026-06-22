@@ -20,11 +20,6 @@ public class SpherePhysics {
             Vec3d currPos = entity.getPos();
             double currDist = currPos.distanceTo(center);
 
-            // --- DOMAIN EFFECT ---
-            if (currDist < radius && !entity.getUuid().equals(barrier.getOwnerUuid())) {
-                barrier.getDomainEffect().accept(entity, barrier);
-            }
-
             Vec3d prevPos = new Vec3d(entity.prevX, entity.prevY, entity.prevZ);
             if (prevPos.equals(Vec3d.ZERO)) prevPos = currPos;
             double prevDist = prevPos.distanceTo(center);
