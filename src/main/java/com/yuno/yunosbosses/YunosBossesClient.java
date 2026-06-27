@@ -8,14 +8,11 @@ import com.yuno.yunosbosses.entity.client.UbelRenderer;
 import com.yuno.yunosbosses.entity.client.UselessChickenRenderer;
 import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
-import com.yuno.yunosbosses.particle.ReversalRedParticle;
+import com.yuno.yunosbosses.particle.*;
 import com.yuno.yunosbosses.render.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
-import com.yuno.yunosbosses.particle.LapseBlueParticle;
-import com.yuno.yunosbosses.particle.ModParticles;
-import com.yuno.yunosbosses.particle.SlashImpactScissorsParticle;
 import com.yuno.yunosbosses.render.SlashProjectileRenderer;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneManager;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneOverlay;
@@ -57,6 +54,7 @@ public class YunosBossesClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, SlashImpactScissorsParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.LAPSE_BLUE_PARTICLE, LapseBlueParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.REVERSAL_RED_PARTICLE, ReversalRedParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.DISMANTLE_A_PARTICLE, DismantleAParticle.Factory::new);
 
         // Register animations
         ModAnimations.registerAnimations();

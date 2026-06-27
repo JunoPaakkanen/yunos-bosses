@@ -132,27 +132,14 @@ public class DomainExpansionShrine extends DomainExpansion {
             // 2. Validate position
             if (spawnPos.getY() >= floorY + 0.5) {
 
-                // 1. Spawn it with 0 damage since this specific instance is cosmetic
-                SlashProjectileEntity visualSlash = new SlashProjectileEntity(
-                        ModEntities.SLASH_PROJECTILE,
-                        world,
-                        0.0F
+                // Spawn slash particles
+                ((ServerWorld) world).spawnParticles(
+                        ModParticles.DISMANTLE_A_PARTICLE,
+                        spawnPos.x, spawnPos.y, spawnPos.z,
+                        1,
+                        0.3, 0.3, 0.3,
+                        0.05
                 );
-
-                visualSlash.setPosition(spawnPos);
-
-                // Randomize orientation angles
-                float randomYaw = rand.nextFloat() * 360.0F;
-                double radYaw = Math.toRadians(randomYaw);
-                float randomPitch = rand.nextFloat() * 180.0F - 90.0F;
-                visualSlash.refreshPositionAndAngles(spawnPos.x, spawnPos.y, spawnPos.z, randomYaw, randomPitch);
-
-                Vec3d motion = new Vec3d(Math.sin(radYaw) * 0.001, 0.0, Math.cos(radYaw) * 0.001);
-                visualSlash.setVelocity(motion);
-
-                visualSlash.addCommandTag("domain_cosmetic");
-
-                world.spawnEntity(visualSlash);
             }
         }
     }
