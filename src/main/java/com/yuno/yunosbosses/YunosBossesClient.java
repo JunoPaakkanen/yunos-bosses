@@ -55,6 +55,7 @@ public class YunosBossesClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.LAPSE_BLUE_PARTICLE, LapseBlueParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.REVERSAL_RED_PARTICLE, ReversalRedParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.DISMANTLE_A_PARTICLE, DismantleAParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.DISMANTLE_B_PARTICLE, DismantleBParticle.Factory::new);
 
         // Register animations
         ModAnimations.registerAnimations();

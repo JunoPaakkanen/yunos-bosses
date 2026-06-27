@@ -34,6 +34,11 @@ public class ReversalRedParticle extends SpriteBillboardParticle {
         return ParticleTextureSheet.PARTICLE_SHEET_LIT;
     }
 
+    @Override
+    public int getBrightness(float tint) {
+        return 15728880;
+    }
+
     // --- THE FACTORY ---
     public static class Factory implements ParticleFactory<SimpleParticleType> {
         private final SpriteProvider spriteProvider;

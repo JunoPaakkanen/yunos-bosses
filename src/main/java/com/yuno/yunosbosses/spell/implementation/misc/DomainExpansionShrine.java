@@ -15,6 +15,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -79,8 +80,9 @@ public class DomainExpansionShrine extends DomainExpansion {
                 // Apply damage to the target
                 DamageSource source = ModDamageTypes.of(affectedEntity.getWorld(), ModDamageTypes.CUTTING_MAGIC, caster);
                 Vec3d originalVelocity = affectedEntity.getVelocity(); // Store original velocity
+                float damage = 1.5f;
 
-                affectedEntity.damage(source, 2.0f);
+                affectedEntity.damage(source, damage);
 
                 affectedEntity.setVelocity(originalVelocity); // Restore original velocity (Undoes knockback)
                 affectedEntity.velocityModified = true;
@@ -132,9 +134,19 @@ public class DomainExpansionShrine extends DomainExpansion {
             // 2. Validate position
             if (spawnPos.getY() >= floorY + 0.5) {
 
-                // Spawn slash particles
-                ((ServerWorld) world).spawnParticles(
+                // Slash particle pool
+                SimpleParticleType[] particlePool = {
                         ModParticles.DISMANTLE_A_PARTICLE,
+                        ModParticles.DISMANTLE_B_PARTICLE
+                };
+
+                // Randomly select a particle from the pool
+                int randomIndex = world.getRandom().nextInt(particlePool.length);
+                SimpleParticleType particleType = particlePool[randomIndex];
+
+                // Spawn the particle
+                ((ServerWorld) world).spawnParticles(
+                        particleType,
                         spawnPos.x, spawnPos.y, spawnPos.z,
                         1,
                         0.3, 0.3, 0.3,

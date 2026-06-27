@@ -4,16 +4,16 @@ import net.minecraft.client.particle.*;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.SimpleParticleType;
 
-public class DismantleAParticle extends SpriteBillboardParticle {
+public class DismantleBParticle extends SpriteBillboardParticle {
     private final SpriteProvider spriteProvider;
 
-    protected DismantleAParticle(ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, SpriteProvider spriteProvider) {
+    protected DismantleBParticle(ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, SpriteProvider spriteProvider) {
         super(world, x, y, z, velocityX, velocityY, velocityZ);
         this.spriteProvider = spriteProvider;
 
-        // Randomized lifetime between 8 and 16 ticks
-        int minTicks = 8;
-        int maxTicks = 16;
+        // Randomized lifetime
+        int minTicks = 9;
+        int maxTicks = 18;
         this.maxAge = this.random.nextInt(maxTicks - minTicks) + minTicks;
 
         // Randomized scale
