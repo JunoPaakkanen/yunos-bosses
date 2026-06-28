@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.spell.implementation.offensive;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -50,5 +51,10 @@ public class KillingMagicBarrage extends KillingMagic {
                 });
             }
         }
+    }
+
+    @Override
+    public Text getName() {
+        return Text.translatable("yunosbosses.spell.killing_magic_barrage");
     }
 }

@@ -9,6 +9,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -34,6 +35,11 @@ public class SphereBarrierSpell extends Spell {
                 ServerPlayNetworking.send(player, new BarrierPayload(caster.getUuid(), pos, Vec3d.ZERO, lifetime, BARRIER_TEXTURE));
             }
         }
+    }
+
+    @Override
+    public Text getName() {
+        return Text.translatable("yunosbosses.spell.sphere_barrier");
     }
 
     @Override

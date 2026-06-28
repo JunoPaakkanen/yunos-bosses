@@ -13,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -43,6 +44,11 @@ public class KillingMagic extends Spell {
             
             fireBeam(world, caster, start, maxRange, delay, stepDistance, damageRadius, baseDamage, false);
         }
+    }
+
+    @Override
+    public Text getName() {
+        return Text.translatable("yunosbosses.spell.killing_magic");
     }
 
     protected void fireBeam(World world, LivingEntity caster, Vec3d start, int maxRange, int delay, float stepDistance,

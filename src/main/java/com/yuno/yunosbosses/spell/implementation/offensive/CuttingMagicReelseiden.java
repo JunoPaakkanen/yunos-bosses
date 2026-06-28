@@ -7,6 +7,7 @@ import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -52,5 +53,10 @@ public class CuttingMagicReelseiden extends Spell {
 
             world.spawnEntity(projectile);
         }
+    }
+
+    @Override
+    public Text getName() {
+        return Text.translatable("yunosbosses.spell.cutting_magic_reelseiden");
     }
 }

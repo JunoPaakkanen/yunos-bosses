@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.entity.character.modified.UselessChickenEntity;
 import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
@@ -27,5 +28,10 @@ public class SummonUselessChicken extends Spell {
 
             world.spawnEntity(chicken);
         }
+    }
+
+    @Override
+    public Text getName() {
+        return Text.translatable("yunosbosses.spell.summon_useless_chicken");
     }
 }

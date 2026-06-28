@@ -8,6 +8,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -40,5 +41,10 @@ public class DefensiveMagic extends Spell {
                     new BarrierPayload(caster.getUuid(), barrierPos, look, lifetime, hexTexture)
             );
         }
+    }
+
+    @Override
+    public Text getName() {
+        return Text.translatable("yunosbosses.spell.defensive_magic");
     }
 }

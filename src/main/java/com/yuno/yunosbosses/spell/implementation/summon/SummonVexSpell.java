@@ -9,6 +9,7 @@ import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.Team;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import java.util.Objects;
@@ -62,5 +63,10 @@ public class SummonVexSpell extends Spell {
 
             world.spawnEntity(vex);
         }
+    }
+
+    @Override
+    public Text getName() {
+        return Text.translatable("yunosbosses.spell.summon_vex");
     }
 }

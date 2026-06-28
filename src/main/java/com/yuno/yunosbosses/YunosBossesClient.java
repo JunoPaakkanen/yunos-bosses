@@ -68,7 +68,8 @@ public class YunosBossesClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.world != null) {
                 boolean isFrozen = client.world.getTickManager().isFrozen();
-                if (!isFrozen) {
+                boolean isPaused = client.isPaused();
+                if (!isFrozen && !isPaused) {
                     BeamManager.tick();
                     BarrierManager.tick(client.world);
                     DomainCutsceneManager.tick();

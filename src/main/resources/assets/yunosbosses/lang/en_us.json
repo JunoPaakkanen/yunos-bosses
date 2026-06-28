@@ -8,9 +8,18 @@
   "entity.yunosbosses.useless_chicken": "Useless Chicken",
 
   "effect.yunosbosses.gojobindingvow": "Binding Vow: Gojo",
+  "effect.yunosbosses.gojo": "Binding Vow: Gojo",
 
   "death.attack.cutting_magic": "%1$s was sliced apart by %2$s",
   "death.attack.cutting_magic.item": "%1$s was sliced apart by %2$s using %3$s",
 
-  "effect.yunosbosses.gojo": "Gojo Binding Vow"
+  "yunosbosses.spell.defensive_magic": "Defensive Magic",
+  "yunosbosses.spell.killing_magic": "Killing Magic",
+  "yunosbosses.spell.sphere_barrier": "Sphere Barrier Spell",
+  "yunosbosses.spell.domain_expansion_shrine": "Domain Expansion: Shrine",
+  "yunosbosses.spell.reverse_cursed_technique": "Reverse Cursed Technique",
+  "yunosbosses.spell.cutting_magic_reelseiden": "Cutting Magic: Reelseiden",
+  "yunosbosses.spell.killing_magic_barrage": "Killing Magic Barrage",
+  "yunosbosses.spell.summon_useless_chicken": "Summon Useless Chicken",
+  "yunosbosses.spell.summon_vex": "Summon Vex"
 }

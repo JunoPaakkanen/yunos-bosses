@@ -19,6 +19,7 @@ import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
@@ -48,6 +49,11 @@ public class DomainExpansionShrine extends DomainExpansion {
         playCastAnimation(world, caster);
 
         DelayedServerEffects.delay(80, () -> finishDomainExpansionCast(world, caster, staff));
+    }
+
+    @Override
+    public Text getName() {
+        return Text.translatable("yunosbosses.spell.domain_expansion_shrine");
     }
 
     @Override
