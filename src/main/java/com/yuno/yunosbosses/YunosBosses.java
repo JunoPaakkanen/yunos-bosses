@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.event.ModCommands;
+import com.yuno.yunosbosses.item.ModItemGroups;
 import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.network.*;
 import com.yuno.yunosbosses.particle.ModParticles;
@@ -37,6 +38,7 @@ public class YunosBosses implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
+		ModItemGroups.registerItemGroups();
 		ModItems.registerModItems();
 		ModSpells.registerModSpells();
 		ModCommands.register();
