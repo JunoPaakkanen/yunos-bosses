@@ -43,7 +43,7 @@ public abstract class DomainExpansion extends Spell {
     @Override
     public float getManaCost(LivingEntity caster) {return manaCost;}
 
-    public void playCastAnimation(World world, LivingEntity caster) {
+    public void startDomainExpansionCast(World world, LivingEntity caster, String domainName) {
         for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
             // 3D Player Animation
             ServerPlayNetworking.send(player, getDomainCastAnimation(caster, castAnimation));
@@ -53,8 +53,8 @@ public abstract class DomainExpansion extends Spell {
             if (caster.isPlayer()) {durationTicks = 40;}
             else {durationTicks = 60;}
 
-            // 2D Cutscene (Pass ticks and Domain name as parameters for playcastanimation, also refactor it to startDomainExpansionCast()
-            ServerPlayNetworking.send(player, new DomainCutscenePayload(caster.getUuid(), "Malevolent Shrine", durationTicks));
+            // 2D Cutscene
+            ServerPlayNetworking.send(player, new DomainCutscenePayload(caster.getUuid(), domainName, durationTicks));
         }
     }
 
@@ -138,6 +138,39 @@ public abstract class DomainExpansion extends Spell {
                         java.util.Collections.emptySet(), entity.getYaw(), entity.getPitch());
 
                 System.out.println("Teleported " + entity.getName().getString() + " to " + targetSpawnY);
+            }
+        }
+    }
+
+    public void removeDomainFloor(World world, ActiveBarrier barrier) {
+        // Reverse-engineer the floor height from the barrier position
+        BlockPos centerPos = BlockPos.ofFloored(
+                barrier.getPosition().x,
+                barrier.getPosition().y -2,
+                barrier.getPosition().z
+        );
+        int floorY = centerPos.getY() - 1;
+
+        double radius = getRadius();
+        double blockRadiusSq = (radius + 0.5) * (radius + 0.5);
+        int loopRadius = (int) Math.ceil(radius + 1);
+
+        var airState = Blocks.AIR.getDefaultState();
+
+        for (int x = -loopRadius; x <= loopRadius; x++) {
+            for (int z = -loopRadius; z <= loopRadius; z++) {
+                double distanceSq = (x * x) + (z * z);
+
+                if (distanceSq <= blockRadiusSq) {
+                    int targetX = centerPos.getX() + x;
+                    int targetZ = centerPos.getZ() + z;
+                    BlockPos floorPos = new BlockPos(targetX, floorY, targetZ);
+
+                    // ONLY remove it if it's a domain floor block
+                    if (world.getBlockState(floorPos).isOf(ModBlocks.DOMAIN_FLOOR)) {
+                        world.setBlockState(floorPos, airState, Block.NOTIFY_LISTENERS);
+                    }
+                }
             }
         }
     }

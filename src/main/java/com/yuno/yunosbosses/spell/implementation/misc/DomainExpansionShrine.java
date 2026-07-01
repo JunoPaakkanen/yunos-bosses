@@ -46,7 +46,7 @@ public class DomainExpansionShrine extends DomainExpansion {
         }
 
         // Play cast animation
-        playCastAnimation(world, caster);
+        startDomainExpansionCast(world, caster, "Malevolent Shrine");
 
         DelayedServerEffects.delay(80, () -> finishDomainExpansionCast(world, caster, staff));
     }
