@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.entity;
 import com.yuno.yunosbosses.entity.character.MethodeEntity;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.entity.character.modified.UselessChickenEntity;
+import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
@@ -50,6 +51,14 @@ public class ModEntities {
             Identifier.of("yunosbosses", "useless_chicken"),
             EntityType.Builder.create(UselessChickenEntity::new, SpawnGroup.CREATURE)
                     .dimensions(1f, 1f)
+                    .build()
+    );
+
+    public static final EntityType<DomainShrineEntity> DOMAIN_SHRINE = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier.of("yunosbosses", "domain_shrine"),
+            EntityType.Builder.create(DomainShrineEntity::new, SpawnGroup.MISC)
+                    .dimensions(7f, 6.5f)
                     .build()
     );
 

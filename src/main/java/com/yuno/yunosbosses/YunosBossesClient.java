@@ -2,10 +2,7 @@ package com.yuno.yunosbosses;
 
 import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.entity.ModEntities;
-import com.yuno.yunosbosses.entity.client.MethodeRenderer;
-import com.yuno.yunosbosses.entity.client.SeveredTorsoRenderer;
-import com.yuno.yunosbosses.entity.client.UbelRenderer;
-import com.yuno.yunosbosses.entity.client.UselessChickenRenderer;
+import com.yuno.yunosbosses.entity.client.*;
 import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.particle.*;
@@ -49,6 +46,7 @@ public class YunosBossesClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.SLASH_PROJECTILE, SlashProjectileRenderer::new);
         EntityRendererRegistry.register(ModEntities.SEVERED_TORSO, SeveredTorsoRenderer::new);
         EntityRendererRegistry.register(ModEntities.USELESS_CHICKEN, UselessChickenRenderer::new);
+        EntityRendererRegistry.register(ModEntities.DOMAIN_SHRINE, DomainShrineRenderer::new);
 
         // Register particle factories
         ParticleFactoryRegistry.getInstance().register(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, SlashImpactScissorsParticle.Factory::new);

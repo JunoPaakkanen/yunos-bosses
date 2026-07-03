@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.spell.implementation.misc;
 import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
+import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
@@ -21,9 +22,12 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public class DomainExpansionShrine extends DomainExpansion {
 
@@ -103,6 +107,43 @@ public class DomainExpansionShrine extends DomainExpansion {
                         0.0
                 );
             }
+        }
+    }
+
+    @Override
+    public void onDomainCreated(ServerWorld world, LivingEntity caster, Vec3d barrierCenter) {
+        // Spawn Shrine entity
+        DomainShrineEntity shrine = new DomainShrineEntity(ModEntities.DOMAIN_SHRINE, world);
+
+        // Spawn it 1.5 blocks behind the caster
+        Vec3d forwardVec = Vec3d.fromPolar(0.0F, caster.getYaw()).normalize();
+        double spawnX = caster.getX() - (forwardVec.x * 1.5);
+        double spawnY = caster.getY();
+        double spawnZ = caster.getZ() - (forwardVec.z * 1.5);
+
+        shrine.refreshPositionAndAngles(spawnX, spawnY, spawnZ, caster.getYaw(), 0.0F);
+        world.spawnEntity(shrine);
+
+        // Levitate the player slightly
+        caster.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 60, 3));
+        caster.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 100, 1));
+    }
+
+    @Override
+    public void onDomainRemoved(ServerWorld world, ActiveBarrier barrier) {
+        // Create a search area covering the entire domain
+        Box searchBox = Box.from(barrier.getPosition()).expand(this.getRadius());
+
+        // Find any Shrine Entities inside that box
+        List<DomainShrineEntity> shrines = world.getEntitiesByClass(
+                DomainShrineEntity.class,
+                searchBox,
+                entity -> true
+        );
+
+        // Delete them
+        for (DomainShrineEntity shrine : shrines) {
+            shrine.discard();
         }
     }
 

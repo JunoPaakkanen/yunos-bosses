@@ -90,9 +90,10 @@ public class BarrierManager {
                     // Glass shatter effect, visual and sound
                     world.syncWorldEvent(2001, blockPos, Block.getRawIdFromState(Blocks.GLASS.getDefaultState()));
 
-                    // If the barrier is of type Domain Expansion, clean up the Domain Floor
-                    if (barrier.getDomainExpansion() != null) {
+                    // If the barrier is of type Domain Expansion, clean up the Domain Floor and perform custom Domain removal logic
+                    if (barrier.getDomainExpansion() != null && world instanceof ServerWorld serverWorld) {
                         barrier.getDomainExpansion().removeDomainFloor(world, barrier);
+                        barrier.getDomainExpansion().onDomainRemoved(serverWorld, barrier);
                     }
 
                 } else {

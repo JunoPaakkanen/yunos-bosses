@@ -1,6 +1,8 @@
 package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.block.ModBlocks;
+import com.yuno.yunosbosses.entity.ModEntities;
+import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
@@ -69,6 +71,9 @@ public abstract class DomainExpansion extends Spell {
             // Create the floor
             createDomainFloor(world, caster, radius);
 
+            // Domain creation hook
+            onDomainCreated((ServerWorld) world, caster, pos);
+
             // Create the barrier
             BarrierManager.ACTIVE_BARRIERS.add(
                     new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture, this::onDomainEffect, this)
@@ -80,6 +85,10 @@ public abstract class DomainExpansion extends Spell {
             }
         }
     }
+
+    // Hooks used for custom domain logic upon creation and removal
+    public void onDomainCreated(ServerWorld world, LivingEntity caster, Vec3d barrierCenter) {}
+    public void onDomainRemoved(ServerWorld world, ActiveBarrier barrier) {}
 
     public void onGlobalTick(World world, ActiveBarrier barrier) {
         // Implement this method to perform any global tick logic, for entity-specific logic use onDomainEffect() instead
