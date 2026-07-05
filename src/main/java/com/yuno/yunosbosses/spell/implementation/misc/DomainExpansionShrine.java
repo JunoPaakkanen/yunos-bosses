@@ -4,12 +4,14 @@ import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
-import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -22,6 +24,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
@@ -112,21 +115,46 @@ public class DomainExpansionShrine extends DomainExpansion {
 
     @Override
     public void onDomainCreated(ServerWorld world, LivingEntity caster, Vec3d barrierCenter) {
-        // Spawn Shrine entity
-        DomainShrineEntity shrine = new DomainShrineEntity(ModEntities.DOMAIN_SHRINE, world);
-
-        // Spawn it 1.5 blocks behind the caster
+        // Calculate Shrine spawn coordinates
+        // Spawn Shrine 1.5 blocks behind the caster
         Vec3d forwardVec = Vec3d.fromPolar(0.0F, caster.getYaw()).normalize();
         double spawnX = caster.getX() - (forwardVec.x * 1.5);
         double spawnY = caster.getY();
         double spawnZ = caster.getZ() - (forwardVec.z * 1.5);
+
+        BlockPos shrineCenter = BlockPos.ofFloored(spawnX, spawnY, spawnZ);
+
+        // Instantly clear the area to make room for the Shrine entity
+        int clearRadius = 4;  // 4 blocks in each direction creates a 9x9 horizontal clearing
+        int clearHeight = 10; // 10 blocks tall
+
+        for (int x = -clearRadius; x <= clearRadius; x++) {
+            for (int y = 0; y < clearHeight; y++) {
+                for (int z = -clearRadius; z <= clearRadius; z++) {
+
+                    // Check if the current coordinate falls inside the cylinder shape
+                    if ((x * x) + (z * z) <= (clearRadius * clearRadius)) {
+                        BlockPos targetPos = shrineCenter.add(x, y, z);
+                        BlockState state = world.getBlockState(targetPos);
+
+                        // Delete the block instantly if it is breakable
+                        if (!state.isAir() && state.getHardness(world, targetPos) >= 0.0F) {
+                            world.setBlockState(targetPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Spawn Shrine entity
+        DomainShrineEntity shrine = new DomainShrineEntity(ModEntities.DOMAIN_SHRINE, world);
 
         shrine.refreshPositionAndAngles(spawnX, spawnY, spawnZ, caster.getYaw(), 0.0F);
         world.spawnEntity(shrine);
 
         // Levitate the player slightly
         caster.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 60, 3));
-        caster.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 100, 1));
+        caster.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 140, 1));
     }
 
     @Override
@@ -155,6 +183,13 @@ public class DomainExpansionShrine extends DomainExpansion {
         Vec3d center = barrier.getPosition();
         float radius = this.getRadius();
         Random rand = world.getRandom();
+        double floorY = center.getY() - 3.0; // Reference point of our custom floor layer
+
+        // Slash particle pool
+        SimpleParticleType[] particlePool = {
+                ModParticles.DISMANTLE_A_PARTICLE,
+                ModParticles.DISMANTLE_B_PARTICLE
+        };
 
         // --- RANDOM STATIONARY SLASH SPAWNER ---
         int spawnCount = 4;
@@ -176,16 +211,9 @@ public class DomainExpansionShrine extends DomainExpansion {
             double dz = r * Math.cos(phi);
 
             Vec3d spawnPos = center.add(dx, dy, dz);
-            double floorY = center.getY() - 1.0; // Reference point of our custom floor layer
 
             // 2. Validate position
             if (spawnPos.getY() >= floorY + 0.5) {
-
-                // Slash particle pool
-                SimpleParticleType[] particlePool = {
-                        ModParticles.DISMANTLE_A_PARTICLE,
-                        ModParticles.DISMANTLE_B_PARTICLE
-                };
 
                 // Randomly select a particle from the pool
                 int randomIndex = world.getRandom().nextInt(particlePool.length);
@@ -199,6 +227,57 @@ public class DomainExpansionShrine extends DomainExpansion {
                         0.3, 0.3, 0.3,
                         0.05
                 );
+            }
+        }
+
+        // -- RANDOMLY DESTROY BLOCKS --
+        int blocksToBreakPerTick = 250;
+
+        for (int i = 0; i < blocksToBreakPerTick; i++) {
+            // Generate random spherical coordinates
+            double u = rand.nextDouble();
+            double v = rand.nextDouble();
+            double w = rand.nextDouble();
+
+            double theta = u * 2.0 * Math.PI;
+            double phi = Math.acos(2.0 * v - 1.0);
+
+            // Math.cbrt ensures destruction is spread evenly to the very edges
+            double r = radius * Math.cbrt(w);
+
+            double dx = r * Math.sin(phi) * Math.cos(theta);
+            double dy = r * Math.sin(phi) * Math.sin(theta);
+            double dz = r * Math.cos(phi);
+
+            // Convert to a block grid position
+            BlockPos targetPos = BlockPos.ofFloored(center.x + dx, center.y + dy, center.z + dz);
+
+            // Do not break the custom domain floor or anything beneath it
+            if (targetPos.getY() <= floorY) continue;
+
+            BlockState state = world.getBlockState(targetPos);
+
+            // Only attempt to break if it's an actual block (not air or water)
+            if (!state.isAir() && state.getFluidState().isEmpty()) {
+                // Check if the block is breakable
+                if (state.getHardness(world, targetPos) >= 0.0F) {
+                    // Break the block!
+                    //world.breakBlock(targetPos, false);
+                    world.setBlockState(targetPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+
+                    // Spawn a random Slash particle on the broken block from the particle pool
+                    int randomIndex = world.getRandom().nextInt(particlePool.length);
+                    SimpleParticleType particleType = particlePool[randomIndex];
+
+                    // Spawn the particle
+                    ((ServerWorld) world).spawnParticles(
+                            particleType,
+                            targetPos.getX(), targetPos.getY(), targetPos.getZ(),
+                            1,
+                            0.3, 0.3, 0.3,
+                            0.05
+                    );
+                }
             }
         }
     }

@@ -28,8 +28,10 @@ public class DomainShrineRenderer extends GeoEntityRenderer<DomainShrineEntity> 
         // Make it massive
         matrixStack.scale(4.0F, 4.0F, 4.0F);
 
+        int lightLevel = 15728880;
+
         // 3. Draw the model using GeckoLib's rendering engine
-        super.render(entity, entityYaw, tickDelta, matrixStack, vertexConsumers, light);
+        super.render(entity, entityYaw, tickDelta, matrixStack, vertexConsumers, lightLevel);
 
         matrixStack.pop();
     }

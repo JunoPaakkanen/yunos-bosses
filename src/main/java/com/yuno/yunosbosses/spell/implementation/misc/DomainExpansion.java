@@ -118,11 +118,6 @@ public abstract class DomainExpansion extends Spell {
                     BlockPos floorPos = new BlockPos(targetX, floorY, targetZ);
 
                     world.setBlockState(floorPos, floorState, Block.NOTIFY_LISTENERS | Block.FORCE_STATE);
-
-                    // Clear columns efficiently
-                    for (int h = 1; h <= 8; h++) {
-                        world.setBlockState(floorPos.up(h), airState, Block.NOTIFY_LISTENERS);
-                    }
                 }
             }
         }
@@ -139,6 +134,11 @@ public abstract class DomainExpansion extends Spell {
             // Check if the entity is genuinely inside the smooth horizontal sphere
             if ((dx * dx) + (dz * dz) <= (radius * radius)) {
                 double targetSpawnY = floorY + 1.0;
+
+                // Clear a tiny 2 block safety bubble for the entity, so they don't suffocate
+                BlockPos entityPos = BlockPos.ofFloored(entity.getX(), targetSpawnY, entity.getZ());
+                world.setBlockState(entityPos, airState, Block.NOTIFY_LISTENERS);
+                world.setBlockState(entityPos.up(), airState, Block.NOTIFY_LISTENERS);
 
                 entity.setVelocity(entity.getVelocity().x, 0, entity.getVelocity().z);
                 entity.velocityModified = true;
