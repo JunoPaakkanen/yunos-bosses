@@ -7,15 +7,17 @@ import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 
 public class ModBlocks {
 
-    public static final Block DOMAIN_FLOOR = registerBlock("domain_floor", new Block(AbstractBlock.Settings.create()
+    public static final Block DOMAIN_FLOOR = registerBlock("domain_floor", new DomainFloorBlock(AbstractBlock.Settings.create()
             .strength(-1.0f, 3600000.0f)
             .dropsNothing()
             .nonOpaque()
             .luminance(state -> 9)
+            .sounds(BlockSoundGroup.MUD)
     ));
 
     private static Block registerBlock(String name, Block block) {
