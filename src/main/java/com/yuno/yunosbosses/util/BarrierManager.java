@@ -23,18 +23,18 @@ public class BarrierManager {
     public static final List<ActiveBarrier> ACTIVE_BARRIERS_CLIENT = new ArrayList<>(); // CLIENT
 
     // Add barrier to ACTIVE_BARRIERS
-    public static void addBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int maxTicks, Identifier texture, boolean isClient) {
+    public static void addBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int maxTicks, Identifier texture, float radius, boolean isClient) {
         if (isClient) {
-            ACTIVE_BARRIERS_CLIENT.add(new ActiveBarrier(ownerUuid, position, direction, maxTicks, texture, null));
+            ACTIVE_BARRIERS_CLIENT.add(new ActiveBarrier(ownerUuid, position, direction, maxTicks, texture, null, radius));
         } else {
-            ACTIVE_BARRIERS.add(new ActiveBarrier(ownerUuid, position, direction, maxTicks, texture, (entity, barrier) -> {}));
+            ACTIVE_BARRIERS.add(new ActiveBarrier(ownerUuid, position, direction, maxTicks, texture, (entity, barrier) -> {}, radius));
         }
     }
 
     // Legacy method for adding a barrier with the default texture
-    public static void addBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int maxTicks, boolean isClient) {
+    public static void addBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int maxTicks, float radius, boolean isClient) {
         Identifier hexTexture = Identifier.of("yunosbosses", "textures/effect/magical_hexagon.png");
-        addBarrier(ownerUuid, position, direction, maxTicks, hexTexture, isClient);
+        addBarrier(ownerUuid, position, direction, maxTicks, hexTexture, radius, isClient);
     }
 
     public static void tick(World world) {
@@ -50,7 +50,7 @@ public class BarrierManager {
             // Blocking, Physics and Domain logic (Server-side)
             if (!world.isClient && world instanceof ServerWorld serverWorld) {
                 if (barrier.getDirection().equals(Vec3d.ZERO)) {
-                    double radius = 20.0;
+                    double radius = barrier.getRadius();
                     // Apply the spherical pushing physics
                     SpherePhysics.apply(world, barrier, radius);
 

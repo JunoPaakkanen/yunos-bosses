@@ -16,6 +16,7 @@ public class ActiveBarrier {
     private final Vec3d direction; // Which way the shield faces
     private int maxTicks;
     private int currentTicks;
+    private final float radius;
 
     private final Identifier texture;
     private final BiConsumer<Entity, ActiveBarrier> domainEffect;
@@ -30,9 +31,10 @@ public class ActiveBarrier {
         this.texture = texture;
         this.domainEffect = domainEffect;
         this.domainExpansion = domainExpansion;
+        this.radius = domainExpansion.getRadius();
     }
 
-    public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration, Identifier texture, BiConsumer<Entity, ActiveBarrier> domainEffect) {
+    public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration, Identifier texture, BiConsumer<Entity, ActiveBarrier> domainEffect, float radius) {
         this.ownerUuid = ownerUuid;
         this.position = position;
         this.direction = direction;
@@ -41,6 +43,7 @@ public class ActiveBarrier {
         this.texture = texture;
         this.domainEffect = domainEffect;
         this.domainExpansion = null;
+        this.radius = radius;
     }
 
     public void tick() {
@@ -58,4 +61,5 @@ public class ActiveBarrier {
     public Identifier getTexture() { return this.texture; }
     public BiConsumer<Entity, ActiveBarrier> getDomainEffect() { return this.domainEffect; }
     public DomainExpansion getDomainExpansion() { return this.domainExpansion; }
+    public float getRadius() { return this.radius; }
 }

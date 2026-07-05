@@ -11,6 +11,7 @@
     "PlayerInventoryMixin"
   ],
   "client": [
+    "GameRendererAccessor",
     "InGameHudMixin",
     "MinecraftClientMixin",
     "PlayerAttackAnimationMixin",

@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.entity.client.*;
 import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.particle.*;
+import com.yuno.yunosbosses.render.ShaderManager;
 import com.yuno.yunosbosses.render.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.BarrierPayload;
@@ -62,6 +63,9 @@ public class YunosBossesClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(new AbilityHudOverlay());
         HudRenderCallback.EVENT.register(new DomainCutsceneOverlay());
 
+        // Register shader manager
+        ShaderManager.register();
+
         // Client tick event that runs 20 times per second
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.world != null) {
@@ -88,7 +92,7 @@ public class YunosBossesClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(BarrierPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 // Add to a client-side list of barriers for the renderer to draw
-                BarrierManager.addBarrier(payload.ownerUuid(), payload.position(), payload.direction(), payload.maxTicks(), payload.texture(), true);
+                BarrierManager.addBarrier(payload.ownerUuid(), payload.position(), payload.direction(), payload.maxTicks(), payload.texture(), payload.radius(), true);
             });
         });
 

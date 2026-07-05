@@ -33,12 +33,12 @@ public class DefensiveMagic extends Spell {
             Vec3d barrierPos = caster.getEyePos().add(look.multiply(1.5));
 
             // Add to BarrierManager
-            BarrierManager.addBarrier(caster.getUuid(), barrierPos, look, lifetime, false);
+            BarrierManager.addBarrier(caster.getUuid(), barrierPos, look, lifetime, 0, false);
 
             // Send Packet to Client for rendering
             ServerPlayNetworking.send(
                     (ServerPlayerEntity) caster,
-                    new BarrierPayload(caster.getUuid(), barrierPos, look, lifetime, hexTexture)
+                    new BarrierPayload(caster.getUuid(), barrierPos, look, lifetime, hexTexture, 0)
             );
         }
     }

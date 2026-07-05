@@ -81,7 +81,7 @@ public abstract class DomainExpansion extends Spell {
 
             // Broadcast to ALL nearby players so they can see the barrier and animation
             for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, pos, 64)) {
-                ServerPlayNetworking.send(player, new BarrierPayload(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture));
+                ServerPlayNetworking.send(player, new BarrierPayload(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture, this.getRadius()));
             }
         }
     }
