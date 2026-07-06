@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansion;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -13,8 +14,14 @@ public class SpellCastHelper {
         }
 
         var manaComponent = ModEntityComponents.MANA.get(caster);
+        var spellComponent = ModEntityComponents.SPELL_DATA.get(caster);
         float manaCost = spell.getManaCost(caster);
 
+        // Check if the spell is a Domain Expansion and block the cast if they have one active
+        if (spell instanceof DomainExpansion && BarrierManager.hasActiveDomain(caster.getUuid())) {
+            return false;
+        }
+        // Check if the player has enough mana to cast the spell
         if (manaComponent.useMana(manaCost)) {
             // Mana consumed successfully, cast the spell
             spell.cast(world, caster, staff);

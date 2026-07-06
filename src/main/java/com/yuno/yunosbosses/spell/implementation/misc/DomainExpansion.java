@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.block.ModBlocks;
+import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.network.BarrierPayload;
@@ -15,6 +16,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -47,6 +49,7 @@ public abstract class DomainExpansion extends Spell {
 
     public void startDomainExpansionCast(World world, LivingEntity caster, String domainName) {
         for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
+
             // 3D Player Animation
             ServerPlayNetworking.send(player, getDomainCastAnimation(caster, castAnimation));
 

@@ -1,8 +1,10 @@
 package com.yuno.yunosbosses.util;
 
+import com.yuno.yunosbosses.component.ModEntityComponents;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -90,7 +92,7 @@ public class BarrierManager {
                     // Glass shatter effect, visual and sound
                     world.syncWorldEvent(2001, blockPos, Block.getRawIdFromState(Blocks.GLASS.getDefaultState()));
 
-                    // If the barrier is of type Domain Expansion, clean up the Domain Floor and perform custom Domain removal logic
+                    // If the barrier is of type Domain Expansion and clean up the Domain Floor
                     if (barrier.getDomainExpansion() != null && world instanceof ServerWorld serverWorld) {
                         barrier.getDomainExpansion().removeDomainFloor(world, barrier);
                         barrier.getDomainExpansion().onDomainRemoved(serverWorld, barrier);
@@ -138,5 +140,16 @@ public class BarrierManager {
             world.playSound(null, barrier.getPosition().x, barrier.getPosition().y, barrier.getPosition().z,
                     SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0F, 1.5F);
         });
+    }
+
+    // Checks if a specific player already owns an active Domain Expansion
+    public static boolean hasActiveDomain(UUID playerUuid) {
+        for (ActiveBarrier barrier : ACTIVE_BARRIERS) {
+            // If we find a barrier owned by this player that is a Domain Expansion
+            if (barrier.getOwnerUuid().equals(playerUuid) && barrier.getDomainExpansion() != null) {
+                return true;
+            }
+        }
+        return false;
     }
 }
