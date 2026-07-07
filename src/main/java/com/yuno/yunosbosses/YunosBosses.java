@@ -13,6 +13,7 @@ import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
+import com.yuno.yunosbosses.world.ModEntitySpawns;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -47,6 +48,7 @@ public class YunosBosses implements ModInitializer {
 		ModSounds.registerSounds();
 		ModEffects.registerEffects();
 		ModBlocks.registerModBlocks();
+		ModEntitySpawns.registerEntitySpawns();
 
 		// Register payload types
 		ModMessages.registerC2SPackets();
