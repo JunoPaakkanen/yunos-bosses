@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.spell.implementation.defensive.SphereBarrierSpell;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
 import com.yuno.yunosbosses.spell.implementation.misc.ReverseCursedTechnique;
 import com.yuno.yunosbosses.spell.implementation.offensive.CuttingMagicReelseiden;
+import com.yuno.yunosbosses.spell.implementation.offensive.Dismantle;
 import com.yuno.yunosbosses.spell.implementation.offensive.KillingMagic;
 import com.yuno.yunosbosses.spell.implementation.offensive.KillingMagicBarrage;
 import com.yuno.yunosbosses.spell.implementation.summon.SummonUselessChicken;
@@ -25,6 +26,7 @@ public class ModSpells {
     public static final Spell KILLING_MAGIC = registerSpell(new KillingMagic(Identifier.of("yunosbosses", "killingmagic")));
     public static final Spell KILLING_MAGIC_BARRAGE = registerSpell(new KillingMagicBarrage(Identifier.of("yunosbosses", "killingmagicbarrage")));
     public static final Spell CUTTING_MAGIC_REELSEIDEN = registerSpell(new CuttingMagicReelseiden(Identifier.of("yunosbosses", "cuttingmagicreelseiden")));
+    public static final Spell DISMANTLE = registerSpell(new Dismantle(Identifier.of("yunosbosses", "dismantle")));
 
     // Defensive spells
     public static final Spell DEFENSIVE_MAGIC = registerSpell(new DefensiveMagic(Identifier.of("yunosbosses", "defensivemagic")));

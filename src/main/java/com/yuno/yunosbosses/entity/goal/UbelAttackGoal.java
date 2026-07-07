@@ -16,7 +16,7 @@ public class UbelAttackGoal extends Goal {
     private int cooldownTimer; // Ticks to wait between attacks
     private int teleportCooldown;
     private final double speed; // Movement speed
-    private int currentAttackType = 0; // 0: Cutting Magic Reelseiden, 1: Melee
+    private int currentAttackType = 0; // 0: Cutting Magic Reelseiden, 1: Melee, 2: Long range Dismantle
     private boolean usedDomainExpansion = false;
 
     public UbelAttackGoal(UbelEntity ubel, double speed) {
@@ -109,8 +109,8 @@ public class UbelAttackGoal extends Goal {
         // --- ATTACK TRIGGER ---
         // Ready to hit
         if (this.cooldownTimer <= 0 && this.attackDurationTimer <= 0) {
-            // Check if the target is within max range (5 block range for Cutting Magic Reelseiden)
-            if (distanceSq <= 25.0) {
+            // Check if the target is within a 20-block range to start the attack sequence.
+            if (distanceSq <= 400.0) {
                 this.attackDurationTimer = 20;
             }
             else {return;}
@@ -129,10 +129,13 @@ public class UbelAttackGoal extends Goal {
             if (this.attackDurationTimer == 10) {
                 // Check if the target is within melee range
                 if (distanceSq <= 4.0) {
-                    this.currentAttackType = 1; // Melee
+                    this.currentAttackType = 1; // Melee (0 to 2 blocks)
+                }
+                else if (distanceSq <= 25.0){
+                    this.currentAttackType = 0; // Cutting Magic Reelseiden (2 to 5 blocks)
                 }
                 else {
-                    this.currentAttackType = 0; // Cutting Magic Reelseiden
+                    this.currentAttackType = 2; // Long range Dismantle (5 to 20 blocks)
                 }
 
                 // Snap to face the target
@@ -146,11 +149,11 @@ public class UbelAttackGoal extends Goal {
                 else if (this.currentAttackType == 0) {
                     // Cast Cutting Magic Reelseiden
                     var spell = ModSpells.CUTTING_MAGIC_REELSEIDEN;
-                    spell.cast(
-                            this.ubel.getWorld(),
-                            this.ubel,
-                            this.ubel.getMainHandStack()
-                    );
+                    spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
+                }
+                else if (this.currentAttackType == 2) {
+                    var spell = ModSpells.DISMANTLE;
+                    spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
                 }
             }
 
