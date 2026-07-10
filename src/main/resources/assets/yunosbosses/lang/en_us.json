@@ -22,6 +22,12 @@
   "yunosbosses.spell.killing_magic_barrage": "Killing Magic Barrage",
   "yunosbosses.spell.summon_useless_chicken": "Summon Useless Chicken",
   "yunosbosses.spell.summon_vex": "Summon Vex",
+  "yunosbosses.spell.dismantle": "Dismantle",
+
   "itemGroup.yunosbosses.yunos_bosses_items": "Yuno's Bosses",
-  "yunosbosses.spell.dismantle": "Dismantle"
+
+  "advancements.yunosbosses.root.title": "Yuno's Bosses",
+  "advancements.yunosbosses.root.description": "Thanks For Playing!",
+  "advancements.yunosbosses.ubel.title": "Killing Feels Good",
+  "advancements.yunosbosses.ubel.description": "Defeat Ubel"
 }

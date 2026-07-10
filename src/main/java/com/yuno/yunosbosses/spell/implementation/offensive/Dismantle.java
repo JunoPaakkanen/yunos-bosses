@@ -169,6 +169,9 @@ public class Dismantle extends Spell {
                         // Silently shred the block for maximum performance
                         world.setBlockState(bPos, net.minecraft.block.Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_LISTENERS);
 
+                        // Spawn dust particles
+                        serverWorld.spawnParticles(ParticleTypes.LARGE_SMOKE, currentPos.x, currentPos.y, currentPos.z, 1, 0.2, 0.2, 0.2, 0.05);
+
                         // Hitting a solid block counts as penetrating a layer!
                         hitObjects++;
                     }
