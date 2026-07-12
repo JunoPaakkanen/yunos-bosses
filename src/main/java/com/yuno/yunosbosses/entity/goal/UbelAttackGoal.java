@@ -2,8 +2,11 @@ package com.yuno.yunosbosses.entity.goal;
 
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.spell.ModSpells;
+import com.yuno.yunosbosses.spell.implementation.offensive.Dismantle;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.sound.SoundEvents;
 
 import java.util.EnumSet;
@@ -15,8 +18,9 @@ public class UbelAttackGoal extends Goal {
     private int attackDurationTimer; // Ticks for the current attack animation
     private int cooldownTimer; // Ticks to wait between attacks
     private int teleportCooldown;
+    private int enhancedDismantleCooldown;
     private final double speed; // Movement speed
-    private int currentAttackType = 0; // 0: Cutting Magic Reelseiden, 1: Melee, 2: Long range Dismantle
+    private int currentAttackType = 0; // 0: Cutting Magic Reelseiden, 1: Melee, 2: Long range Dismantle, 3: Enhanced Dismantle
     private boolean usedDomainExpansion = false;
 
     public UbelAttackGoal(UbelEntity ubel, double speed) {
@@ -36,6 +40,7 @@ public class UbelAttackGoal extends Goal {
     @Override
     public void start() {
         this.cooldownTimer = 10;
+        this.enhancedDismantleCooldown = 200;
     }
 
     @Override
@@ -85,7 +90,7 @@ public class UbelAttackGoal extends Goal {
 
         if (shouldTeleport && this.teleportCooldown <= 0) {
             this.teleportToTarget();
-            this.teleportCooldown = 100; // 5 second cooldown
+            this.teleportCooldown = 100; // 5-second cooldown
         }
 
         // --- DOMAIN EXPANSION ---
@@ -101,6 +106,9 @@ public class UbelAttackGoal extends Goal {
         if (this.cooldownTimer > 0) {
             this.cooldownTimer--;
         }
+        if (this.enhancedDismantleCooldown > 0) {
+            this.enhancedDismantleCooldown--;
+        }
 
         // --- MOVEMENT LOGIC ---
         // Mover closer to target
@@ -111,55 +119,89 @@ public class UbelAttackGoal extends Goal {
         if (this.cooldownTimer <= 0 && this.attackDurationTimer <= 0) {
             // Check if the target is within a 20-block range to start the attack sequence.
             if (distanceSq <= 400.0) {
-                this.attackDurationTimer = 20;
-            }
-            else {return;}
+                // Decide whether to use enhanced dismantle or not
+                if (this.enhancedDismantleCooldown <= 0 && distanceSq > 25.0 && this.ubel.getRandom().nextFloat() <= 0.25F){
+                    this.currentAttackType = 3; // Enhanced Dismantle
+                    this.attackDurationTimer = 100;
+                    this.enhancedDismantleCooldown = 1200; // 60-second cooldown
+
+                    // Levitate Ubel
+                    this.ubel.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 60, 1));
+                    this.ubel.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 120, 0));
+                    this.ubel.getNavigation().stop();
+
+                    // Play Dismantle animation
+                    this.ubel.triggerDismantleAnim();
+                } else {
+                    // Standard attacks
+                    this.currentAttackType = 0;
+                    this.attackDurationTimer = 20;
+                }
+            } else {return;}
         }
 
         // --- THE ATTACK SEQUENCE ---
         if (this.attackDurationTimer > 0) {
             this.attackDurationTimer--;
 
-            // Trigger attack animation
-            if (this.attackDurationTimer == 15) {
-                this.ubel.triggerMeleeAnim();
-            }
+            if (this.currentAttackType == 3) {
+                // Enhanced Dismantle
+                // Keep her staring at the player while floating
+                this.ubel.getLookControl().lookAt(this.target, 360.0F, 360.0F);
 
-            // Attack halfway through the attack phase (at tick 10)
-            if (this.attackDurationTimer == 10) {
-                // Check if the target is within melee range
-                if (distanceSq <= 4.0) {
-                    this.currentAttackType = 1; // Melee (0 to 2 blocks)
-                }
-                else if (distanceSq <= 25.0){
-                    this.currentAttackType = 0; // Cutting Magic Reelseiden (2 to 5 blocks)
-                }
-                else {
-                    this.currentAttackType = 2; // Long range Dismantle (5 to 20 blocks)
+                // Fire the spell after 30 ticks
+                if (this.attackDurationTimer == 70) {
+                    // Snap to face the target
+                    this.ubel.setBodyYaw(this.ubel.getHeadYaw());
+                    this.ubel.setYaw(this.ubel.getHeadYaw());
+
+                    var spell = (Dismantle) ModSpells.DISMANTLE;
+                    spell.fireDismantle(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack(), 3.0F);
                 }
 
-                // Snap to face the target
-                this.ubel.setBodyYaw(this.ubel.getHeadYaw());
-                this.ubel.setYaw(this.ubel.getHeadYaw());
-
-                if (this.currentAttackType == 1) {
-                    // Melee attack
-                    meleeAttack();
-                }
-                else if (this.currentAttackType == 0) {
-                    // Cast Cutting Magic Reelseiden
-                    var spell = ModSpells.CUTTING_MAGIC_REELSEIDEN;
-                    spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
-                }
-                else if (this.currentAttackType == 2) {
-                    var spell = ModSpells.DISMANTLE;
-                    spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
+                if (this.attackDurationTimer == 0) {
+                    this.cooldownTimer = 20; // 1-second cooldown after she lands
                 }
             }
+            else {
+                // Trigger attack animation
+                if (this.attackDurationTimer == 15) {
+                    this.ubel.triggerMeleeAnim();
+                }
 
-            // Once the animation ends, set the next cooldown
-            if (this.attackDurationTimer == 0) {
-                this.cooldownTimer = 10; // Reset 1 second attack cooldown
+                // Attack halfway through the attack phase (at tick 10)
+                if (this.attackDurationTimer == 10) {
+                    // Check if the target is within melee range
+                    if (distanceSq <= 4.0) {
+                        this.currentAttackType = 1; // Melee (0 to 2 blocks)
+                    } else if (distanceSq <= 25.0) {
+                        this.currentAttackType = 0; // Cutting Magic Reelseiden (2 to 5 blocks)
+                    } else {
+                        this.currentAttackType = 2; // Long range Dismantle (5 to 20 blocks)
+                    }
+
+                    // Snap to face the target
+                    this.ubel.setBodyYaw(this.ubel.getHeadYaw());
+                    this.ubel.setYaw(this.ubel.getHeadYaw());
+
+                    if (this.currentAttackType == 1) {
+                        // Melee attack
+                        meleeAttack();
+                    } else if (this.currentAttackType == 0) {
+                        // Cast Cutting Magic Reelseiden
+                        var spell = ModSpells.CUTTING_MAGIC_REELSEIDEN;
+                        spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
+                    } else if (this.currentAttackType == 2) {
+                        // Long range Dismantle
+                        var spell = ModSpells.DISMANTLE;
+                        spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
+                    }
+                }
+
+                // Once the animation ends, set the next cooldown
+                if (this.attackDurationTimer == 0) {
+                    this.cooldownTimer = 10; // Reset 1-second attack cooldown
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.spell.implementation.offensive;
 
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
@@ -41,8 +42,15 @@ public class KillingMagic extends Spell {
             float damageRadius = 0.9F;
             float baseDamage = 30.0F;
             float cooldown = 15.0F;
+            float damageMultiplier = 1.0F;  // Damage multiplier granted by Staff item
+
+            // Apply damage multiplier
+            if (staff.getItem() instanceof StaffItem staffItem) {
+                damageMultiplier = staffItem.getPowerMultiplier();
+            }
+            float trueDamage = baseDamage * damageMultiplier;
             
-            fireBeam(world, caster, start, maxRange, delay, stepDistance, damageRadius, baseDamage, false);
+            fireBeam(world, caster, start, maxRange, delay, stepDistance, damageRadius, trueDamage, false);
         }
     }
 
@@ -52,7 +60,7 @@ public class KillingMagic extends Spell {
     }
 
     protected void fireBeam(World world, LivingEntity caster, Vec3d start, int maxRange, int delay, float stepDistance,
-                            float damageRadius, float baseDamage, boolean useCustomStart) {
+                            float damageRadius, float trueDamage, boolean useCustomStart) {
         Vec3d playerLookVector = caster.getRotationVector();
 
         // Pass the caster UUID and start position to the renderer.
@@ -81,7 +89,7 @@ public class KillingMagic extends Spell {
                     world.getOtherEntities(caster, attackHitbox, Entity::isAlive).forEach(entity -> {
                     if (hitEntities.contains(entity)) return;
                     if (entity instanceof ItemEntity) return;
-                    entity.damage(world.getDamageSources().indirectMagic(caster, caster), baseDamage);
+                    entity.damage(world.getDamageSources().indirectMagic(caster, caster), trueDamage);
                     hitEntities.add(entity);
                 });
 

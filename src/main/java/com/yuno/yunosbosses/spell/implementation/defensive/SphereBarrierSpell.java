@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.spell.implementation.defensive;
 
+import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.BarrierManager;
@@ -17,14 +18,22 @@ import net.minecraft.world.World;
 public class SphereBarrierSpell extends Spell {
     public SphereBarrierSpell(Identifier id) { super(id); }
 
-    float manaCost = 100.0F;
+    float manaCost = 50.0F;
 
     private static final Identifier BARRIER_TEXTURE = Identifier.of("yunosbosses", "textures/effect/barrier.png");
 
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
-            float radius = 12.0F; // Currently hardcoded in multiple places, change later
+
+            // Fail if the caster has an active Domain
+            if (BarrierManager.hasActiveDomain(caster.getUuid())) {
+                // Return lost mana
+                ModEntityComponents.MANA.get(caster).addMana(manaCost);
+                return;
+            }
+
+            float radius = 20.0F; // Currently hardcoded in multiple places, change later
             int lifetime = 400; // 20 seconds
             Vec3d pos = caster.getPos().add(0, 1, 0); // Center of the sphere
 

@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.entity.character;
 
 import com.yuno.yunosbosses.entity.goal.UbelAttackGoal;
 import com.yuno.yunosbosses.item.ModItems;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ai.goal.*;
@@ -85,7 +86,9 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         // Melee animation
         .triggerableAnim("melee_attack", RawAnimation.begin().thenPlay("animation.ubel.melee"))
         // Domain cast animation
-        .triggerableAnim("domain", RawAnimation.begin().thenPlay("animation.ubel.domain")));
+        .triggerableAnim("domain", RawAnimation.begin().thenPlay("animation.ubel.domain"))
+        // Dismantle animation
+        .triggerableAnim("dismantle", RawAnimation.begin().thenPlay("animation.ubel.dismantle")));
     }
 
     @Override
@@ -124,6 +127,11 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         this.bossBar.clearPlayers();
     }
 
+    @Override
+    public boolean startRiding(Entity entity, boolean force) {
+        return false;
+    }
+
     public void triggerMeleeAnim() {
         this.triggerAnim("controller", "melee_attack");
     }
@@ -131,4 +139,6 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
     public void triggerDomainAnim() {
         this.triggerAnim("controller", "domain");
     }
+
+    public void triggerDismantleAnim() { this.triggerAnim("controller", "dismantle"); }
 }

@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.spell.implementation.offensive;
 
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -21,6 +22,16 @@ public class KillingMagicBarrage extends KillingMagic {
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
+
+            // Damage calculation
+            float baseDamage = 15.0F;
+            float damageMultiplier = 1.0F;
+            // Apply damage multiplier
+            if (staff.getItem() instanceof StaffItem staffItem) {
+                damageMultiplier = staffItem.getPowerMultiplier();
+            }
+            float trueDamage = baseDamage * damageMultiplier;
+
             // Calculate the convergence point where all beams will aim
             Vec3d playerLookVector = caster.getRotationVector();
             double convergenceDistance = 12.0; // Distance to the focal point
@@ -47,7 +58,7 @@ public class KillingMagicBarrage extends KillingMagic {
                     Vec3d direction = targetPoint.subtract(start).normalize();
                 
                     // Fire beam toward the convergence point
-                    fireBeamTowardTarget(world, caster, start, direction, 12, 15, 1.0F, 0.6F, 15.0F);
+                    fireBeamTowardTarget(world, caster, start, direction, 12, 15, 1.0F, 0.6F, trueDamage);
                 });
             }
         }

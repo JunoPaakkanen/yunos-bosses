@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.spell.implementation.offensive;
 
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.ActiveBarrier;
@@ -33,6 +34,10 @@ public class Dismantle extends Spell {
 
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
+        fireDismantle(world, caster, staff, 1.0F);
+    }
+
+    public void fireDismantle(World world, LivingEntity caster, ItemStack staff, float potency) {
         if (world.isClient) return;
         ServerWorld serverWorld = (ServerWorld) world;
 
@@ -52,7 +57,7 @@ public class Dismantle extends Spell {
         }
         Vec3d upDir = rightDir.crossProduct(lookDir).normalize();
 
-        // 2. Randomly select 1 of 4 orientations (Horizontal, Vertical, Diagonal /, Diagonal \)
+        //  Randomly select 1 of 4 orientations (Horizontal, Vertical, Diagonal /, Diagonal \)
         int orientation = caster.getRandom().nextInt(4);
         Vec3d slashAxis = switch (orientation) {
             case 0 -> rightDir; // Horizontal (-)
@@ -62,11 +67,20 @@ public class Dismantle extends Spell {
             default -> rightDir;
         };
 
-        // 3. Slash Configuration
-        float slashWidth = 5.0f;     // Total width of the slash in blocks
+        // Slash Configuration
+        float slashWidth = 5.0f * potency;     // Total width of the slash in blocks
         int rayCount = 10;           // Shoots 10 parallel rays to form the "blade"
         float maxDistance = 25.0f;   // How far the slash travels
         float baseDamage = 20.0f;    // 100% Damage value
+        float cooldown = 15.0F;      // Implement this later
+        float damageMultiplier = potency;  // Damage multiplier granted by Staff item
+        int penetrationDepth = Math.max(1, (int) (4 * potency)); // How many blocks/entities the slash penetrates
+
+        // Apply damage multipliers
+        if (staff.getItem() instanceof StaffItem staffItem) {
+            damageMultiplier *= staffItem.getPowerMultiplier();
+        }
+        float trueDamage = baseDamage * damageMultiplier;
 
         // Trackers to prevent double-hitting the same entity or block across parallel rays
         Set<Entity> hitEntitiesThisCast = new HashSet<>();
@@ -140,7 +154,7 @@ public class Dismantle extends Spell {
 
                         // Calculate falloff damage based on what layer this is
                         float multiplier = (hitObjects == 0) ? 1.0f : ((hitObjects == 1) ? 0.7f : 0.5f);
-                        float finalDamage = baseDamage * multiplier;
+                        float finalDamage = trueDamage * multiplier;
 
                         target.damage(ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC, caster), finalDamage);
 
@@ -155,7 +169,7 @@ public class Dismantle extends Spell {
                 }
 
                 // If this specific ray has penetrated 4 objects/blocks, stop it and move to the next ray
-                if (hitObjects >= 4) break;
+                if (hitObjects >= penetrationDepth) break;
 
                 // --- B. BLOCK CHECK ---
                 BlockPos bPos = BlockPos.ofFloored(currentPos);
@@ -170,14 +184,14 @@ public class Dismantle extends Spell {
                         world.setBlockState(bPos, net.minecraft.block.Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_LISTENERS);
 
                         // Spawn dust particles
-                        serverWorld.spawnParticles(ParticleTypes.LARGE_SMOKE, currentPos.x, currentPos.y, currentPos.z, 1, 0.2, 0.2, 0.2, 0.05);
+                        serverWorld.spawnParticles(ParticleTypes.POOF, currentPos.x, currentPos.y, currentPos.z, 1, 0.2, 0.2, 0.2, 0.05);
 
                         // Hitting a solid block counts as penetrating a layer!
                         hitObjects++;
                     }
                 }
 
-                if (hitObjects >= 4) break;
+                if (hitObjects >= penetrationDepth) break;
             }
         }
 
