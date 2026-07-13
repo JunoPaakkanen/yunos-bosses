@@ -70,4 +70,9 @@ public class ReverseCursedTechnique extends Spell {
     public Text getName() {
         return Text.translatable("yunosbosses.spell.reverse_cursed_technique");
     }
+
+    @Override
+    public boolean canBeCharged() {
+        return false;
+    }
 }

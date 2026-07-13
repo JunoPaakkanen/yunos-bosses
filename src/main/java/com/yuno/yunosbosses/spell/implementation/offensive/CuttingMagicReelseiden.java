@@ -59,4 +59,9 @@ public class CuttingMagicReelseiden extends Spell {
     public Text getName() {
         return Text.translatable("yunosbosses.spell.cutting_magic_reelseiden");
     }
+
+    @Override
+    public boolean canBeCharged() {
+        return false;
+    }
 }

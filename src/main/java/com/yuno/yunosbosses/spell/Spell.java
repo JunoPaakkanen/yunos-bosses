@@ -20,9 +20,17 @@ public abstract class Spell {
         this.canCastWithoutStaff = canCastWithoutStaff;
     }
 
+    // Default cast method
     public abstract void cast(World world, LivingEntity caster, ItemStack staff);
 
+    // Used for casting spells with charge levels
+    public void cast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
+        this.cast(world, caster, staff);
+    }
+
     public abstract Text getName();
+
+    public abstract boolean canBeCharged();
 
     public float getManaCost(LivingEntity caster) {
         return 10.0F;

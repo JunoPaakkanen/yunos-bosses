@@ -69,4 +69,9 @@ public class SummonVexSpell extends Spell {
     public Text getName() {
         return Text.translatable("yunosbosses.spell.summon_vex");
     }
+
+    @Override
+    public boolean canBeCharged() {
+        return false;
+    }
 }

@@ -64,6 +64,11 @@ public class DomainExpansionShrine extends DomainExpansion {
     }
 
     @Override
+    public boolean canBeCharged() {
+        return true;
+    }
+
+    @Override
     public Identifier getBarrierTexture() {
         return Identifier.of("yunosbosses", "textures/domain_expansion/shrine.png");
     }

@@ -34,4 +34,9 @@ public class SummonUselessChicken extends Spell {
     public Text getName() {
         return Text.translatable("yunosbosses.spell.summon_useless_chicken");
     }
+
+    @Override
+    public boolean canBeCharged() {
+        return false;
+    }
 }

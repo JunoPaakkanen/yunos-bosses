@@ -52,5 +52,10 @@ public class SphereBarrierSpell extends Spell {
     }
 
     @Override
+    public boolean canBeCharged() {
+        return false;
+    }
+
+    @Override
     public float getManaCost(LivingEntity caster) {return manaCost;}
 }

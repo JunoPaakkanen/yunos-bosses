@@ -47,4 +47,9 @@ public class DefensiveMagic extends Spell {
     public Text getName() {
         return Text.translatable("yunosbosses.spell.defensive_magic");
     }
+
+    @Override
+    public boolean canBeCharged() {
+        return false;
+    }
 }

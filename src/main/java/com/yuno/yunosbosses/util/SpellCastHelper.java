@@ -8,27 +8,35 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 public class SpellCastHelper {
-    public static boolean tryCastSpell(Spell spell, World world, LivingEntity caster, ItemStack staff) {
-        if (world.isClient) {
+
+    // Check if the player has enough mana to start casting the spell
+    public static boolean canStartCasting(Spell spell, LivingEntity caster) {
+        if (spell instanceof DomainExpansion && BarrierManager.hasActiveDomain(caster.getUuid())) {
             return false;
         }
 
         var manaComponent = ModEntityComponents.MANA.get(caster);
-        var spellComponent = ModEntityComponents.SPELL_DATA.get(caster);
-        float manaCost = spell.getManaCost(caster);
+        float baseManaCost = spell.getManaCost(caster);
 
-        // Check if the spell is a Domain Expansion and block the cast if they have one active
-        if (spell instanceof DomainExpansion && BarrierManager.hasActiveDomain(caster.getUuid())) {
-            return false;
-        }
-        // Check if the player has enough mana to cast the spell
-        if (manaComponent.useMana(manaCost)) {
-            // Mana consumed successfully, cast the spell
-            spell.cast(world, caster, staff);
+        return manaComponent.useMana(baseManaCost);
+    }
+
+    // Execute the spell with the given charge level
+    public static void castChargedSpell(Spell spell, World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
+        if (world.isClient) return;
+
+        spell.cast(world, caster, staff, chargeLevel);
+    }
+
+    // Used for immediate casting of spells
+    public static boolean tryCastSpell(Spell spell, World world, LivingEntity caster, ItemStack staff) {
+        if (world.isClient) return false;
+
+        if (canStartCasting(spell, caster)) {
+            // Force a Level 1 cast instantly
+            castChargedSpell(spell, world, caster, staff, 1);
             return true;
         }
-
-        // Not enough mana
         return false;
     }
 }

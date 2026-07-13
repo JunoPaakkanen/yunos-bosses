@@ -59,6 +59,11 @@ public class KillingMagic extends Spell {
         return Text.translatable("yunosbosses.spell.killing_magic");
     }
 
+    @Override
+    public boolean canBeCharged() {
+        return false;
+    }
+
     protected void fireBeam(World world, LivingEntity caster, Vec3d start, int maxRange, int delay, float stepDistance,
                             float damageRadius, float trueDamage, boolean useCustomStart) {
         Vec3d playerLookVector = caster.getRotationVector();

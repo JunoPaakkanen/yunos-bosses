@@ -37,6 +37,17 @@ public class Dismantle extends Spell {
         fireDismantle(world, caster, staff, 1.0F);
     }
 
+    @Override
+    public void cast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
+        float potency = switch (chargeLevel) {
+            case 2 -> 1.5F; // Charge level 2 = 150% potency
+            case 3 -> 3.0F; // Charge level 3 = 300% potency
+            default -> 1.0F; // Charge level 1 (Instant) = Base potency
+        };
+
+        fireDismantle(world, caster, staff, potency);
+    }
+
     public void fireDismantle(World world, LivingEntity caster, ItemStack staff, float potency) {
         if (world.isClient) return;
         ServerWorld serverWorld = (ServerWorld) world;
@@ -69,10 +80,10 @@ public class Dismantle extends Spell {
 
         // Slash Configuration
         float slashWidth = 5.0f * potency;     // Total width of the slash in blocks
-        int rayCount = 10;           // Shoots 10 parallel rays to form the "blade"
-        float maxDistance = 25.0f;   // How far the slash travels
+        int rayCount = Math.max(10, (int) (slashWidth * 4));    // Shoots parallel rays to form the "blade"
+        float maxDistance = 20.0f + (5.0f * potency);   // How far the slash travels
         float baseDamage = 20.0f;    // 100% Damage value
-        float cooldown = 15.0F;      // Implement this later
+        float cooldown = 15.0F;      // TODO: Implement this later
         float damageMultiplier = potency;  // Damage multiplier granted by Staff item
         int penetrationDepth = Math.max(1, (int) (4 * potency)); // How many blocks/entities the slash penetrates
 
@@ -202,6 +213,11 @@ public class Dismantle extends Spell {
     @Override
     public Text getName() {
         return Text.translatable("yunosbosses.spell.dismantle");
+    }
+
+    @Override
+    public boolean canBeCharged() {
+        return true;
     }
 
     @Override
