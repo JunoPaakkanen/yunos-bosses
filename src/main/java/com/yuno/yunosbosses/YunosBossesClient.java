@@ -14,6 +14,7 @@ import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.render.SlashProjectileRenderer;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneManager;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneOverlay;
+import com.yuno.yunosbosses.render.gui.SpellChargeHudOverlay;
 import com.yuno.yunosbosses.util.BeamManager;
 import com.yuno.yunosbosses.render.DefensiveMagicRenderer;
 import com.yuno.yunosbosses.render.KillingMagicRenderer;
@@ -62,6 +63,7 @@ public class YunosBossesClient implements ClientModInitializer {
         // Register custom HUD
         HudRenderCallback.EVENT.register(new AbilityHudOverlay());
         HudRenderCallback.EVENT.register(new DomainCutsceneOverlay());
+        HudRenderCallback.EVENT.register(new SpellChargeHudOverlay());
 
         // Register shader manager
         ShaderManager.register();
