@@ -3,21 +3,15 @@ package com.yuno.yunosbosses;
 import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.client.*;
-import com.yuno.yunosbosses.network.DomainCutscenePayload;
-import com.yuno.yunosbosses.network.PlayerAnimationPayload;
+import com.yuno.yunosbosses.network.*;
 import com.yuno.yunosbosses.particle.*;
-import com.yuno.yunosbosses.render.ShaderManager;
+import com.yuno.yunosbosses.render.*;
 import com.yuno.yunosbosses.render.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
-import com.yuno.yunosbosses.network.BarrierPayload;
-import com.yuno.yunosbosses.network.BeamPayload;
-import com.yuno.yunosbosses.render.SlashProjectileRenderer;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneManager;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneOverlay;
 import com.yuno.yunosbosses.render.gui.SpellChargeHudOverlay;
 import com.yuno.yunosbosses.util.BeamManager;
-import com.yuno.yunosbosses.render.DefensiveMagicRenderer;
-import com.yuno.yunosbosses.render.KillingMagicRenderer;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationAccess;
@@ -29,6 +23,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 
@@ -41,6 +37,7 @@ public class YunosBossesClient implements ClientModInitializer {
         // Register Renderers
         KillingMagicRenderer.register();
         DefensiveMagicRenderer.register();
+        ProjectionSorceryRenderer.register();
 
         // Register Entity Renderers
         EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
@@ -121,6 +118,21 @@ public class YunosBossesClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(DomainCutscenePayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 DomainCutsceneManager.startCutscene(payload.casterUuid(), payload.domainName(), payload.durationTicks());
+            });
+        });
+
+        // Receiver for Projection Sorcery image rendering
+        ClientPlayNetworking.registerGlobalReceiver(SpawnImagePayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+
+                // Look up the entity on the client's side using the ID from the packet
+                if (context.client().world != null) {
+                    Entity entity = context.client().world.getEntityById(payload.entityId());
+
+                    if (entity instanceof LivingEntity livingCaster) {
+                        ProjectionSorceryRenderer.addImage(livingCaster, payload.position(), payload.ticks());
+                    }
+                }
             });
         });
     }

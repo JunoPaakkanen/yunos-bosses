@@ -56,6 +56,7 @@ public class YunosBosses implements ModInitializer {
 		BarrierPayload.register();
 		PlayerAnimationPayload.register();
 		DomainCutscenePayload.register();
+		SpawnImagePayload.register();
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			DelayedServerEffects.tick();

@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.spell.implementation.defensive.DefensiveMagic;
 import com.yuno.yunosbosses.spell.implementation.defensive.SphereBarrierSpell;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
+import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import com.yuno.yunosbosses.spell.implementation.misc.ReverseCursedTechnique;
 import com.yuno.yunosbosses.spell.implementation.offensive.CuttingMagicReelseiden;
 import com.yuno.yunosbosses.spell.implementation.offensive.Dismantle;
@@ -35,6 +36,7 @@ public class ModSpells {
     // Miscellaneous spells
     public static final Spell REVERSE_CURSED_TECHNIQUE = registerSpell(new ReverseCursedTechnique(Identifier.of("yunosbosses", "reversecursedtechnique")));
     public static final Spell DOMAIN_EXPANSION_SHRINE = registerSpell(new DomainExpansionShrine(Identifier.of("yunosbosses", "domainexpansionshrine")));
+    public static final Spell PROJECTION_SORCERY = registerSpell(new ProjectionSorcery(Identifier.of("yunosbosses", "projectionsorcery")));
 
     private static Spell registerSpell(Spell spell) {
         SPELLS.put(spell.getId(), spell);

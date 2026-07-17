@@ -23,7 +23,7 @@ public class ModEntityComponents implements EntityComponentInitializer {
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
         // Register spells
         registry.registerForPlayers(SPELL_DATA, player -> {
-            PlayerSpellComponent component = new PlayerSpellComponent();
+            PlayerSpellComponent component = new PlayerSpellComponent(player);
             return component;
         }, RespawnCopyStrategy.ALWAYS_COPY);
 
