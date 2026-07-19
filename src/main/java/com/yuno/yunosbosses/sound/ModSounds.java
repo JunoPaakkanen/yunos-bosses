@@ -14,6 +14,10 @@ public class ModSounds {
     public static final SoundEvent ANGRY_CHICKEN_HURT = registerSoundEvent("angry_chicken_hurt");
     public static final SoundEvent DOMAIN_EXPANSION_SHRINE_1 = registerSoundEvent("domain_expansion_shrine_1");
     public static final SoundEvent DOMAIN_EXPANSION_SHRINE_2 = registerSoundEvent("domain_expansion_shrine_2");
+    public static final SoundEvent FRAME_FREEZE = registerSoundEvent("frame_freeze");
+    public static final SoundEvent FRAME_SHATTER = registerSoundEvent("frame_shatter");
+    public static final SoundEvent FRAME_SHATTER_FROM_DAMAGE = registerSoundEvent("frame_shatter_from_damage");
+    public static final SoundEvent FRAME_SHATTER_FINISHER = registerSoundEvent("frame_shatter_finisher");
 
     private static SoundEvent registerSoundEvent(String name) {
         Identifier id = Identifier.of("yunosbosses", name);

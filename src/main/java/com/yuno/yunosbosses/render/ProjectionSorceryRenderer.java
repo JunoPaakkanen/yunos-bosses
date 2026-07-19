@@ -69,10 +69,15 @@ public class ProjectionSorceryRenderer {
 
                 VertexConsumerProvider wrappedProvider = layer -> {
                     String layerName = layer.toString().toLowerCase();
-                    // If the game asks to draw a shadow or nametag, give it the blank dummy canvas
-                    if (layerName.contains("shadow") || (layerName.contains("text") && !layerName.contains("texture"))) {
+                    // Do not apply the blue image consumer to shadows or text (it will crash)
+                    if (layerName.contains("shadow")) {
                         return new DummyVertexConsumer();
                     }
+
+                    if (layerName.contains("text") && !layerName.contains("entity")) {
+                        return immediate.getBuffer(layer);
+                    }
+
                     return wrappedConsumer;
                 };
 

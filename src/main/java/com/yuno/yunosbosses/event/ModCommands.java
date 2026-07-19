@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.event;
 
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.yuno.yunosbosses.component.ModEntityComponents;
@@ -68,6 +69,37 @@ public class ModCommands {
                         }
                         return 1;
                     }));
+            // Commands for adding mana / setting max mana
+            dispatcher.register(CommandManager.literal("mana")
+                    .requires(source -> source.hasPermissionLevel(2)) // Require OP/cheats enabled
+                    .then(CommandManager.literal("setmax")
+                            .then(CommandManager.argument("amount", FloatArgumentType.floatArg(0.0F))
+                                    .executes(context -> {
+                                        ServerPlayerEntity player = context.getSource().getPlayer();
+                                        if (player == null) return 0;
+
+                                        float amount = FloatArgumentType.getFloat(context, "amount");
+                                        var manaComponent = ModEntityComponents.MANA.get(player);
+
+                                        manaComponent.setMaxMana(amount);
+
+                                        player.sendMessage(Text.literal("§aMaximum mana set to: " + amount), false);
+                                        return 1;
+                                    })))
+                    .then(CommandManager.literal("add")
+                            .then(CommandManager.argument("amount", FloatArgumentType.floatArg())
+                                    .executes(context -> {
+                                        ServerPlayerEntity player = context.getSource().getPlayer();
+                                        if (player == null) return 0;
+
+                                        float amount = FloatArgumentType.getFloat(context, "amount");
+                                        var manaComponent = ModEntityComponents.MANA.get(player);
+
+                                        manaComponent.addMana(amount);
+
+                                        player.sendMessage(Text.literal("§aAdded " + amount + " mana! Current: " + manaComponent.getMana()), false);
+                                        return 1;
+                                    }))));
             dispatcher.register(CommandManager.literal("bindingvow")
                     .then(CommandManager.argument("vow", StringArgumentType.word())
                             .suggests(SUGGEST_WORDS)

@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.event.ModCommands;
+import com.yuno.yunosbosses.event.ModEvents;
 import com.yuno.yunosbosses.item.ModItemGroups;
 import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.network.*;
@@ -19,7 +20,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import org.slf4j.Logger;
@@ -47,6 +47,7 @@ public class YunosBosses implements ModInitializer {
 		ModParticles.registerParticles();
 		ModSounds.registerSounds();
 		ModEffects.registerEffects();
+		ModEvents.registerEvents();
 		ModBlocks.registerModBlocks();
 		ModEntitySpawns.registerEntitySpawns();
 

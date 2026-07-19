@@ -27,8 +27,7 @@ public class ProjectionSorcery extends Spell {
     Once the images have been created, the caster has a total of 5 seconds to teleport through all of them.
     Recasting the spell will instantly teleport the caster to the next image. Failing to teleport through all images within the time limit
     will result in the caster being frozen for 2 seconds.
-    Depending on how fast you teleport through the images and the number of images, you will receive a speed boost once you are done.
-    Taking less time will grant you a greater speed boost.
+    After teleporting through all the images, you will receive a speed boost.
     Hitting an entity within 0.5 seconds of casting the spell will instead turn the trajectory of the images from a line to a circle, surrounding the hit entity.
     Each time you teleport through these images, you will re-hit that entity (dealing reduced damage per hit).
      */
@@ -108,9 +107,7 @@ public class ProjectionSorcery extends Spell {
         if (currentIndex >= images.size()) {
 
             // Apply the Speed Boost reward
-            caster.addStatusEffect(new StatusEffectInstance(
-                    StatusEffects.SPEED, 100, 1
-            ));
+            ModEntityComponents.SPELL_DATA.get(caster).addSpeedStack();
 
             // Clean up
             component.clearAltCastWindow(this);

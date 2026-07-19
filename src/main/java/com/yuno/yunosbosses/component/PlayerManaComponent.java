@@ -57,7 +57,17 @@ public class PlayerManaComponent implements ManaComponent, AutoSyncedComponent, 
         this.mana = Math.max(0, Math.min(value, maxMana));
         syncToClient();
     }
-    
+
+    @Override
+    public void setMaxMana(float mana) {
+        this.maxMana = Math.max(0, mana);
+        // Cap current mana if max mana drops below it
+        if (this.mana > this.maxMana) {
+            this.mana = this.maxMana;
+        }
+        syncToClient();
+    }
+
     @Override
     public void addMana(float amount) {
         setMana(mana + amount);

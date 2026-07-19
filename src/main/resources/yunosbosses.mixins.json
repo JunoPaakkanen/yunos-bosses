@@ -7,12 +7,15 @@
     "EntityMixin",
     "ExampleMixin",
     "ItemEntityMixin",
+    "LivingEntityMixin",
     "MilkBucketMixin",
     "PlayerInventoryMixin"
   ],
   "client": [
+    "ClientInputMixin",
     "GameRendererAccessor",
     "InGameHudMixin",
+    "LivingEntityRendererMixin",
     "MinecraftClientMixin",
     "PlayerAttackAnimationMixin",
     "PlayerLegsModelMixin"

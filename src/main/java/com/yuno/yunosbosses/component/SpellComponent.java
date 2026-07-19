@@ -36,5 +36,7 @@ public interface SpellComponent extends Component, AutoSyncedComponent, ServerTi
     void setProjectionImages(List<Vec3d> images);
     int getProjectionIndex();
     void setProjectionIndex(int index);
+    void addSpeedStack();
+    int getSpeedStacks();
 
 }

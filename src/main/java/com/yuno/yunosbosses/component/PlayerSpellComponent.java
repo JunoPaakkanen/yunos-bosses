@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.component;
 
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.entity.LivingEntity;
@@ -33,6 +34,8 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     // Projection Sorcery memory
     private List<Vec3d> projectionImages = new ArrayList<>();
     private int projectionIndex = 0;
+    private int projectionSpeedStacks = 0;
+    private int speedStackDecayTimer = 0;
 
     // Contructor to grab the player
     public PlayerSpellComponent(LivingEntity player) {
@@ -165,7 +168,24 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     }
 
     @Override
+    public void addSpeedStack() {
+        // Cap speed stacks at 10
+        if (this.projectionSpeedStacks < 10) {
+            this.projectionSpeedStacks++;
+        }
+        this.speedStackDecayTimer = 60;
+        ModEntityComponents.SPELL_DATA.sync(this.player);
+    }
+
+    @Override
+    public int getSpeedStacks() {
+        return this.projectionSpeedStacks;
+    }
+
+    @Override
     public void serverTick() {
+        boolean[] needsSync = {false};
+
         // Ticks down the alt cast windows
         this.activeAltCasts.entrySet().removeIf(entry -> {
             int newTime = entry.getValue() - 1;
@@ -178,20 +198,32 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                     // Check if the player had images left
                     if (this.projectionIndex < this.projectionImages.size()) {
                         // Get the player and apply the penalty
-                        this.player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 255, false, false, false));
-                        this.player.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 40, 255, false, false, false));
+                        this.player.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 40, 0, false, false, true));
+                        this.player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 255, false, false, true));
                     }
                     // Clean up the projection images
                     this.projectionImages.clear();
                     this.projectionIndex = 0;
                 }
 
+                needsSync[0] = true;
                 // Clear the alt cast window when the time runs out
                 return true;
             }
             return false; // Keep counting down
         });
+        // If a timer expired naturally, sync the component to the client
+        if (needsSync[0]) ModEntityComponents.SPELL_DATA.sync(this.player);
+
+        if (this.speedStackDecayTimer > 0) {
+            this.speedStackDecayTimer--;
+            if (this.speedStackDecayTimer <= 0 && this.projectionSpeedStacks > 0) {
+                this.projectionSpeedStacks--; // Lose one stack
+                if (this.projectionSpeedStacks > 0) {
+                    this.speedStackDecayTimer = 30; // The next stack decays in 1.5 seconds
+                }
+                ModEntityComponents.SPELL_DATA.sync(this.player);
+            }
+        }
     }
-
-
 }

@@ -8,6 +8,7 @@ public interface ManaComponent extends Component, ServerTickingComponent {
     public float getMaxMana();
     public boolean useMana(float amount);
     public void setMana(float mana);
+    public void setMaxMana(float mana);
     public void addMana(float mana);
     public void setManaRegen(float regen);
     public float getManaRegen();

@@ -34,5 +34,25 @@
   "domain_expansion_shrine_2": {
     "subtitle": "subtitles.yunosbosses.domain_expansion_shrine_2",
     "sounds": [ "yunosbosses:domain_expansion_shrine_2" ]
+  },
+
+  "frame_shatter": {
+    "subtitle": "subtitles.yunosbosses.frame_shatter",
+    "sounds": [ "yunosbosses:frame_shatter" ]
+  },
+
+  "frame_shatter_from_damage": {
+    "subtitle": "subtitles.yunosbosses.frame_shatter_from_damage",
+    "sounds": [ "yunosbosses:frame_shatter_from_damage" ]
+  },
+
+  "frame_shatter_finisher": {
+    "subtitle": "subtitles.yunosbosses.frame_shatter_finisher",
+    "sounds": [ "yunosbosses:frame_shatter_finisher" ]
+  },
+
+  "frame_freeze": {
+    "subtitle": "subtitles.yunosbosses.frame_freeze",
+    "sounds": [ "yunosbosses:frame_freeze" ]
   }
 }
