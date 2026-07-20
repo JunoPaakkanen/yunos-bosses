@@ -169,8 +169,8 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
 
     @Override
     public void addSpeedStack() {
-        // Cap speed stacks at 10
-        if (this.projectionSpeedStacks < 10) {
+        // Cap speed stacks at 15
+        if (this.projectionSpeedStacks < 15) {
             this.projectionSpeedStacks++;
         }
         this.speedStackDecayTimer = 60;

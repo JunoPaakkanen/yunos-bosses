@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.network.SpawnImagePayload;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
@@ -52,34 +53,54 @@ public class ProjectionSorcery extends Spell {
     }
 
     public void defaultCast(World world, LivingEntity caster, ItemStack staff) {
+        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
+
+        // If images are already active/stored, don't spawn a new set
+        if (!component.getProjectionImages().isEmpty()) {
+            return;
+        }
 
         // Projection Sorcery Configuration
         int imageCount = 5;
         int maxTicks = 100; // 5 seconds
-        List<Vec3d> imagePositions = new ArrayList<>();
+        int intervalTicks = 2; // 0.1s delay between frame spawns (2 ticks)
+        double frameDistance = 1.5; // 1.5 blocks distance between frames
 
         // Start the alt cast window
-        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
         component.startAltCastWindow(this, maxTicks);
 
-        // Calculate the image world positions and store them
-        Vec3d startPos = caster.getPos();
-        Vec3d lookDir = caster.getRotationVec(1.0F);
-        Vec3d projectionPos = startPos;
-
-        for (int i = 0; i < imageCount; i++) {
-            projectionPos = projectionPos.add(lookDir.multiply(1.5));
-            imagePositions.add(projectionPos);
-            // Send a packet to the client to render the image
-            SpawnImagePayload payload = new SpawnImagePayload(caster.getId(), projectionPos, maxTicks);
-            for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, projectionPos, 64.0)) {
-                ServerPlayNetworking.send(player, payload);
-            }
-        }
-
-        // Save the images to the caster's spell component memory
+        // Reset storage
+        List<Vec3d> imagePositions = new ArrayList<>();
         component.setProjectionImages(imagePositions);
         component.setProjectionIndex(0);
+
+        // Mutable reference to keep track of the last spawned frame's position
+        final Vec3d[] lastPos = new Vec3d[]{ caster.getPos() };
+
+        for (int i = 0; i < imageCount; i++) {
+            int delayTicks = i * intervalTicks; // 0 ticks, 2 ticks, 4 ticks, 6 ticks, 8 ticks
+
+            DelayedServerEffects.delay(delayTicks, () -> {
+                // Ensure the caster is still alive/valid when the task runs
+                if (!caster.isAlive() || caster.getWorld().isClient()) return;
+
+                // Fetch current camera orientation at the EXACT moment this tick fires
+                Vec3d currentLookDir = caster.getRotationVec(1.0F);
+
+                // Extend from the previously spawned frame
+                Vec3d nextFramePos = lastPos[0].add(currentLookDir.multiply(frameDistance));
+                lastPos[0] = nextFramePos; // Update tracking pointer for the next frame in line
+
+                // Save to the component list
+                imagePositions.add(nextFramePos);
+
+                // Dispatch packet to nearby clients for rendering
+                SpawnImagePayload payload = new SpawnImagePayload(caster.getId(), nextFramePos, maxTicks);
+                for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, nextFramePos, 64.0)) {
+                    ServerPlayNetworking.send(player, payload);
+                }
+            });
+        }
     }
 
     public void altCast(World world, LivingEntity caster, ItemStack staff) {
