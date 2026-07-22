@@ -33,7 +33,7 @@ public class DefensiveMagicRenderer {
             for (ActiveBarrier barrier : BarrierManager.ACTIVE_BARRIERS_CLIENT) {
                 // If direction is ZERO, treat it as a Sphere
                 if (barrier.getDirection().equals(Vec3d.ZERO)) {
-                    renderSphere(matrices, consumers, cameraPos, barrier, 20.0f);
+                    renderSphere(matrices, consumers, cameraPos, barrier, barrier.getRadius());
                 } else {
                     // Otherwise, render the directional hex shield
                     renderBarrier(matrices, consumers, cameraPos, barrier, context);

@@ -22,7 +22,7 @@ public class ActiveBarrier {
     private final BiConsumer<Entity, ActiveBarrier> domainEffect;
     private final DomainExpansion domainExpansion;
 
-    public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration, Identifier texture, BiConsumer<Entity, ActiveBarrier> domainEffect, DomainExpansion domainExpansion) {
+    public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration, float radius, Identifier texture, BiConsumer<Entity, ActiveBarrier> domainEffect, DomainExpansion domainExpansion) {
         this.ownerUuid = ownerUuid;
         this.position = position;
         this.direction = direction;
@@ -31,7 +31,7 @@ public class ActiveBarrier {
         this.texture = texture;
         this.domainEffect = domainEffect;
         this.domainExpansion = domainExpansion;
-        this.radius = domainExpansion.getRadius();
+        this.radius = radius;
     }
 
     public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration, Identifier texture, BiConsumer<Entity, ActiveBarrier> domainEffect, float radius) {

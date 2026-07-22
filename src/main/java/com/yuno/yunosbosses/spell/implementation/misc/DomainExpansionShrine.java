@@ -55,7 +55,33 @@ public class DomainExpansionShrine extends DomainExpansion {
         // Play cast animation
         startDomainExpansionCast(world, caster, "Malevolent Shrine");
 
-        DelayedServerEffects.delay(80, () -> finishDomainExpansionCast(world, caster, staff));
+        DelayedServerEffects.delay(80, () -> finishDomainExpansionCast(world, caster, staff, 20.0F));
+    }
+
+    @Override
+    public void cast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
+        float potency = switch (chargeLevel) {
+            case 2 -> 1.5F; // Charge level 2 = 150% potency
+            case 3 -> 3.0F; // Charge level 3 = 300% potency
+            default -> 1.0F; // Charge level 1 (Instant) = Base potency
+        };
+
+        // --- VOICE LINE ---
+        caster.getWorld().playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                ModSounds.DOMAIN_EXPANSION_SHRINE_2, SoundCategory.NEUTRAL, 1.2f, 1.0f);
+
+        // Apply a brief darkness effect to players
+        for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 110, 1));
+        }
+
+        // Play cast animation
+        startDomainExpansionCast(world, caster, "Malevolent Shrine");
+
+        // Calculate dynamic radius
+        float dynamicRadius = getRadius(chargeLevel);
+
+        DelayedServerEffects.delay(80, () -> finishDomainExpansionCast(world, caster, staff, dynamicRadius));
     }
 
     @Override
@@ -165,7 +191,7 @@ public class DomainExpansionShrine extends DomainExpansion {
     @Override
     public void onDomainRemoved(ServerWorld world, ActiveBarrier barrier) {
         // Create a search area covering the entire domain
-        Box searchBox = Box.from(barrier.getPosition()).expand(this.getRadius());
+        Box searchBox = Box.from(barrier.getPosition()).expand(barrier.getRadius());
 
         // Find any Shrine Entities inside that box
         List<DomainShrineEntity> shrines = world.getEntitiesByClass(
@@ -186,7 +212,7 @@ public class DomainExpansionShrine extends DomainExpansion {
 
         // --- SPAWN SLASHES ---
         Vec3d center = barrier.getPosition();
-        float radius = this.getRadius();
+        float radius = barrier.getRadius();
         Random rand = world.getRandom();
         double floorY = center.getY() - 3.0; // Reference point of our custom floor layer
 
@@ -257,31 +283,52 @@ public class DomainExpansionShrine extends DomainExpansion {
             // Convert to a block grid position
             BlockPos targetPos = BlockPos.ofFloored(center.x + dx, center.y + dy, center.z + dz);
 
-            // Do not break the custom domain floor or anything beneath it
-            if (targetPos.getY() <= floorY) continue;
+            // Determine level of destruction based on Domain radius
 
-            BlockState state = world.getBlockState(targetPos);
+            // Charge Level 1 (radius < 30): 0 to 0 (1x1x1 single block)
+            int minX = (radius >= 50.0F) ? -1 : 0;
+            int maxX = (radius >= 30.0F) ? 1 : 0;
+            // Charge Level 2 (30 <= radius < 50): 0 to 1 (2x2x2 cube)
+            int minY = (radius >= 50.0F) ? -1 : 0;
+            int maxY = (radius >= 30.0F) ? 1 : 0;
+            // Charge Level 3 (radius >= 50): -1 to 1 (3x3x3 cube)
+            int minZ = (radius >= 50.0F) ? -1 : 0;
+            int maxZ = (radius >= 30.0F) ? 1 : 0;
 
-            // Only attempt to break if it's an actual block (not air or water)
-            if (!state.isAir() && state.getFluidState().isEmpty()) {
-                // Check if the block is breakable
-                if (state.getHardness(world, targetPos) >= 0.0F) {
-                    // Break the block!
-                    //world.breakBlock(targetPos, false);
-                    world.setBlockState(targetPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
 
-                    // Spawn a random Slash particle on the broken block from the particle pool
-                    int randomIndex = world.getRandom().nextInt(particlePool.length);
-                    SimpleParticleType particleType = particlePool[randomIndex];
+            for (int x = minX; x <= maxX; x++) {
+                for (int y = minY; y <= maxY; y++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        BlockPos currentPos = targetPos.add(x, y, z);
 
-                    // Spawn the particle
-                    ((ServerWorld) world).spawnParticles(
-                            particleType,
-                            targetPos.getX(), targetPos.getY(), targetPos.getZ(),
-                            1,
-                            0.3, 0.3, 0.3,
-                            0.05
-                    );
+                        // Do not break the custom domain floor or anything beneath it
+                        if (currentPos.getY() <= floorY) continue;
+
+                        BlockState state = world.getBlockState(currentPos);
+
+                        // Only attempt to break if it's an actual block (not air or water)
+                        if (!state.isAir() && state.getFluidState().isEmpty()) {
+                            // Check if the block is breakable
+                            if (state.getHardness(world, currentPos) >= 0.0F) {
+                                // Break the block!
+                                //world.breakBlock(targetPos, false);
+                                world.setBlockState(currentPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+
+                                // Spawn a random Slash particle on the broken block from the particle pool
+                                int randomIndex = world.getRandom().nextInt(particlePool.length);
+                                SimpleParticleType particleType = particlePool[randomIndex];
+
+                                // Spawn the particle
+                                ((ServerWorld) world).spawnParticles(
+                                        particleType,
+                                        currentPos.getX() + 0.5, currentPos.getY(), currentPos.getZ(),
+                                        1,
+                                        0.3, 0.3, 0.3,
+                                        0.05
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }

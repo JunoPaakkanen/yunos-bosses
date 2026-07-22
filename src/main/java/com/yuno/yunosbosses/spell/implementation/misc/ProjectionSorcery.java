@@ -64,7 +64,9 @@ public class ProjectionSorcery extends Spell {
         int imageCount = 5;
         int maxTicks = 100; // 5 seconds
         int intervalTicks = 2; // 0.1s delay between frame spawns (2 ticks)
-        double frameDistance = 1.5; // 1.5 blocks distance between frames
+        int currentStacks = component.getSpeedStacks();
+        double baseDistance = 1.5; // 1.5 blocks base distance between frames
+        double frameDistance = baseDistance + (currentStacks * 0.25); // Scales up dynamically based on the number of speed stacks
 
         // Start the alt cast window
         component.startAltCastWindow(this, maxTicks);

@@ -47,6 +47,14 @@ public abstract class DomainExpansion extends Spell {
     @Override
     public float getManaCost(LivingEntity caster) {return manaCost;}
 
+    public float getRadius(int chargeLevel) {
+        return switch (chargeLevel) {
+            case 2 -> 30.0F; // Charge Level 2
+            case 3 -> 50.0F; // Charge Level 3
+            default -> 20.0F; // Charge Level 1 (Instant / Base)
+        };
+    }
+
     public void startDomainExpansionCast(World world, LivingEntity caster, String domainName) {
         for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
 
@@ -63,11 +71,10 @@ public abstract class DomainExpansion extends Spell {
         }
     }
 
-    public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff) {
+    public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff, float radius) {
         if (!world.isClient) {
             Vec3d pos = caster.getPos().add(0, 2, 0); // Center of the sphere
 
-            double radius = getRadius();
             Identifier texture = getBarrierTexture();
             int lifetime = getLifetimeTicks();
 
@@ -79,12 +86,12 @@ public abstract class DomainExpansion extends Spell {
 
             // Create the barrier
             BarrierManager.ACTIVE_BARRIERS.add(
-                    new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture, this::onDomainEffect, this)
+                    new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, radius, texture, this::onDomainEffect, this)
             );
 
             // Broadcast to ALL nearby players so they can see the barrier and animation
             for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, pos, 64)) {
-                ServerPlayNetworking.send(player, new BarrierPayload(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture, this.getRadius()));
+                ServerPlayNetworking.send(player, new BarrierPayload(caster.getUuid(), pos, Vec3d.ZERO, lifetime, texture, radius));
             }
         }
     }
@@ -163,7 +170,7 @@ public abstract class DomainExpansion extends Spell {
         );
         int floorY = centerPos.getY() - 1;
 
-        double radius = getRadius();
+        double radius = barrier.getRadius();
         double blockRadiusSq = (radius + 0.5) * (radius + 0.5);
         int loopRadius = (int) Math.ceil(radius + 1);
 
