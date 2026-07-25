@@ -4,6 +4,9 @@ import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.nbt.NbtCompound;
@@ -36,6 +39,7 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     private int projectionIndex = 0;
     private int projectionSpeedStacks = 0;
     private int speedStackDecayTimer = 0;
+    private static final Identifier PROJECTION_SPEED_MODIFIER = Identifier.of("yunosbosses", "projection_speed_modifier");
 
     // Contructor to grab the player
     public PlayerSpellComponent(LivingEntity player) {
@@ -174,9 +178,29 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             this.projectionSpeedStacks++;
         }
         this.speedStackDecayTimer = 60;
+        updateSpeedAttribute(); // Update the speed attribute
         ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 
+    public void updateSpeedAttribute() {
+        EntityAttributeInstance speedAttribute = this.player.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        if (speedAttribute == null) return;
+
+        // Remove any old modifier first
+        speedAttribute.removeModifier(PROJECTION_SPEED_MODIFIER);
+
+        // If stacks exist, apply the speed modifier
+        if (this.projectionSpeedStacks > 0) {
+            double boostValue = this.projectionSpeedStacks * 0.3; // 30% per stack
+
+            EntityAttributeModifier modifier = new EntityAttributeModifier(
+                    PROJECTION_SPEED_MODIFIER,
+                    boostValue,
+                    EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE
+            );
+            speedAttribute.addTemporaryModifier(modifier);
+        }
+    }
     @Override
     public int getSpeedStacks() {
         return this.projectionSpeedStacks;
@@ -219,6 +243,9 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             this.speedStackDecayTimer--;
             if (this.speedStackDecayTimer <= 0 && this.projectionSpeedStacks > 0) {
                 this.projectionSpeedStacks--; // Lose one stack
+                // Update the speed attribute
+                updateSpeedAttribute();
+
                 if (this.projectionSpeedStacks > 0) {
                     this.speedStackDecayTimer = 30; // The next stack decays in 1.5 seconds
                 }

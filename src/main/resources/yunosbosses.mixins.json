@@ -12,6 +12,7 @@
     "PlayerInventoryMixin"
   ],
   "client": [
+    "AbstractClientPlayerEntityMixin",
     "ClientInputMixin",
     "GameRendererAccessor",
     "InGameHudMixin",

@@ -8,8 +8,6 @@ import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -116,9 +114,9 @@ public class ProjectionSorcery extends Spell {
             return;
         }
 
-        // Get the target position and teleport
         Vec3d targetPos = images.get(currentIndex);
 
+        // Teleport to target position
         caster.requestTeleport(targetPos.x, targetPos.y, targetPos.z);
         caster.fallDistance = 0.0F; // Reset fall distance so they don't take damage
 

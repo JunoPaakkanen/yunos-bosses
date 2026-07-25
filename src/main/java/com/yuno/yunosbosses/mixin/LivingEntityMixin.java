@@ -96,23 +96,4 @@ public abstract class LivingEntityMixin {
             }
         }
     }
-
-    @Inject(method = "getMovementSpeed", at = @At("RETURN"), cancellable = true)
-    private void yunosbosses$applyStackingProjectionSpeed(CallbackInfoReturnable<Float> cir) {
-        LivingEntity entity = (LivingEntity) (Object) this;
-
-        // Ensure this logic only runs on players since they own the component
-        if (entity instanceof PlayerEntity player) {
-            var component = ModEntityComponents.SPELL_DATA.get(player);
-            int stacks = component.getSpeedStacks();
-
-            if (stacks > 0) {
-                float originalSpeed = cir.getReturnValue();
-                // Each stack grants a 30% speed bonus
-                float speedMultiplier = 1.0F + (stacks * 0.30F);
-
-                cir.setReturnValue(originalSpeed * speedMultiplier);
-            }
-        }
-    }
 }
