@@ -14,6 +14,16 @@ public interface SpellComponent extends Component, AutoSyncedComponent, ServerTi
     @Override
     default void serverTick() {}
 
+    int getMaxSpellSlots();
+
+    void setMaxSpellSlots(int slots);
+
+    Spell getEquippedSpell(int slot);
+
+    void setEquippedSpell(int slot, Spell spell);
+
+    Spell[] getEquippedSpells();
+
     void setActiveSpell(Spell spell);
 
     List<Spell> getKnownSpells();

@@ -31,6 +31,10 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     // Store the player that owns this component
     private final LivingEntity player;
 
+    // Spell Loadout data
+    private int maxSpellSlots = 3; // 3 slots by default, can be increased later
+    private Spell[] equippedSpells = new Spell[10]; // Hard cap of 10
+
     // Timer tracking for alt cast windows
     private final Map<Identifier, Integer> activeAltCasts = new HashMap<>();
 
@@ -49,13 +53,60 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     // Logic methods
 
     @Override
+    public int getMaxSpellSlots() {
+        return this.maxSpellSlots;
+    }
+
+    @Override
+    public void setMaxSpellSlots(int slots) {
+        this.maxSpellSlots = Math.min(slots, 10);
+        ModEntityComponents.SPELL_DATA.sync(this.player);
+    }
+
+    @Override
+    public Spell getEquippedSpell(int slot) {
+        if (slot >= 0 && slot < this.maxSpellSlots) {
+            return this.equippedSpells[slot];
+        }
+        return null;
+    }
+
+    @Override
+    public void setEquippedSpell(int slot, Spell spell) {
+        if (slot >= 0 && slot < this.maxSpellSlots) {
+            this.equippedSpells[slot] = spell;
+
+            // Set as the active spell if the player has none selected
+            if (this.activeSpell == null && spell != null) {
+                this.activeSpell = spell;
+            }
+            ModEntityComponents.SPELL_DATA.sync(this.player);
+        }
+    }
+
+    @Override
+    public Spell[] getEquippedSpells() {
+        return this.equippedSpells;
+    }
+
+    @Override
     public Spell getActiveSpell() {
+        // If the active spell is null, return the first equipped spell
+        if (this.activeSpell == null) {
+            for (int i = 0; i < this.maxSpellSlots; i++) {
+                if (this.equippedSpells[i] != null) {
+                    this.activeSpell = this.equippedSpells[i];
+                    break;
+                }
+            }
+        }
         return this.activeSpell;
     }
 
     @Override
     public void setActiveSpell(Spell spell) {
         this.activeSpell = spell;
+        ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 
     @Override
@@ -67,16 +118,54 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     public void learnSpell(Spell spell) {
         if (!knownSpells.contains(spell)) {
             knownSpells.add(spell);
+
+            // Find the first empty slot within unlocked maxSpellSlots
+            for (int i = 0; i < this.maxSpellSlots; i++) {
+                if (this.equippedSpells[i] == null) {
+                    this.equippedSpells[i] = spell;
+                    break; // Stop immediately after equipping into the first empty slot
+                }
+            }
+
+            // Set as the active spell
+            this.activeSpell = spell;
+
+            ModEntityComponents.SPELL_DATA.sync(this.player);
         }
     }
 
     @Override
     public void cycleSpell() {
-        if (!canChangeSpell() || knownSpells.isEmpty()) return;
+        if (!canChangeSpell()) return;
 
-        int currentIndex = knownSpells.indexOf(this.activeSpell);
-        int nextIndex = (currentIndex + 1) % knownSpells.size();
-        this.activeSpell = knownSpells.get(nextIndex);
+        // Collect equipped spells into an active list
+        List<Spell> activeLoadout = new ArrayList<>();
+        for (int i = 0; i < this.maxSpellSlots; i++) {
+            if (this.equippedSpells[i] != null) {
+                activeLoadout.add(this.equippedSpells[i]);
+            }
+        }
+
+        // If no spells are equipped, reset active spell
+        if (activeLoadout.isEmpty()) {
+            this.activeSpell = null;
+            ModEntityComponents.SPELL_DATA.sync(this.player);
+            return;
+        }
+
+        // Find the current position in the active loadout
+        int currentIndex = activeLoadout.indexOf(this.activeSpell);
+
+        // If the active spell is null or not equipped, select the first equipped spell
+        if (currentIndex == -1) {
+            this.activeSpell = activeLoadout.getFirst();
+        } else {
+            // Cycle to the next equipped spell in the sequence
+            int nextIndex = (currentIndex + 1) % activeLoadout.size();
+            this.activeSpell = activeLoadout.get(nextIndex);
+        }
+
+        ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 
     // NBT Serialization
@@ -104,6 +193,26 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                 this.activeAltCasts.put(Identifier.of(key), altCastsTag.getInt(key));
             }
         }
+
+        // Read max slots
+        if (tag.contains("MaxSpellSlots")) {
+            this.maxSpellSlots = tag.getInt("MaxSpellSlots");
+        }
+
+        // Read equipped spells loadout
+        this.equippedSpells = new Spell[10];
+        if (tag.contains("EquippedSpells")) {
+            NbtList equippedList = tag.getList("EquippedSpells", NbtElement.COMPOUND_TYPE);
+            for (int i = 0; i < equippedList.size(); i++) {
+                NbtCompound slotTag = equippedList.getCompound(i);
+                int slot = slotTag.getInt("Slot");
+                Identifier id = Identifier.of(slotTag.getString("SpellId"));
+
+                if (slot >= 0 && slot < 10) {
+                    this.equippedSpells[slot] = ModSpells.getSpell(id);
+                }
+            }
+        }
     }
 
     @Override
@@ -126,6 +235,22 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             altCastsTag.putInt(entry.getKey().toString(), entry.getValue());
         }
         tag.put("ActiveAltCasts", altCastsTag);
+
+        // Persist max slots
+        tag.putInt("MaxSpellSlots", this.maxSpellSlots);
+
+        // Persist equippedSpells loadout
+        NbtList equippedList = new NbtList();
+        for (int i = 0; i < this.maxSpellSlots; i++) {
+            Spell spell = this.equippedSpells[i];
+            if (spell != null) {
+                NbtCompound slotTag = new NbtCompound();
+                slotTag.putInt("Slot", i);
+                slotTag.putString("SpellId", spell.getId().toString());
+                equippedList.add(slotTag);
+            }
+        }
+        tag.put("EquippedSpells", equippedList);
     }
 
     @Override

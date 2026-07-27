@@ -21,7 +21,7 @@ public class ModSpells {
 
     // Summon spells
     public static final Spell SUMMON_VEX_SPELL = registerSpell(new SummonVexSpell(Identifier.of("yunosbosses", "summonvexspell")));
-    public static final Spell SUMMON_USELESS_CHICKEN = registerSpell(new SummonUselessChicken(Identifier.of("yunosbosses", "summonuselesschicken"))); // STAFFLESS
+    public static final Spell SUMMON_USELESS_CHICKEN = registerSpell(new SummonUselessChicken(Identifier.of("yunosbosses", "summonuselesschicken")));
 
     // Offensive spells
     public static final Spell KILLING_MAGIC = registerSpell(new KillingMagic(Identifier.of("yunosbosses", "killingmagic")));
