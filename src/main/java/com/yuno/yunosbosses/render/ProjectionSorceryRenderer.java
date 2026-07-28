@@ -3,12 +3,10 @@ package com.yuno.yunosbosses.render;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
@@ -42,8 +40,11 @@ public class ProjectionSorceryRenderer {
             Vec3d cameraPos = context.camera().getPos();
             MatrixStack matrixStack = context.matrixStack();
 
-            // Get the buffer so we can tell the game to draw our translucent layer
-            VertexConsumerProvider.Immediate immediate = client.getBufferBuilders().getEntityVertexConsumers();
+            // Get the buffer provider from context or client
+            VertexConsumerProvider entityConsumers = context.consumers();
+            if (entityConsumers == null) {
+                entityConsumers = client.getBufferBuilders().getEntityVertexConsumers();
+            }
 
             for (ImageData image : IMAGES) {
                 LivingEntity entity = image.entity;
@@ -57,16 +58,9 @@ public class ProjectionSorceryRenderer {
                 double z = image.position.z - cameraPos.z;
                 matrixStack.translate(x, y, z);
 
-                // Fetch the entity's actual texture
-                Identifier texture = client.getEntityRenderDispatcher().getRenderer(entity).getTexture(entity);
 
-                // Force the layer to be Translucent
-                RenderLayer translucentLayer = RenderLayer.getEntityTranslucent(texture);
-                VertexConsumer originalConsumer = immediate.getBuffer(translucentLayer);
-
-                // Wrap the consumer with the custom Blue Tint
-                VertexConsumer wrappedConsumer = new BlueImageConsumer(originalConsumer);
-
+                // Dynamically wrap whichever RenderLayer Mojang requests for this entity call
+                final VertexConsumerProvider originalProvider = entityConsumers;
                 VertexConsumerProvider wrappedProvider = layer -> {
                     String layerName = layer.toString().toLowerCase();
                     // Do not apply the blue image consumer to shadows or text (it will crash)
@@ -74,11 +68,14 @@ public class ProjectionSorceryRenderer {
                         return new DummyVertexConsumer();
                     }
 
+                    // Dynamically get the consumer for this render layer
+                    VertexConsumer rawConsumer = originalProvider.getBuffer(layer);
+
                     if (layerName.contains("text") && !layerName.contains("entity")) {
-                        return immediate.getBuffer(layer);
+                        return rawConsumer;
                     }
 
-                    return wrappedConsumer;
+                    return new BlueImageConsumer(rawConsumer);
                 };
 
                 // --- THE SNAP TRICK ---
@@ -116,8 +113,7 @@ public class ProjectionSorceryRenderer {
                 matrixStack.pop();
             }
 
-            // Force the game to draw our transparent layer immediately
-            immediate.draw();
+            //immediate.draw();
         });
     }
 
