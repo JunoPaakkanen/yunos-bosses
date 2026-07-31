@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.spell.implementation.misc;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
@@ -15,7 +16,7 @@ import net.minecraft.world.World;
 
 public class ReverseCursedTechnique extends Spell {
 
-    public ReverseCursedTechnique(Identifier id) { super(id, true); }
+    public ReverseCursedTechnique(Identifier id, SpellRarity rarity) { super(id, true, rarity); }
 
     @Override
     public float getManaCost(LivingEntity caster) {

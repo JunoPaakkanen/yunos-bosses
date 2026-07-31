@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.spell.implementation.offensive;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
@@ -25,8 +26,8 @@ import java.util.HashSet;
 
 public class KillingMagic extends Spell {
 
-    public KillingMagic(Identifier id) {
-        super(id);
+    public KillingMagic(Identifier id, SpellRarity rarity) {
+        super(id, rarity);
     }
 
     @Override

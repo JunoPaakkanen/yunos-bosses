@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.spell.implementation.offensive;
 
 import com.yuno.yunosbosses.item.custom.StaffItem;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -15,8 +16,8 @@ public class KillingMagicBarrage extends KillingMagic {
     private static final int BEAM_COUNT = 5;
     private static final int DELAY_BETWEEN_BEAMS = 3;
 
-    public KillingMagicBarrage(Identifier id) {
-        super(id);
+    public KillingMagicBarrage(Identifier id, SpellRarity rarity) {
+        super(id, rarity);
     }
 
     @Override

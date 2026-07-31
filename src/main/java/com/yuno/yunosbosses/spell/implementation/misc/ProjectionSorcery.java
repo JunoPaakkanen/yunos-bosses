@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.network.SpawnImagePayload;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -31,8 +32,8 @@ public class ProjectionSorcery extends Spell {
     Each time you teleport through these images, you will re-hit that entity (dealing reduced damage per hit).
      */
 
-    public ProjectionSorcery(Identifier id) {
-        super(id, true);
+    public ProjectionSorcery(Identifier id, SpellRarity rarity) {
+        super(id, true, rarity);
     }
 
     @Override

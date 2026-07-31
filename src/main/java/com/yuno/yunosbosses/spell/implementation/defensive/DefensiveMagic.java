@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.spell.implementation.defensive;
 
 import com.yuno.yunosbosses.network.BarrierPayload;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.spell.Spell;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -15,7 +16,7 @@ import net.minecraft.world.World;
 
 public class DefensiveMagic extends Spell {
 
-    public DefensiveMagic(Identifier id) { super(id); }
+    public DefensiveMagic(Identifier id, SpellRarity rarity) { super(id, rarity); }
 
     Identifier hexTexture = Identifier.of("yunosbosses", "textures/effect/magical_hexagon.png");
 

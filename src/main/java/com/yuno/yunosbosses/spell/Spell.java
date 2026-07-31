@@ -11,17 +11,16 @@ public abstract class Spell {
     private final Identifier id;
     private final boolean canCastWithoutStaff;
     private final Identifier iconTexture;
+    private final SpellRarity rarity;
 
-    public Spell(Identifier id) {
-        this.id = id;
-        canCastWithoutStaff = false;
-        // Maps spell ID to assets/yunosbosses/textures/gui/spells/<spell_name>.png
-        this.iconTexture = Identifier.of(YunosBosses.MOD_ID, "textures/gui/spells/" + id.getPath() + ".png");
+    public Spell(Identifier id, SpellRarity rarity) {
+        this(id, false, rarity);
     }
 
-    public Spell(Identifier id, boolean canCastWithoutStaff) {
+    public Spell(Identifier id, boolean canCastWithoutStaff, SpellRarity rarity) {
         this.id = id;
         this.canCastWithoutStaff = canCastWithoutStaff;
+        this.rarity = rarity;
         this.iconTexture = Identifier.of(YunosBosses.MOD_ID, "textures/gui/spells/" + id.getPath() + ".png");
     }
 
@@ -50,4 +49,6 @@ public abstract class Spell {
     }
 
     public boolean canCastWithoutStaff() { return canCastWithoutStaff; }
+
+    public SpellRarity getRarity() { return rarity; }
 }

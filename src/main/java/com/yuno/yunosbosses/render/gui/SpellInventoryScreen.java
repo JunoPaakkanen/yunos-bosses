@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import java.util.List;
 
@@ -84,13 +85,22 @@ public class SpellInventoryScreen extends Screen {
 
             // Highlight Selected Spell
             if (this.selectedSpell == spell) {
-                context.drawBorder(x - 1, y - 1, slotSize + 2, slotSize + 2, 0xFFA6E3A1);
+                context.drawBorder(x - 1, y - 1, slotSize + 2, slotSize + 2, spell.getRarity().getColorHex());
             }
 
             // Mouse Hover Effect & Tooltip
             if (isHovering(x, y, slotSize, slotSize, mouseX, mouseY)) {
                 context.fill(x, y, x + slotSize, y + slotSize, 0x40FFFFFF);
-                context.drawTooltip(this.textRenderer, Text.literal(spell.getId().getPath().replace('_', ' ').toUpperCase()), mouseX, mouseY);
+
+                // Colored name + rarity subtext
+                List<Text> tooltip = List.of(
+                        Text.literal(spell.getId().getPath().replace('_', ' ').toUpperCase())
+                                .formatted(spell.getRarity().getFormatting()),
+                        Text.literal(spell.getRarity().getName() + " Spell")
+                                .formatted(Formatting.DARK_GRAY)
+                );
+
+                context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
             }
         }
     }
@@ -106,7 +116,10 @@ public class SpellInventoryScreen extends Screen {
 
             // Slot Box
             context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0xFF181825);
-            context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFF585B70);
+
+            // Draw dynamic Border
+            int borderColor = (equipped != null) ? equipped.getRarity().getColorHex() : 0xFF585B70;
+            context.drawBorder(sidebarX, y, slotSize, slotSize, borderColor);
 
             // Draw Slot Number Label
             context.drawText(this.textRenderer, String.valueOf(i + 1), sidebarX - 8, y + 8, 0xFF7F849C, false);
@@ -131,10 +144,17 @@ public class SpellInventoryScreen extends Screen {
                     context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x40FFFFFF);
                 }
 
+                // Color-coded tooltip
                 if (equipped != null) {
-                    context.drawTooltip(this.textRenderer, Text.literal("Slot " + (i + 1) + ": " + equipped.getId().getPath()), mouseX, mouseY);
+                    List<Text> tooltip = List.of(
+                            Text.literal("Slot " + (i + 1) + ": " + equipped.getId().getPath().replace('_', ' ').toUpperCase())
+                                    .formatted(equipped.getRarity().getFormatting()),
+                            Text.literal(equipped.getRarity().getName() + " Spell")
+                                    .formatted(Formatting.GRAY)
+                    );
+                    context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
                 } else {
-                    context.drawTooltip(this.textRenderer, Text.literal("Slot " + (i + 1) + ": Empty"), mouseX, mouseY);
+                    context.drawTooltip(this.textRenderer, Text.literal("Slot " + (i + 1) + ": Empty").formatted(Formatting.DARK_GRAY), mouseX, mouseY);
                 }
             }
         }

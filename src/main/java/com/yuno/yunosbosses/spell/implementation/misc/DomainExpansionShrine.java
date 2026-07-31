@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -34,8 +35,8 @@ import java.util.List;
 
 public class DomainExpansionShrine extends DomainExpansion {
 
-    public DomainExpansionShrine(Identifier id) {
-        super(id, castAnimation);
+    public DomainExpansionShrine(Identifier id, SpellRarity rarity) {
+        super(id, castAnimation, rarity);
     }
 
     public static final Identifier castAnimation = ModAnimations.DOMAIN_EXPANSION_SHRINE_ANIM;

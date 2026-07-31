@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.spell.implementation.summon;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.character.modified.UselessChickenEntity;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
@@ -11,7 +12,7 @@ import net.minecraft.world.World;
 
 public class SummonUselessChicken extends Spell {
 
-    public SummonUselessChicken(Identifier id) { super(id, true); }
+    public SummonUselessChicken(Identifier id, SpellRarity rarity) { super(id, true, rarity); }
 
     float manaCost = 90.0F;
 

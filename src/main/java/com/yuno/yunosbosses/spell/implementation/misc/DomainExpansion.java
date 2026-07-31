@@ -8,6 +8,7 @@ import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -30,8 +31,8 @@ import java.util.List;
 
 public abstract class DomainExpansion extends Spell {
 
-    public DomainExpansion(Identifier id, Identifier castAnimation) {
-        super(id, true);
+    public DomainExpansion(Identifier id, Identifier castAnimation, SpellRarity rarity) {
+        super(id, true, rarity);
         this.castAnimation = castAnimation;
     }
 

@@ -20,23 +20,23 @@ public class ModSpells {
     public static final Map<Identifier, Spell> SPELLS = new HashMap<>();
 
     // Summon spells
-    public static final Spell SUMMON_VEX_SPELL = registerSpell(new SummonVexSpell(Identifier.of("yunosbosses", "summonvexspell")));
-    public static final Spell SUMMON_USELESS_CHICKEN = registerSpell(new SummonUselessChicken(Identifier.of("yunosbosses", "summonuselesschicken")));
+    public static final Spell SUMMON_VEX_SPELL = registerSpell(new SummonVexSpell(Identifier.of("yunosbosses", "summonvexspell"), SpellRarity.RARE));
+    public static final Spell SUMMON_USELESS_CHICKEN = registerSpell(new SummonUselessChicken(Identifier.of("yunosbosses", "summonuselesschicken"), SpellRarity.RARE));
 
     // Offensive spells
-    public static final Spell KILLING_MAGIC = registerSpell(new KillingMagic(Identifier.of("yunosbosses", "killingmagic")));
-    public static final Spell KILLING_MAGIC_BARRAGE = registerSpell(new KillingMagicBarrage(Identifier.of("yunosbosses", "killingmagicbarrage")));
-    public static final Spell CUTTING_MAGIC_REELSEIDEN = registerSpell(new CuttingMagicReelseiden(Identifier.of("yunosbosses", "cuttingmagicreelseiden")));
-    public static final Spell DISMANTLE = registerSpell(new Dismantle(Identifier.of("yunosbosses", "dismantle")));
+    public static final Spell KILLING_MAGIC = registerSpell(new KillingMagic(Identifier.of("yunosbosses", "killingmagic"), SpellRarity.COMMON));
+    public static final Spell KILLING_MAGIC_BARRAGE = registerSpell(new KillingMagicBarrage(Identifier.of("yunosbosses", "killingmagicbarrage"), SpellRarity.COMMON));
+    public static final Spell CUTTING_MAGIC_REELSEIDEN = registerSpell(new CuttingMagicReelseiden(Identifier.of("yunosbosses", "cuttingmagicreelseiden"), SpellRarity.UNCOMMON));
+    public static final Spell DISMANTLE = registerSpell(new Dismantle(Identifier.of("yunosbosses", "dismantle"), SpellRarity.RARE));
 
     // Defensive spells
-    public static final Spell DEFENSIVE_MAGIC = registerSpell(new DefensiveMagic(Identifier.of("yunosbosses", "defensivemagic")));
-    public static final Spell SPHERE_BARRIER = registerSpell(new SphereBarrierSpell(Identifier.of("yunosbosses", "spherebarrier")));
+    public static final Spell DEFENSIVE_MAGIC = registerSpell(new DefensiveMagic(Identifier.of("yunosbosses", "defensivemagic"), SpellRarity.COMMON));
+    public static final Spell SPHERE_BARRIER = registerSpell(new SphereBarrierSpell(Identifier.of("yunosbosses", "spherebarrier"), SpellRarity.UNCOMMON));
 
     // Miscellaneous spells
-    public static final Spell REVERSE_CURSED_TECHNIQUE = registerSpell(new ReverseCursedTechnique(Identifier.of("yunosbosses", "reversecursedtechnique")));
-    public static final Spell DOMAIN_EXPANSION_SHRINE = registerSpell(new DomainExpansionShrine(Identifier.of("yunosbosses", "domainexpansionshrine")));
-    public static final Spell PROJECTION_SORCERY = registerSpell(new ProjectionSorcery(Identifier.of("yunosbosses", "projectionsorcery")));
+    public static final Spell REVERSE_CURSED_TECHNIQUE = registerSpell(new ReverseCursedTechnique(Identifier.of("yunosbosses", "reversecursedtechnique"), SpellRarity.SPECIAL));
+    public static final Spell DOMAIN_EXPANSION_SHRINE = registerSpell(new DomainExpansionShrine(Identifier.of("yunosbosses", "domainexpansionshrine"), SpellRarity.LEGENDARY));
+    public static final Spell PROJECTION_SORCERY = registerSpell(new ProjectionSorcery(Identifier.of("yunosbosses", "projectionsorcery"), SpellRarity.EPIC));
 
     private static Spell registerSpell(Spell spell) {
         SPELLS.put(spell.getId(), spell);

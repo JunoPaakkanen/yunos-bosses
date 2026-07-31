@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.spell.implementation.defensive;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -16,7 +17,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class SphereBarrierSpell extends Spell {
-    public SphereBarrierSpell(Identifier id) { super(id); }
+    public SphereBarrierSpell(Identifier id, SpellRarity rarity) { super(id, rarity); }
 
     float manaCost = 50.0F;
 

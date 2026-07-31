@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.spell.implementation.summon;
 
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -16,8 +17,8 @@ import java.util.Objects;
 
 public class SummonVexSpell extends Spell {
 
-    public SummonVexSpell(Identifier id) {
-        super(id);
+    public SummonVexSpell(Identifier id, SpellRarity rarity) {
+        super(id, rarity);
     }
 
     private static Team getOrCreateVexTeam(Scoreboard scoreboard) {

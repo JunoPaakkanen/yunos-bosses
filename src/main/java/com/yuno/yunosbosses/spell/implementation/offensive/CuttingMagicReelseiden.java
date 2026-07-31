@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -14,7 +15,7 @@ import net.minecraft.world.World;
 
 public class CuttingMagicReelseiden extends Spell {
 
-    public CuttingMagicReelseiden(Identifier id) {super(id); }
+    public CuttingMagicReelseiden(Identifier id, SpellRarity rarity) {super(id, rarity); }
 
     float manaCost = 15.0F;
 

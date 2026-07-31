@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
 import net.minecraft.block.BlockState;
@@ -28,8 +29,8 @@ import java.util.Set;
 
 public class Dismantle extends Spell {
 
-    public Dismantle(Identifier id) {
-        super(id, true);
+    public Dismantle(Identifier id, SpellRarity rarity) {
+        super(id, true, rarity);
     }
 
     @Override
