@@ -67,8 +67,13 @@ public class DomainExpansionShrine extends DomainExpansion {
         };
 
         // --- VOICE LINE ---
-        caster.getWorld().playSound(null, caster.getX(), caster.getY(), caster.getZ(),
-                ModSounds.DOMAIN_EXPANSION_SHRINE_2, SoundCategory.NEUTRAL, 1.2f, 1.0f);
+        if (chargeLevel == 3) {
+            caster.getWorld().playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                    ModSounds.DOMAIN_EXPANSION_SHRINE_2, SoundCategory.NEUTRAL, 1.2f, 1.0f);
+        } else {
+            caster.getWorld().playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                    ModSounds.DOMAIN_EXPANSION_SHRINE_1, SoundCategory.NEUTRAL, 1.2f, 1.0f);
+        }
 
         // Apply a brief darkness effect to players
         for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {

@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.network.CastSpellPayload;
 import com.yuno.yunosbosses.network.SpellCyclePayload;
+import com.yuno.yunosbosses.render.gui.SpellInventoryScreen;
 import com.yuno.yunosbosses.spell.Spell;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -15,6 +16,7 @@ import org.lwjgl.glfw.GLFW;
 public class ModKeybindings {
     public static KeyBinding spellCycleKey;
     public static KeyBinding castSpellKey;
+    public static KeyBinding openSpellInventoryKey;
 
     public static void register() {
         // Register keybindings
@@ -29,6 +31,12 @@ public class ModKeybindings {
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_V,
                 "category.yunosbosses"
+        ));
+        openSpellInventoryKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.yunosbosses.open_spell_inventory",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_G,
+                "category.yunosbosses.spells"
         ));
 
         // Listen for the keypress every client tick
@@ -46,6 +54,11 @@ public class ModKeybindings {
                 if (activeSpell != null && activeSpell.canCastWithoutStaff()) {
                     // Send the payload to cast the spell
                     CastSpellPayload.sendCastSpellPacket(activeSpell.getId());
+                }
+            }
+            while (openSpellInventoryKey.wasPressed()) {
+                if (client.player != null) {
+                    client.setScreen(new SpellInventoryScreen());
                 }
             }
         });
