@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.item;
 
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.item.custom.StaffItem;
+import com.yuno.yunosbosses.item.custom.StrangeFruitItem;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.component.type.FoodComponent;
 import net.minecraft.item.Item;
@@ -15,7 +16,7 @@ public class ModItems {
     public static final FoodComponent STRANGE_FRUIT_COMPONENT = new FoodComponent.Builder().nutrition(4).saturationModifier(0.3f).alwaysEdible().build();
 
     // Items
-    public static final Item STRANGE_FRUIT = registerItem("strange_fruit", new Item(new Item.Settings().food(STRANGE_FRUIT_COMPONENT)));
+    public static final Item STRANGE_FRUIT = registerItem("strange_fruit", new StrangeFruitItem(new Item.Settings().food(STRANGE_FRUIT_COMPONENT)));
 
     // Staff Items
     public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", new StaffItem(new Item.Settings().maxCount(1), 1));
