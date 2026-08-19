@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.spell.Spell;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -36,11 +37,23 @@ public class DefensiveMagic extends Spell {
             // Add to BarrierManager
             BarrierManager.addBarrier(caster.getUuid(), barrierPos, look, lifetime, 0, false);
 
-            // Send Packet to Client for rendering
-            ServerPlayNetworking.send(
-                    (ServerPlayerEntity) caster,
-                    new BarrierPayload(caster.getUuid(), barrierPos, look, lifetime, hexTexture, 0)
-            );
+            // Send Packet to Client for rendering if the caster is a player
+            if (caster instanceof ServerPlayerEntity player) {
+                ServerPlayNetworking.send(
+                        player,
+                        new BarrierPayload(caster.getUuid(), barrierPos, look, lifetime, hexTexture, 0)
+                );
+            }
+
+            // Send the packet to all players tracking the caster entity (So everyone can see a boss's barrier render)
+            for (ServerPlayerEntity player : PlayerLookup.tracking(caster)) {
+                if (player != caster) {
+                    ServerPlayNetworking.send(
+                            player,
+                            new BarrierPayload(caster.getUuid(), barrierPos, look, lifetime, hexTexture, 0)
+                    );
+                }
+            }
         }
     }
 

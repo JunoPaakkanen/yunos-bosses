@@ -1,10 +1,12 @@
 package com.yuno.yunosbosses.spell.implementation.offensive;
 
 import com.yuno.yunosbosses.item.custom.StaffItem;
+import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.BeamPayload;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -69,8 +71,17 @@ public class KillingMagic extends Spell {
                             float damageRadius, float trueDamage, boolean useCustomStart) {
         Vec3d playerLookVector = caster.getRotationVector();
 
-        // Pass the caster UUID and start position to the renderer.
-        ServerPlayNetworking.send((ServerPlayerEntity) caster, new BeamPayload(caster.getUuid(), start, maxRange, useCustomStart, null));
+        // Pass the caster UUID and start position to the renderer. (If caster is a player)
+        if (caster instanceof ServerPlayerEntity player) {
+        ServerPlayNetworking.send(player, new BeamPayload(caster.getUuid(), start, maxRange, useCustomStart, null));
+        }
+
+        // Send the packet to all players tracking the caster entity (So everyone can see a boss's barrier render)
+        for (ServerPlayerEntity player : PlayerLookup.tracking(caster)) {
+            if (player != caster) {
+                ServerPlayNetworking.send(player, new BeamPayload(caster.getUuid(), start, maxRange, useCustomStart, null));
+            }
+        }
 
         // Create a runnable to be executed later
         DelayedServerEffects.delay(delay, () -> {
@@ -143,8 +154,18 @@ public class KillingMagic extends Spell {
 
     protected void fireBeamTowardTarget(World world, LivingEntity caster, Vec3d start, Vec3d direction,
                                        int maxRange, int delay, float stepDistance, float damageRadius, float baseDamage) {
-        // Pass the caster UUID and start position to the renderer.
-        ServerPlayNetworking.send((ServerPlayerEntity) caster, new BeamPayload(caster.getUuid(), start, maxRange, true, direction));
+
+        // Pass the caster UUID and start position to the renderer. (If caster is a player)
+        if (caster instanceof ServerPlayerEntity player) {
+            ServerPlayNetworking.send(player, new BeamPayload(caster.getUuid(), start, maxRange, true, direction));
+        }
+
+        // Send the packet to all players tracking the caster entity (So everyone can see a boss's barrier render)
+        for (ServerPlayerEntity player : PlayerLookup.tracking(caster)) {
+            if (player != caster) {
+                ServerPlayNetworking.send(player, new BeamPayload(caster.getUuid(), start, maxRange, true, direction));
+            }
+        }
 
         // Create a runnable to be executed later
         DelayedServerEffects.delay(delay, () -> {

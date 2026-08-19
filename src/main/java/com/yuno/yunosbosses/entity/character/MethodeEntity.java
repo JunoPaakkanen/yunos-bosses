@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.entity.character;
 
+import com.yuno.yunosbosses.entity.goal.MethodeAttackGoal;
 import com.yuno.yunosbosses.item.ModItems;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
@@ -64,8 +65,8 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
         // Get revenge on the player if she gets hit.
         this.targetSelector.add(1, new RevengeGoal(this));
 
-        // Move towards her targets to melee attack them.
-        this.goalSelector.add(2, new MeleeAttackGoal(this, 2D, true));
+        // Move towards her targets to attack them.
+        this.goalSelector.add(2, new MethodeAttackGoal(this, 2D));
     }
 
     @Override

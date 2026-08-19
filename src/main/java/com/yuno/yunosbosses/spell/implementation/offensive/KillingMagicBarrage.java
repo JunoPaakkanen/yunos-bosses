@@ -27,17 +27,17 @@ public class KillingMagicBarrage extends KillingMagic {
             // Damage calculation
             float baseDamage = 15.0F;
             float damageMultiplier = 1.0F;
-            // Apply damage multiplier
             if (staff.getItem() instanceof StaffItem staffItem) {
                 damageMultiplier = staffItem.getPowerMultiplier();
             }
             float trueDamage = baseDamage * damageMultiplier;
 
-            // Calculate the convergence point where all beams will aim
-            Vec3d playerLookVector = caster.getRotationVector();
-            double convergenceDistance = 12.0; // Distance to the focal point
-            Vec3d targetPoint = caster.getEyePos().add(playerLookVector.multiply(convergenceDistance));
-            
+            // Use the actual attack target, fall back to look vector if none
+            LivingEntity target = caster.getAttacking();
+            Vec3d targetPoint = (target != null)
+                    ? target.getEyePos()
+                    : caster.getEyePos().add(caster.getRotationVector().multiply(12.0));
+
             // Fire multiple beams with staggered delays
             for (int beamIndex = 0; beamIndex < BEAM_COUNT; beamIndex++) {
                 int delayForThisBeam = beamIndex * DELAY_BETWEEN_BEAMS;

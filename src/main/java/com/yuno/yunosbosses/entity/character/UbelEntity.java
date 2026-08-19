@@ -66,7 +66,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         // Get revenge on the player if she gets hit.
         this.targetSelector.add(1, new RevengeGoal(this));
 
-        // Move towards her targets to melee attack them.
+        // Move towards her targets to attack them.
         this.goalSelector.add(2, new UbelAttackGoal(this, 2D));
     }
 

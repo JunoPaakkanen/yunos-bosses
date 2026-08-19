@@ -8,12 +8,16 @@ import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+
+import java.util.UUID;
 
 public class KillingMagicRenderer {
 
@@ -26,11 +30,23 @@ public class KillingMagicRenderer {
         });
     }
 
+    // Helper method to get an entity by its UUID
+    private static Entity getEntityByUuid(ClientWorld world, UUID uuid) {
+        if (uuid == null || world == null) return null;
+        for (Entity entity : world.getEntities()) {
+            if (entity.getUuid().equals(uuid)) {
+                return entity;
+            }
+        }
+        return null;
+    }
+
     public static void renderBeam(WorldRenderContext context, Vec3d start, int range, ActiveBeam beam) {
         MatrixStack matrices = context.matrixStack();
         Vec3d cameraPos = context.camera().getPos();
 
-        PlayerEntity owner = context.world().getPlayerByUuid(beam.getOwnerUuid());
+
+        Entity owner = getEntityByUuid(context.world(), beam.getOwnerUuid());
         if (owner == null) return;
 
         // Get current player orientation
@@ -146,8 +162,10 @@ public class KillingMagicRenderer {
     }
 
     public static void renderBeam(WorldRenderContext context, ActiveBeam beam) {
-        // Look for the player who owns this beam
-        PlayerEntity owner = context.world().getPlayerByUuid(beam.getOwnerUuid());
+        if (!(context.world() instanceof ClientWorld clientWorld)) return;
+
+        // Look for the entity who owns this beam
+        Entity owner = getEntityByUuid(clientWorld, beam.getOwnerUuid());
         if (owner == null) return;
 
         Vec3d currentStart = beam.getStart();
