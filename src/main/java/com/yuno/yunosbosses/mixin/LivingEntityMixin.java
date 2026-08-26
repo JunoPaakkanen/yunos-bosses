@@ -4,15 +4,24 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import com.yuno.yunosbosses.util.EffectRemovalContext;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LimbAnimator;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
+import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -36,11 +45,60 @@ public abstract class LivingEntityMixin {
         LivingEntity entity = (LivingEntity) (Object) this;
 
         if (entity.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
-            // Amplifies the damage by 2x.
-            return amount * 2.0F;
+            // Amplify damage and shatter frame
+            float damage = ProjectionSorcery.shatterFrame(entity, source, amount);
+
+            // Remove effect manually (bypass onStatusEffectRemoved)
+            try {
+                EffectRemovalContext.setManualRemoval(true);
+                entity.removeStatusEffect(ModEffects.FRAME_FREEZE);
+            } finally {
+                EffectRemovalContext.setManualRemoval(false);
+            }
+
+            return damage;
         }
 
         return amount; // Return original damage if they aren't frozen
+    }
+
+    @Inject(method = "damage", at = @At("HEAD"))
+    private void increaseMeterOnDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        // The entity being attacked/damaged
+        LivingEntity victim = (LivingEntity) (Object) this;
+
+        // Check if the direct attacker is a LivingEntity
+        if (source.getAttacker() instanceof PlayerEntity attacker) {
+
+            // Check if the attacker has projection sorcery as the active spell
+            var component = ModEntityComponents.SPELL_DATA.get(attacker);
+            if (component.getActiveSpell() instanceof ProjectionSorcery) {
+
+                // Ensure it was a direct melee punch rather than a projectile
+                if (source.getSource() == attacker) {
+                    component.addFrameMeter(10);
+                }
+            }
+        }
+    }
+
+    @Inject(method = "damage", at = @At("RETURN"))
+    private void applyEffectOnSuccessfulHit(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        // cir.getReturnValue() is true ONLY if damage was successfully dealt
+        if (!cir.getReturnValue()) {
+            return;
+        }
+
+        LivingEntity target = (LivingEntity) (Object) this;
+        Entity attacker = source.getAttacker();
+
+        if (attacker instanceof PlayerEntity player) {
+            var component = ModEntityComponents.SPELL_DATA.get(player);
+            if (component.getFrameMeter() >= 100) {
+                target.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 40, 0, false, false, true));
+                component.setFrameMeter(0);
+            }
+        }
     }
 
     // Intercepts the exact moment a status effect is stripped or expires naturally
@@ -48,45 +106,37 @@ public abstract class LivingEntityMixin {
     private void yunosbosses$triggerGlassShatter(StatusEffectInstance effect, CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;
 
+        // Sync effect removal to nearby tracking clients so client-side rendering (e.g., LivingEntityRendererMixin) updates
+        if (!entity.getWorld().isClient()) {
+            RemoveEntityStatusEffectS2CPacket packet = new RemoveEntityStatusEffectS2CPacket(entity.getId(), effect.getEffectType());
+            for (ServerPlayerEntity player : PlayerLookup.tracking(entity)) {
+                player.networkHandler.sendPacket(packet);
+            }
+        }
+
+        // If the effect removal is triggered manually, skip this
+        if (EffectRemovalContext.isManualRemoval()) {
+            return;
+        }
+
         // Check if the removed effect is Frame Freeze
         if (effect.getEffectType().value() == ModEffects.FRAME_FREEZE.value()) {
-
-            // Execute only on the server
-            if (!entity.getWorld().isClient() && entity.getWorld() instanceof ServerWorld serverWorld) {
-                double x = entity.getX();
-                double y = entity.getY() + (entity.getHeight() / 2.0); // Center at torso height
-                double z = entity.getZ();
-
-                // Play Frame Shatter sound effect
-                serverWorld.playSound(null, x, y, z, ModSounds.FRAME_SHATTER, SoundCategory.PLAYERS, 1.0F, 1.0F);
-
-                // Spawn Frame Shatter particle
-                serverWorld.spawnParticles(
-                        ModParticles.FRAME_SHATTER_PARTICLE,
-                        x, y, z,
-                        1,
-                        0.1, 0.1, 0.1,
-                        0.1
-                );
-
-                // Layer bright critical hit stars
-                serverWorld.spawnParticles(
-                        ParticleTypes.CRIT,
-                        x, y, z,
-                        20,
-                        0.2, 0.4, 0.2,
-                        0.15
-                );
-
-                // Damage the entity
-                entity.damage(serverWorld.getDamageSources().indirectMagic(entity, entity), 5.0F);
-            }
+            float damage = ProjectionSorcery.shatterFrame(entity, null, 0);
+            entity.damage(entity.getDamageSources().indirectMagic(entity, entity), damage);
         }
     }
 
     @Inject(method = "onStatusEffectApplied", at = @At("TAIL"))
-    private void yunosbosses$playFreezeSoundOnApply(StatusEffectInstance effect, Entity source, CallbackInfo ci) {
+    private void yunosbosses$onStatusEffectApplied(StatusEffectInstance effect, Entity source, CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;
+
+        // Sync effect application to nearby tracking clients
+        if (!entity.getWorld().isClient()) {
+            EntityStatusEffectS2CPacket packet = new EntityStatusEffectS2CPacket(entity.getId(), effect, true);
+            for (ServerPlayerEntity player : PlayerLookup.tracking(entity)) {
+                player.networkHandler.sendPacket(packet);
+            }
+        }
 
         // Play the Frame Freeze sound when the Frame Freeze effect is applied
         if (effect.getEffectType().value() == ModEffects.FRAME_FREEZE.value()) {
@@ -94,6 +144,63 @@ public abstract class LivingEntityMixin {
                 serverWorld.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
                         ModSounds.FRAME_FREEZE, SoundCategory.PLAYERS, 1.0F, 1.0F);
             }
+        }
+    }
+
+    @Inject(method = "onStatusEffectUpgraded", at = @At("TAIL"))
+    private void yunosbosses$onStatusEffectUpgraded(StatusEffectInstance effect, boolean reapplyEffect, Entity source, CallbackInfo ci) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+
+        // Sync effect upgrade to nearby tracking clients
+        if (!entity.getWorld().isClient()) {
+            EntityStatusEffectS2CPacket packet = new EntityStatusEffectS2CPacket(entity.getId(), effect, true);
+            for (ServerPlayerEntity player : PlayerLookup.tracking(entity)) {
+                player.networkHandler.sendPacket(packet);
+            }
+        }
+    }
+
+    @Shadow protected abstract void tickStatusEffects();
+    @Shadow public LimbAnimator limbAnimator;
+    @Shadow public float prevBodyYaw;
+    @Shadow public float prevHeadYaw;
+
+    @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
+    private void onTickFreeze(CallbackInfo ci) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+
+        if (entity.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
+            // Lock velocity
+            entity.setVelocity(Vec3d.ZERO);
+            entity.velocityDirty = true;
+
+            // Sync previous coordinates to current coordinates to stop interpolation jitter
+            entity.prevX = entity.getX();
+            entity.prevY = entity.getY();
+            entity.prevZ = entity.getZ();
+            entity.lastRenderX = entity.getX();
+            entity.lastRenderY = entity.getY();
+            entity.lastRenderZ = entity.getZ();
+
+            // Sync rotation fields
+            entity.prevYaw = entity.getYaw();
+            entity.prevPitch = entity.getPitch();
+            this.prevBodyYaw = entity.bodyYaw;
+            this.prevHeadYaw = entity.headYaw;
+
+            // Freeze limb animation calculations
+            if (this.limbAnimator != null) {
+                this.limbAnimator.setSpeed(0.0F);
+                this.limbAnimator.updateLimbs(0.0F, 1.0F);
+            }
+
+            // Decay status effect on the server
+            if (!entity.getWorld().isClient()) {
+                this.tickStatusEffects();
+            }
+
+            entity.onLanding();
+            ci.cancel();
         }
     }
 }

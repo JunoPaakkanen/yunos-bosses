@@ -55,9 +55,9 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
             MatrixStack.Entry entry = matrixStack.peek();
             Matrix4f positionMatrix = entry.getPositionMatrix();
 
-            // Draw a rectangular photo frame backing slightly behind the player's back (On both sides)
-            float width = 0.8F;
-            float height = 2.0F;
+            // Draw a rectangular photo frame backing slightly behind the entity's back (On both sides)
+            float width = Math.max(0.8F, (entity.getWidth() + 0.4F) / 2.0F);
+            float height = Math.max(2.0F, entity.getHeight() + 0.2F);
             float offsetZ = -0.05F;
             float offsetZBack = -0.05F;
 
@@ -72,7 +72,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
             // Back quad
             buffer.vertex(positionMatrix, width, 0.0F, offsetZBack - 0.005F).color(255, 255, 255, 255).texture(0.0F, 1.0F).overlay(0, 10).light(fullBright).normal(0, 0, -1);
             buffer.vertex(positionMatrix, -width, 0.0F, offsetZBack - 0.005F).color(255, 255, 255, 255).texture(1.0F, 1.0F).overlay(0, 10).light(fullBright).normal(0, 0, -1);
-            buffer.vertex(positionMatrix, -width, height, offsetZBack - 0.005F).color(255, 255, 255, 255).texture(1.0F, 0.0F).overlay(0, 10).light(fullBright).normal(0, 0, -1);
+            buffer.vertex(positionMatrix, -width, height, offsetZBack - 0.005F).color(255, 255, 255, 255).texture(0.0F, 0.0F).overlay(0, 10).light(fullBright).normal(0, 0, -1);
             buffer.vertex(positionMatrix, width, height, offsetZBack - 0.005F).color(255, 255, 255, 255).texture(0.0F, 0.0F).overlay(0, 10).light(fullBright).normal(0, 0, -1);
         }
     }
@@ -80,7 +80,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
     @Inject(method = "render*", at = @At("RETURN"))
     private void yunosbosses$popMatrix(T entity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CallbackInfo ci) {
         if (entity.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
-            // Restore the original player head yaw/pitch so camera looking is unaffected
+            // Restore the original head yaw/pitch
             entity.headYaw = this.yunosbosses$savedHeadYaw;
             entity.prevHeadYaw = this.yunosbosses$savedPrevHeadYaw;
             entity.setPitch(this.yunosbosses$savedPitch);

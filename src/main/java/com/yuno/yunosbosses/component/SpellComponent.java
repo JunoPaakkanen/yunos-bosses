@@ -48,5 +48,10 @@ public interface SpellComponent extends Component, AutoSyncedComponent, ServerTi
     void setProjectionIndex(int index);
     void addSpeedStack();
     int getSpeedStacks();
+    void setFrameMeter(int value);
+    void incrementFrameMeter();
+    void addFrameMeter(int value);
+    int getFrameMeter();
+    int clamp(int newValue);
 
 }

@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses.component;
 
+import com.yuno.yunosbosses.render.ManaHudRenderer;
+
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
@@ -44,6 +46,7 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     private int projectionSpeedStacks = 0;
     private int speedStackDecayTimer = 0;
     private static final Identifier PROJECTION_SPEED_MODIFIER = Identifier.of("yunosbosses", "projection_speed_modifier");
+    private int frameMeter = 0;
 
     // Contructor to grab the player
     public PlayerSpellComponent(LivingEntity player) {
@@ -213,6 +216,14 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                 }
             }
         }
+
+        // Read Projection Sorcery data
+        if (tag.contains("ProjectionSpeedStacks")) {
+            this.projectionSpeedStacks = tag.getInt("ProjectionSpeedStacks");
+        }
+        if (tag.contains("FrameMeter")) {
+            this.frameMeter = tag.getInt("FrameMeter");
+        }
     }
 
     @Override
@@ -251,6 +262,10 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             }
         }
         tag.put("EquippedSpells", equippedList);
+
+        // Persist Projection Sorcery data
+        tag.putInt("ProjectionSpeedStacks", this.projectionSpeedStacks);
+        tag.putInt("FrameMeter", this.frameMeter);
     }
 
     @Override
@@ -332,6 +347,35 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     }
 
     @Override
+    public void setFrameMeter(int value) {
+        this.frameMeter = clamp(value);
+        ModEntityComponents.SPELL_DATA.sync(this.player);
+    }
+
+    @Override
+    public void incrementFrameMeter() {
+        this.frameMeter = clamp(this.frameMeter + 1);
+        ModEntityComponents.SPELL_DATA.sync(this.player);
+    }
+
+    @Override
+    public void addFrameMeter(int value) {
+        this.frameMeter = clamp(this.frameMeter + value);
+        ModEntityComponents.SPELL_DATA.sync(this.player);
+    }
+
+    @Override
+    public int getFrameMeter() {
+        return this.frameMeter;
+    }
+
+    @Override
+    public int clamp(int newValue) {
+        if (newValue > 100) return 100;
+        return Math.max(newValue, 0);
+    }
+
+    @Override
     public void serverTick() {
         boolean[] needsSync = {false};
 
@@ -349,6 +393,8 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                         // Get the player and apply the penalty
                         this.player.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 40, 0, false, false, true));
                         this.player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 255, false, false, true));
+                        // Delete speed stacks
+                        this.projectionSpeedStacks = 0;
                     }
                     // Clean up the projection images
                     this.projectionImages.clear();

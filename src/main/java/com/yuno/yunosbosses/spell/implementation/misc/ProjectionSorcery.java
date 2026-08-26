@@ -3,15 +3,21 @@ package com.yuno.yunosbosses.spell.implementation.misc;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.network.SpawnImagePayload;
+import com.yuno.yunosbosses.particle.ModParticles;
+import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
+import com.yuno.yunosbosses.util.WallSlamData;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -136,6 +142,56 @@ public class ProjectionSorcery extends Spell {
             component.setProjectionImages(new ArrayList<>());
             component.setProjectionIndex(0);
         }
+    }
+
+    public static float shatterFrame(LivingEntity entity, DamageSource source, float damage) {
+        // Execute only on the server
+        if (!entity.getWorld().isClient() && entity.getWorld() instanceof ServerWorld serverWorld) {
+            double x = entity.getX();
+            double y = entity.getY() + (entity.getHeight() / 2.0); // Center at torso height
+            double z = entity.getZ();
+
+            // Play Frame Shatter sound effect (variation depends on damage)
+            if (damage > 0.0) {
+                serverWorld.playSound(null, x, y, z, ModSounds.FRAME_SHATTER_FROM_DAMAGE, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            }
+            else {
+                serverWorld.playSound(null, x, y, z, ModSounds.FRAME_SHATTER, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            }
+
+            // Spawn Frame Shatter particle
+            serverWorld.spawnParticles(
+                    ModParticles.FRAME_SHATTER_PARTICLE,
+                    x, y, z,
+                    1,
+                    0.1, 0.1, 0.1,
+                    0.1
+            );
+
+            // Layer bright critical hit stars
+            serverWorld.spawnParticles(
+                    ParticleTypes.CRIT,
+                    x, y, z,
+                    20,
+                    0.2, 0.4, 0.2,
+                    0.15
+            );
+
+            // Enable wall slamming damage
+            if (entity instanceof WallSlamData data) {
+                // During these 30 ticks the target will be able to take damage from slamming into a wall
+                data.yunos$setWallSlamTimer(30);
+            }
+
+            // Damage the entity 150% if damage triggered frame shatter
+            if (damage > 0.0) {
+                damage *= 1.5F;
+                return damage;
+            }
+            // Otherwise deal small damage
+            return 5.0F;
+        }
+        return damage;
     }
 
     @Override
