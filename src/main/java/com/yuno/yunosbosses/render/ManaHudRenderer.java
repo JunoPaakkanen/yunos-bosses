@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.render;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -18,7 +19,8 @@ public class ManaHudRenderer {
 
     public static void renderManaBar(DrawContext guiGraphics, int screenWidth, int screenHeight, ClientPlayerEntity player) {
         var manaComponent = ModEntityComponents.MANA.get(player);
-        Spell activeSpell = ModEntityComponents.SPELL_DATA.get(player).getActiveSpell();
+        var spellComponent = ModEntityComponents.SPELL_DATA.get(player);
+        Spell activeSpell = spellComponent.getActiveSpell();
 
         float mana = manaComponent.getMana();
         float maxMana = manaComponent.getMaxMana();
@@ -87,6 +89,25 @@ public class ManaHudRenderer {
             guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(transformedString), textX, textY, 0xFFFF0000);
         } else {
             guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(manaString), textX, textY, 0xFFFFFFFF);
+        }
+
+        // Render Projection Sorcery-specific HUD elements
+        if (activeSpell != null && activeSpell == ModSpells.PROJECTION_SORCERY) {
+            int speedStacks = spellComponent.getSpeedStacks();
+            int frameMeter = spellComponent.getFrameMeter();
+
+            int gap = 10;
+            int sideTextY = y - 10;
+
+            // Speed stacks on the LEFT of the mana bar
+            String speedText = "Speed: " + speedStacks + "/15";
+            int speedTextX = x - gap - textRenderer.getWidth(speedText);
+            guiGraphics.drawTextWithShadow(textRenderer, Text.literal(speedText), speedTextX, sideTextY, 0xFF55FFFF);
+
+            // Frame meter on the RIGHT of the mana bar
+            String frameText = "Frame: " + frameMeter + "%";
+            int frameTextX = x + BAR_WIDTH + gap;
+            guiGraphics.drawTextWithShadow(textRenderer, Text.literal(frameText), frameTextX, sideTextY, 0xFF55FF55);
         }
     }
 }
