@@ -20,7 +20,12 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
@@ -81,8 +86,10 @@ public class ProjectionSorcery extends Spell {
         component.setProjectionImages(imagePositions);
         component.setProjectionIndex(0);
 
-        // Mutable reference to keep track of the last spawned frame's position
+        // Mutable references to keep track of the last spawned frame's position and trajectory direction
         final Vec3d[] lastPos = new Vec3d[]{ caster.getPos() };
+        final Vec3d[] currentDir = new Vec3d[]{ caster.getRotationVec(1.0F) };
+        final Vec3d[] lastCasterLook = new Vec3d[]{ caster.getRotationVec(1.0F) };
 
         for (int i = 0; i < imageCount; i++) {
             int delayTicks = i * intervalTicks; // 0 ticks, 2 ticks, 4 ticks, 6 ticks, 8 ticks
@@ -92,11 +99,24 @@ public class ProjectionSorcery extends Spell {
                 if (!caster.isAlive() || caster.getWorld().isClient()) return;
 
                 // Fetch current camera orientation at the EXACT moment this tick fires
-                Vec3d currentLookDir = caster.getRotationVec(1.0F);
+                Vec3d casterLook = caster.getRotationVec(1.0F);
+                Vec3d lookDelta = casterLook.subtract(lastCasterLook[0]);
+                lastCasterLook[0] = casterLook;
 
-                // Extend from the previously spawned frame
-                Vec3d nextFramePos = lastPos[0].add(currentLookDir.multiply(frameDistance));
+                // Adjust current direction with the player's camera movement (if any)
+                Vec3d travelDir = currentDir[0].add(lookDelta);
+                if (travelDir.lengthSquared() > 1.0e-5) {
+                    travelDir = travelDir.normalize();
+                } else {
+                    travelDir = casterLook;
+                }
+
+                // Calculate next frame position with collision checking & ricochet
+                Vec3d[] outDir = new Vec3d[]{ travelDir };
+                Vec3d nextFramePos = calculateFramePosition(world, caster, lastPos[0], travelDir, frameDistance, outDir);
+
                 lastPos[0] = nextFramePos; // Update tracking pointer for the next frame in line
+                currentDir[0] = outDir[0]; // Update direction so future frames follow the ricocheted trajectory
 
                 // Save to the component list
                 imagePositions.add(nextFramePos);
@@ -108,6 +128,60 @@ public class ProjectionSorcery extends Spell {
                 }
             });
         }
+    }
+
+    private Vec3d calculateFramePosition(World world, LivingEntity caster, Vec3d startPos, Vec3d travelDir, double distance, Vec3d[] outDir) {
+        Vec3d stepPos = startPos;
+        Vec3d dir = travelDir;
+        double remainingDist = distance;
+        int maxBounces = 3;
+
+        for (int bounce = 0; bounce < maxBounces && remainingDist > 0.001; bounce++) {
+            // Raycast starting slightly elevated off current surface to avoid immediate collision with the ground beneath feet
+            Vec3d rayStart = stepPos.add(0, 0.1, 0);
+            Vec3d rayEnd = rayStart.add(dir.multiply(remainingDist));
+
+            BlockHitResult hit = world.raycast(new RaycastContext(
+                    rayStart,
+                    rayEnd,
+                    RaycastContext.ShapeType.COLLIDER,
+                    RaycastContext.FluidHandling.NONE,
+                    caster
+            ));
+
+            if (hit.getType() == HitResult.Type.BLOCK) {
+                Vec3d hitPos = hit.getPos();
+                Direction side = hit.getSide();
+                Vec3d normal = new Vec3d(side.getOffsetX(), side.getOffsetY(), side.getOffsetZ());
+
+                double traveled = rayStart.distanceTo(hitPos);
+                remainingDist = Math.max(0.0, remainingDist - traveled);
+
+                // Reflect direction off the solid surface normal: r = d - 2*(d . n)*n
+                double dot = dir.dotProduct(normal);
+                if (dot < 0) {
+                    dir = dir.subtract(normal.multiply(2.0 * dot)).normalize();
+                } else {
+                    dir = normal;
+                }
+
+                // Place step position slightly off the hit surface along the normal
+                stepPos = hitPos.add(normal.multiply(0.05));
+            } else {
+                stepPos = stepPos.add(dir.multiply(remainingDist));
+                remainingDist = 0;
+                break;
+            }
+        }
+
+        // Safety check: ensure stepPos is not inside a solid block
+        BlockPos blockPos = BlockPos.ofFloored(stepPos);
+        if (world.getBlockState(blockPos).isSolidBlock(world, blockPos)) {
+            stepPos = new Vec3d(stepPos.x, blockPos.getY() + 1.0, stepPos.z);
+        }
+
+        outDir[0] = dir;
+        return stepPos;
     }
 
     public void altCast(World world, LivingEntity caster, ItemStack staff) {
