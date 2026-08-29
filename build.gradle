@@ -63,7 +63,7 @@ dependencies {
 	include "org.ladysnake.cardinal-components-api:cardinal-components-entity:6.1.1"
 
 	// PlayerAnimationLibrary for complex player animations
-	modImplementation "com.zigythebird.playeranim:PlayerAnimationLibFabric:1.1.4+mc.1.21.1"
+	modImplementation "com.zigythebird.playeranim:PlayerAnimationLibFabric:${project.pal_version}"
 
 	// Geckolib for complex entity animations
 	modImplementation "software.bernie.geckolib:geckolib-fabric-1.21.1:4.8.4"
@@ -92,6 +92,10 @@ java {
 
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.named('sourcesJar') {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 jar {
