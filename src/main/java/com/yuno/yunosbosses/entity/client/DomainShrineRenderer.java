@@ -1,38 +1,41 @@
 package com.yuno.yunosbosses.entity.client;
 
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
+import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
+import software.bernie.geckolib.renderer.base.GeoRenderState;
 
-public class DomainShrineRenderer extends GeoEntityRenderer<DomainShrineEntity> {
+public class DomainShrineRenderer<R extends EntityRenderState & GeoRenderState> extends GeoEntityRenderer<DomainShrineEntity, R> {
 
     public DomainShrineRenderer(EntityRendererFactory.Context ctx) {
-        // Pass the GeckoLib model instance directly to the super constructor
         super(ctx, new DomainShrineModel());
+        withScale(4.0F);
     }
 
     @Override
-    public void render(DomainShrineEntity entity, float entityYaw, float tickDelta, MatrixStack matrixStack, VertexConsumerProvider vertexConsumers, int light) {
-        matrixStack.push();
+    public void adjustPositionForRender(R renderState, MatrixStack poseStack, BakedGeoModel model, boolean isReRender) {
+        super.adjustPositionForRender(renderState, poseStack, model, isReRender);
+        if (!isReRender) {
+            float riseDuration = 45.0f; // 2.25 seconds
+            float currentAge = renderState.age;
+            float startingDepth = -6.0f; // Starts 6 blocks underground
+            float yOffset = currentAge < riseDuration ? startingDepth * (1.0f - (currentAge / riseDuration)) : 0.0f;
 
-        // RISING ANIMATION
-        float riseDuration = 45.0f; // 2.25 seconds
-        float currentAge = entity.age + tickDelta;
-        float startingDepth = -6.0f; // Starts 6 blocks underground
-        float yOffset = currentAge < riseDuration ? startingDepth * (1.0f - (currentAge / riseDuration)) : 0.0f;
+            poseStack.translate(0.0, yOffset, 0.0);
+        }
+    }
 
-        matrixStack.translate(0.0, yOffset, 0.0);
-
-        // Make it massive
-        matrixStack.scale(4.0F, 4.0F, 4.0F);
-
+    @Override
+    public void actuallyRender(R renderState, MatrixStack poseStack, BakedGeoModel model, RenderLayer renderType,
+                               VertexConsumerProvider bufferSource, VertexConsumer buffer, boolean isReRender,
+                               int packedLight, int packedOverlay, int renderColor) {
         int lightLevel = 15728880;
-
-        // 3. Draw the model using GeckoLib's rendering engine
-        super.render(entity, entityYaw, tickDelta, matrixStack, vertexConsumers, lightLevel);
-
-        matrixStack.pop();
+        super.actuallyRender(renderState, poseStack, model, renderType, bufferSource, buffer, isReRender, lightLevel, packedOverlay, renderColor);
     }
 }
