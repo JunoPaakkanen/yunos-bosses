@@ -4,7 +4,7 @@ import com.yuno.yunosbosses.effect.MilkProof;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.item.MilkBucketItem;
+import net.minecraft.item.consume.ClearAllEffectsConsumeEffect;
 import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,10 +13,10 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mixin(MilkBucketItem.class)
+@Mixin(ClearAllEffectsConsumeEffect.class)
 public class MilkBucketMixin {
     @Redirect(
-            method = "finishUsing",
+            method = "onConsume",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/LivingEntity;clearStatusEffects()Z")
     )
     private boolean preventClearing(LivingEntity entity) {
