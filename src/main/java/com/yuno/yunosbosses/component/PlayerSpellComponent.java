@@ -1,7 +1,6 @@
 package com.yuno.yunosbosses.component;
 
-import com.yuno.yunosbosses.render.ManaHudRenderer;
-
+import com.mojang.serialization.Codec;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
@@ -11,11 +10,8 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import org.ladysnake.cca.api.v3.component.tick.ServerTickingComponent;
@@ -48,7 +44,7 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     private static final Identifier PROJECTION_SPEED_MODIFIER = Identifier.of("yunosbosses", "projection_speed_modifier");
     private int frameMeter = 0;
 
-    // Contructor to grab the player
+    // Constructor to grab the player
     public PlayerSpellComponent(LivingEntity player) {
         this.player = player;
     }
@@ -171,108 +167,100 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
         ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 
-    // NBT Serialization
+    // Component Data Serialization (CCA / Minecraft ReadView & WriteView)
 
     @Override
-    public void readFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
+    public void readData(ReadView readView) {
         // Read learned spells
-        NbtList list = tag.getList("KnownSpells", NbtElement.STRING_TYPE);
-        knownSpells.clear();
-        for (int i = 0; i < list.size(); i++) {
-            knownSpells.add(ModSpells.getSpell(Identifier.of(list.getString(i))));
-        }
+        this.knownSpells.clear();
+        readView.getOptionalTypedListView("KnownSpells", Identifier.CODEC).ifPresent(list -> {
+            for (Identifier id : list) {
+                Spell spell = ModSpells.getSpell(id);
+                if (spell != null) {
+                    this.knownSpells.add(spell);
+                }
+            }
+        });
 
         // Read active spell
-        if (tag.contains("ActiveSpellId")) {
-            Identifier id = Identifier.of(tag.getString("ActiveSpellId"));
+        this.activeSpell = null;
+        readView.read("ActiveSpellId", Identifier.CODEC).ifPresent(id -> {
             this.activeSpell = ModSpells.getSpell(id);
-        }
+        });
 
         // Read active alt casts
         this.activeAltCasts.clear();
-        if (tag.contains("ActiveAltCasts")) {
-            NbtCompound altCastsTag = tag.getCompound("ActiveAltCasts");
-            for (String key : altCastsTag.getKeys()) {
-                this.activeAltCasts.put(Identifier.of(key), altCastsTag.getInt(key));
-            }
-        }
+        readView.read("ActiveAltCasts", Codec.unboundedMap(Identifier.CODEC, Codec.INT)).ifPresent(this.activeAltCasts::putAll);
 
         // Read max slots
-        if (tag.contains("MaxSpellSlots")) {
-            this.maxSpellSlots = tag.getInt("MaxSpellSlots");
-        }
+        this.maxSpellSlots = readView.getInt("MaxSpellSlots", 3);
 
         // Read equipped spells loadout
         this.equippedSpells = new Spell[10];
-        if (tag.contains("EquippedSpells")) {
-            NbtList equippedList = tag.getList("EquippedSpells", NbtElement.COMPOUND_TYPE);
-            for (int i = 0; i < equippedList.size(); i++) {
-                NbtCompound slotTag = equippedList.getCompound(i);
-                int slot = slotTag.getInt("Slot");
-                Identifier id = Identifier.of(slotTag.getString("SpellId"));
-
-                if (slot >= 0 && slot < 10) {
-                    this.equippedSpells[slot] = ModSpells.getSpell(id);
-                }
+        readView.getOptionalListReadView("EquippedSpells").ifPresent(list -> {
+            for (ReadView slotTag : list) {
+                int slot = slotTag.getInt("Slot", -1);
+                slotTag.read("SpellId", Identifier.CODEC).ifPresent(id -> {
+                    if (slot >= 0 && slot < 10) {
+                        this.equippedSpells[slot] = ModSpells.getSpell(id);
+                    }
+                });
             }
-        }
+        });
 
         // Read Projection Sorcery data
-        if (tag.contains("ProjectionSpeedStacks")) {
-            this.projectionSpeedStacks = tag.getInt("ProjectionSpeedStacks");
-        }
-        if (tag.contains("FrameMeter")) {
-            this.frameMeter = tag.getInt("FrameMeter");
-        }
+        this.projectionSpeedStacks = readView.getInt("ProjectionSpeedStacks", 0);
+        this.frameMeter = readView.getInt("FrameMeter", 0);
     }
 
     @Override
-    public void writeToNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
+    public void writeData(WriteView writeView) {
         // Persist the known spells
-        NbtList list = new NbtList();
-        for (Spell spell : knownSpells) {
-            list.add(NbtString.of(spell.getId().toString()));
+        var knownSpellsAppender = writeView.getListAppender("KnownSpells", Identifier.CODEC);
+        for (Spell spell : this.knownSpells) {
+            if (spell != null) {
+                knownSpellsAppender.add(spell.getId());
+            }
         }
-        tag.put("KnownSpells", list);
 
         // Persist the active spell
-        if (activeSpell != null) {
-            tag.putString("ActiveSpellId", activeSpell.getId().toString());
+        if (this.activeSpell != null) {
+            writeView.put("ActiveSpellId", Identifier.CODEC, this.activeSpell.getId());
         }
 
         // Persist the active alt casts
-        NbtCompound altCastsTag = new NbtCompound();
-        for (Map.Entry<Identifier, Integer> entry : this.activeAltCasts.entrySet()) {
-            altCastsTag.putInt(entry.getKey().toString(), entry.getValue());
+        if (!this.activeAltCasts.isEmpty()) {
+            writeView.put("ActiveAltCasts", Codec.unboundedMap(Identifier.CODEC, Codec.INT), this.activeAltCasts);
         }
-        tag.put("ActiveAltCasts", altCastsTag);
 
         // Persist max slots
-        tag.putInt("MaxSpellSlots", this.maxSpellSlots);
+        writeView.putInt("MaxSpellSlots", this.maxSpellSlots);
 
         // Persist equippedSpells loadout
-        NbtList equippedList = new NbtList();
+        WriteView.ListView equippedList = writeView.getList("EquippedSpells");
         for (int i = 0; i < this.maxSpellSlots; i++) {
             Spell spell = this.equippedSpells[i];
             if (spell != null) {
-                NbtCompound slotTag = new NbtCompound();
+                WriteView slotTag = equippedList.add();
                 slotTag.putInt("Slot", i);
-                slotTag.putString("SpellId", spell.getId().toString());
-                equippedList.add(slotTag);
+                slotTag.put("SpellId", Identifier.CODEC, spell.getId());
             }
         }
-        tag.put("EquippedSpells", equippedList);
 
         // Persist Projection Sorcery data
-        tag.putInt("ProjectionSpeedStacks", this.projectionSpeedStacks);
-        tag.putInt("FrameMeter", this.frameMeter);
+        writeView.putInt("ProjectionSpeedStacks", this.projectionSpeedStacks);
+        writeView.putInt("FrameMeter", this.frameMeter);
     }
 
     @Override
-    public void setCanChangeSpell(boolean value) { this.canChangeSpell = value;}
+    public void setCanChangeSpell(boolean value) {
+        this.canChangeSpell = value;
+    }
 
     @Override
-    public boolean canChangeSpell() { return this.canChangeSpell; }
+    public boolean canChangeSpell() {
+        return this.canChangeSpell;
+    }
 
     @Override
     public boolean hasAltCastWindow(Spell spell) {
@@ -323,7 +311,7 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     }
 
     public void updateSpeedAttribute() {
-        EntityAttributeInstance speedAttribute = this.player.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+        EntityAttributeInstance speedAttribute = this.player.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
         if (speedAttribute == null) return;
 
         // Remove any old modifier first
@@ -341,6 +329,7 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             speedAttribute.addTemporaryModifier(modifier);
         }
     }
+
     @Override
     public int getSpeedStacks() {
         return this.projectionSpeedStacks;

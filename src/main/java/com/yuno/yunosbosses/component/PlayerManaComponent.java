@@ -1,9 +1,9 @@
 package com.yuno.yunosbosses.component;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import org.ladysnake.cca.api.v3.component.sync.AutoSyncedComponent;
 import org.ladysnake.cca.api.v3.component.tick.ServerTickingComponent;
 
@@ -84,14 +84,14 @@ public class PlayerManaComponent implements ManaComponent, AutoSyncedComponent, 
     }
 
     @Override
-    public void readFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup wrapperLookup) {
-        mana = tag.getFloat("mana");
-        maxMana = tag.getFloat("maxMana");
+    public void readData(ReadView readView) {
+        this.mana = readView.getFloat("mana", this.mana);
+        this.maxMana = readView.getFloat("maxMana", this.maxMana);
     }
 
     @Override
-    public void writeToNbt(NbtCompound tag, RegistryWrapper.WrapperLookup wrapperLookup) {
-        tag.putFloat("mana", mana);
-        tag.putFloat("maxMana", maxMana);
+    public void writeData(WriteView writeView) {
+        writeView.putFloat("mana", this.mana);
+        writeView.putFloat("maxMana", this.maxMana);
     }
 }

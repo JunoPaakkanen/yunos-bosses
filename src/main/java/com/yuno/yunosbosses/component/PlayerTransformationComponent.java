@@ -6,13 +6,13 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3f;
 
@@ -92,7 +92,7 @@ public class PlayerTransformationComponent implements TransformationComponent {
                     0.0
             );
             // --- NORMAL VARIANT ---
-            if (player.getInventory().selectedSlot == 0) {
+            if (player.getInventory().getSelectedSlot() == 0) {
                 // --- NORMAL VARIANT PARTICLES ---
                 // Dust effect for extra impact for the regular variant
                 serverWorld.spawnParticles(
@@ -129,7 +129,7 @@ public class PlayerTransformationComponent implements TransformationComponent {
                 }
             }
             // --- BLUE VARIANT ---
-            if (player.getInventory().selectedSlot == 1) {
+            if (player.getInventory().getSelectedSlot() == 1) {
                 // --- BLUE VARIANT PARTICLES ---
                 // Spawn small gust particles
                 serverWorld.spawnParticles(
@@ -166,10 +166,10 @@ public class PlayerTransformationComponent implements TransformationComponent {
                 }
             }
             // --- RED VARIANT ---
-            if (player.getInventory().selectedSlot == 2) {
+            if (player.getInventory().getSelectedSlot() == 2) {
                 // --- RED VARIANT PARTICLES ---
                 // Spawn red particles for the red variant
-                Vector3f pureRed = new Vector3f(1.0f, 0.0f, 0.0f); // Red color
+                int pureRed = 0xFF0000; // Red color
                 DustParticleEffect redDust = new DustParticleEffect(pureRed, 1.2f);
                 serverWorld.spawnParticles(
                         redDust,
@@ -205,19 +205,19 @@ public class PlayerTransformationComponent implements TransformationComponent {
             var targets = player.getWorld().getOtherEntities(player, hitbox);
             for (var target : targets) {
                 if (target instanceof LivingEntity livingTarget) {
-                    livingTarget.damage(player.getDamageSources().playerAttack(player), 10.0f);
+                    livingTarget.damage((ServerWorld) player.getWorld(),player.getDamageSources().playerAttack(player), 10.0f);
                 }
             }
         }
     }
 
     @Override
-    public void readFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
-        this.transformed = tag.getBoolean("IsTransformed");
+    public void readData(ReadView tag) {
+        this.transformed = tag.getBoolean("IsTransformed", false);
     }
 
     @Override
-    public void writeToNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
+    public void writeData(WriteView tag) {
         tag.putBoolean("IsTransformed", this.transformed);
     }
 }
