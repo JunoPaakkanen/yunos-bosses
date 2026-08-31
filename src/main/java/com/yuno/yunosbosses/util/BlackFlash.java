@@ -1,7 +1,6 @@
 package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
-import net.minecraft.data.client.Models;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.server.world.ServerWorld;
@@ -14,12 +13,12 @@ public class BlackFlash {
         if (user.getWorld().isClient) return;
 
         // Deal damage
-        target.damage(target.getDamageSources().indirectMagic(user, user), 10f);
+        target.damage((ServerWorld) target.getWorld(), target.getDamageSources().indirectMagic(user, user), 10f);
 
         ServerWorld serverWorld = (ServerWorld) user.getWorld();
 
         // Spawn particles
-        Vector3f pureRed = new Vector3f(1.0f, 0.0f, 0.0f); // Red color
+        int pureRed = 0xFF0000; // Red color
         DustParticleEffect redDust = new DustParticleEffect(pureRed, 1.2f);
         serverWorld.spawnParticles(
                 redDust,
@@ -50,12 +49,12 @@ public class BlackFlash {
         if (user.getWorld().isClient) return;
 
         // Deal damage
-        target.damage(target.getDamageSources().indirectMagic(user, user), 20f);
+        target.damage((ServerWorld) target.getWorld(),target.getDamageSources().indirectMagic(user, user), 20f);
 
         ServerWorld serverWorld = (ServerWorld) user.getWorld();
 
         // Spawn particles
-        Vector3f pureRed = new Vector3f(1.0f, 0.0f, 0.0f); // Red color
+        int pureRed = 0xFF0000; // Red color
         DustParticleEffect redDust = new DustParticleEffect(pureRed, 1.2f);
         serverWorld.spawnParticles(
                 redDust,
