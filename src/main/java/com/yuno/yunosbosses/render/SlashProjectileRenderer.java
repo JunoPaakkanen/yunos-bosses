@@ -1,50 +1,75 @@
 package com.yuno.yunosbosses.render;
 
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
-import net.minecraft.client.render.*;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 
-public class SlashProjectileRenderer extends EntityRenderer<SlashProjectileEntity> {
+public class SlashProjectileRenderer extends EntityRenderer<SlashProjectileEntity, SlashProjectileRenderer.SlashProjectileRenderState> {
     private static final Identifier TEXTURE = Identifier.of("yunosbosses", "textures/entity/slash.png");
-    
+
+    public static class SlashProjectileRenderState extends EntityRenderState {
+        public float yaw;
+        public float pitch;
+        public float spin;
+        public float scale;
+        public int alpha;
+    }
+
     public SlashProjectileRenderer(EntityRendererFactory.Context context) {
         super(context);
     }
 
     @Override
-    public void render(SlashProjectileEntity entity, float yaw, float tickDelta, MatrixStack matrices,
+    public SlashProjectileRenderState createRenderState() {
+        return new SlashProjectileRenderState();
+    }
+
+    @Override
+    public void updateRenderState(SlashProjectileEntity entity, SlashProjectileRenderState state, float tickDelta) {
+        super.updateRenderState(entity, state, tickDelta);
+        state.yaw = entity.getYaw(tickDelta);
+        state.pitch = entity.getPitch(tickDelta);
+
+        float totalAge = entity.age + tickDelta;
+        state.spin = entity.randomRoll + totalAge * 5.0f;
+        float ageProgress = totalAge / 20.0f;
+        state.scale = 1.0f - (ageProgress * 0.3f);
+        state.alpha = (int) ((1.0f - ageProgress) * 255);
+    }
+
+    @Override
+    public void render(SlashProjectileRenderState state, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light) {
         matrices.push();
 
         // Make the slash face the camera
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - entity.getYaw()));
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-entity.getPitch()));
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - state.yaw));
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-state.pitch));
 
         // Optional: Add a slight spin for energy effect
-        float spin = entity.randomRoll + (entity.age + tickDelta) * 5.0f;
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(spin));
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(state.spin));
 
         // Scale effect: start small, grow, then shrink
-        float ageProgress = (entity.age + tickDelta) / 20.0f; // 0.0 to 1.0 over 20 ticks
-        float scale = 1.0f - (ageProgress * 0.3f); // Shrink slightly over time
-        matrices.scale(scale, scale, scale);
-
-        // Calculate alpha fade
-        int alpha = (int) ((1.0f - ageProgress) * 255);
+        matrices.scale(state.scale, state.scale, state.scale);
 
         VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(TEXTURE));
         Matrix4f posMatrix = matrices.peek().getPositionMatrix();
 
         // Draw the slash arc as a curved ribbon
-        drawSlashArc(buffer, posMatrix, alpha);
+        drawSlashArc(buffer, posMatrix, state.alpha);
 
         matrices.pop();
+        super.render(state, matrices, vertexConsumers, light);
     }
 
     private void drawSlashArc(VertexConsumer buffer, Matrix4f matrix, int alpha) {
@@ -87,11 +112,11 @@ public class SlashProjectileRenderer extends EntityRenderer<SlashProjectileEntit
         // Create a curved crescent shape
         // t goes from 0 to 1 along the arc
         float angle = (t - 0.5f) * (float) Math.PI; // -PI/2 to PI/2
-        
+
         // Crescent curve formula
         float x = (float) Math.sin(angle) * size;
         float y = (float) (Math.cos(angle) - 1.0f) * size * 0.6f; // Creates the arc
-        
+
         return new Vec3d(x, y, 0);
     }
 
@@ -117,10 +142,5 @@ public class SlashProjectileRenderer extends EntityRenderer<SlashProjectileEntit
                 .overlay(OverlayTexture.DEFAULT_UV)
                 .light(15728880) // Full brightness
                 .normal(0, 0, 1);
-    }
-
-    @Override
-    public Identifier getTexture(SlashProjectileEntity entity) {
-        return TEXTURE;
     }
 }
