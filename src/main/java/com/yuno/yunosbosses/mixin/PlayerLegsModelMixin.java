@@ -1,8 +1,9 @@
 package com.yuno.yunosbosses.mixin;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -12,13 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(PlayerEntityModel.class)
 public class PlayerLegsModelMixin {
 
-    @Inject(method = "setAngles", at = @At("TAIL"))
-    private void hideTopHalf(LivingEntity entity, float f, float g, float h, float i, float j, CallbackInfo ci) {
-        if (entity instanceof PlayerEntity player) {
+    @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V", at = @At("TAIL"))
+    private void hideTopHalf(PlayerEntityRenderState state, CallbackInfo ci) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.world != null && client.world.getEntityById(state.id) instanceof PlayerEntity player) {
             var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
 
             if (transformData.isTransformed()) {
-                PlayerEntityModel<?> model = (PlayerEntityModel<?>) (Object) this;
+                PlayerEntityModel model = (PlayerEntityModel) (Object) this;
 
                 // Hide everything but the legs
                 model.head.visible = false;
