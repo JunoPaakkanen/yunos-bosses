@@ -59,7 +59,7 @@ public record BeamPayload(UUID ownerUuid, Vec3d start, int range, boolean useCus
             Uuids.PACKET_CODEC, BeamPayload::ownerUuid,
             VEC3D_CODEC, BeamPayload::start,
             PacketCodecs.VAR_INT, BeamPayload::range,
-            PacketCodecs.BOOL, BeamPayload::useCustomStart,
+            PacketCodecs.BOOLEAN, BeamPayload::useCustomStart,
             NULLABLE_VEC3D_CODEC, BeamPayload::direction,
             BeamPayload::new
     );
