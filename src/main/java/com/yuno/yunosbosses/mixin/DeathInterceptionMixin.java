@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntity.class)
 public abstract class DeathInterceptionMixin {
-    @Inject(method = "tryUseTotem", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "tryUseDeathProtector", at = @At("HEAD"), cancellable = true)
     private void triggerTransformation(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity entity = (LivingEntity) (Object) this;
 

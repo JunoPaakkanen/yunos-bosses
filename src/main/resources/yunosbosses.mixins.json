@@ -17,6 +17,7 @@
     "GameRendererAccessor",
     "InGameHudMixin",
     "LivingEntityRendererMixin",
+    "LivingEntityRenderStateMixin",
     "MinecraftClientMixin",
     "PlayerAttackAnimationMixin",
     "PlayerLegsModelMixin"

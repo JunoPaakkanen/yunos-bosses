@@ -8,8 +8,8 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Mixin(GameRenderer.class)
 public interface GameRendererAccessor {
 
-    // This forcefully exposes the private loadPostProcessor method
-    @Invoker("loadPostProcessor")
-    void invokeLoadPostProcessor(Identifier identifier);
+    // This forcefully exposes the private setPostProcessor method
+    @Invoker("setPostProcessor")
+    void invokeSetPostProcessor(Identifier identifier);
 
 }

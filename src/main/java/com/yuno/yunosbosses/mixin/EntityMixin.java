@@ -54,7 +54,7 @@ public abstract class EntityMixin implements WallSlamData {
                     // Damage calculation
                     float damage = speed * 11.0f;
 
-                    living.damage(living.getDamageSources().flyIntoWall(), damage);
+                    living.damage((ServerWorld) living.getWorld(),living.getDamageSources().flyIntoWall(), damage);
 
                     // Explosion sound
                     living.getWorld().playSound(null, living.getX(), living.getY(), living.getZ(),

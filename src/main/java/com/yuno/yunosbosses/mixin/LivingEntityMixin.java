@@ -2,7 +2,6 @@ package com.yuno.yunosbosses.mixin;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
-import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import com.yuno.yunosbosses.util.EffectRemovalContext;
@@ -12,7 +11,6 @@ import net.minecraft.entity.LimbAnimator;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
 import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
@@ -28,6 +26,8 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Collection;
+
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
 
@@ -41,7 +41,7 @@ public abstract class LivingEntityMixin {
     }
 
     @ModifyVariable(method = "damage", at = @At("HEAD"), ordinal = 0, argsOnly = true)
-    private float yunosbosses$increaseDamageTaken(float amount, DamageSource source) {
+    private float yunosbosses$increaseDamageTaken(float amount, ServerWorld world, DamageSource source) {
         LivingEntity entity = (LivingEntity) (Object) this;
 
         if (entity.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
@@ -63,7 +63,7 @@ public abstract class LivingEntityMixin {
     }
 
     @Inject(method = "damage", at = @At("HEAD"))
-    private void increaseMeterOnDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    private void increaseMeterOnDamage(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         // The entity being attacked/damaged
         LivingEntity victim = (LivingEntity) (Object) this;
 
@@ -83,7 +83,7 @@ public abstract class LivingEntityMixin {
     }
 
     @Inject(method = "damage", at = @At("RETURN"))
-    private void applyEffectOnSuccessfulHit(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    private void applyEffectOnSuccessfulHit(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         // cir.getReturnValue() is true ONLY if damage was successfully dealt
         if (!cir.getReturnValue()) {
             return;
@@ -101,28 +101,32 @@ public abstract class LivingEntityMixin {
         }
     }
 
-    // Intercepts the exact moment a status effect is stripped or expires naturally
-    @Inject(method = "onStatusEffectRemoved", at = @At("TAIL"))
-    private void yunosbosses$triggerGlassShatter(StatusEffectInstance effect, CallbackInfo ci) {
+    // Intercepts the exact moment status effects are stripped or expire naturally
+    @Inject(method = "onStatusEffectsRemoved", at = @At("TAIL"))
+    private void yunosbosses$triggerGlassShatter(Collection<StatusEffectInstance> effects, CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;
 
-        // Sync effect removal to nearby tracking clients so client-side rendering (e.g., LivingEntityRendererMixin) updates
-        if (!entity.getWorld().isClient()) {
-            RemoveEntityStatusEffectS2CPacket packet = new RemoveEntityStatusEffectS2CPacket(entity.getId(), effect.getEffectType());
-            for (ServerPlayerEntity player : PlayerLookup.tracking(entity)) {
-                player.networkHandler.sendPacket(packet);
+        for (StatusEffectInstance effect : effects) {
+            // Sync effect removal to nearby tracking clients so client-side rendering (e.g., LivingEntityRendererMixin) updates
+            if (!entity.getWorld().isClient()) {
+                RemoveEntityStatusEffectS2CPacket packet = new RemoveEntityStatusEffectS2CPacket(entity.getId(), effect.getEffectType());
+                for (ServerPlayerEntity player : PlayerLookup.tracking(entity)) {
+                    player.networkHandler.sendPacket(packet);
+                }
             }
-        }
 
-        // If the effect removal is triggered manually, skip this
-        if (EffectRemovalContext.isManualRemoval()) {
-            return;
-        }
+            // If the effect removal is triggered manually, skip this
+            if (EffectRemovalContext.isManualRemoval()) {
+                continue;
+            }
 
-        // Check if the removed effect is Frame Freeze
-        if (effect.getEffectType().value() == ModEffects.FRAME_FREEZE.value()) {
-            float damage = ProjectionSorcery.shatterFrame(entity, null, 0);
-            entity.damage(entity.getDamageSources().indirectMagic(entity, entity), damage);
+            // Check if the removed effect is Frame Freeze
+            if (effect.getEffectType().value() == ModEffects.FRAME_FREEZE.value()) {
+                float damage = ProjectionSorcery.shatterFrame(entity, null, 0);
+                if (entity.getWorld() instanceof ServerWorld serverWorld) {
+                    entity.damage(serverWorld, entity.getDamageSources().indirectMagic(entity, entity), damage);
+                }
+            }
         }
     }
 
@@ -162,8 +166,8 @@ public abstract class LivingEntityMixin {
 
     @Shadow protected abstract void tickStatusEffects();
     @Shadow public LimbAnimator limbAnimator;
-    @Shadow public float prevBodyYaw;
-    @Shadow public float prevHeadYaw;
+    @Shadow public float lastBodyYaw;
+    @Shadow public float lastHeadYaw;
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void onTickFreeze(CallbackInfo ci) {
@@ -174,24 +178,21 @@ public abstract class LivingEntityMixin {
             entity.setVelocity(Vec3d.ZERO);
             entity.velocityDirty = true;
 
-            // Sync previous coordinates to current coordinates to stop interpolation jitter
-            entity.prevX = entity.getX();
-            entity.prevY = entity.getY();
-            entity.prevZ = entity.getZ();
+            // Sync coordinates to current coordinates to stop interpolation jitter
             entity.lastRenderX = entity.getX();
             entity.lastRenderY = entity.getY();
             entity.lastRenderZ = entity.getZ();
 
             // Sync rotation fields
-            entity.prevYaw = entity.getYaw();
-            entity.prevPitch = entity.getPitch();
-            this.prevBodyYaw = entity.bodyYaw;
-            this.prevHeadYaw = entity.headYaw;
+            entity.lastYaw = entity.getYaw();
+            entity.lastPitch = entity.getPitch();
+            this.lastBodyYaw = entity.bodyYaw;
+            this.lastHeadYaw = entity.headYaw;
 
             // Freeze limb animation calculations
             if (this.limbAnimator != null) {
                 this.limbAnimator.setSpeed(0.0F);
-                this.limbAnimator.updateLimbs(0.0F, 1.0F);
+                this.limbAnimator.reset();
             }
 
             // Decay status effect on the server

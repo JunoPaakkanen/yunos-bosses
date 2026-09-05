@@ -1,10 +1,13 @@
 package com.yuno.yunosbosses.mixin;
 
 import com.yuno.yunosbosses.effect.ModEffects;
+import com.yuno.yunosbosses.util.FrameFreezeStateAccess;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
+import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.Identifier;
@@ -16,32 +19,26 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntityRenderer.class)
-public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
+public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extends LivingEntityRenderState, M extends EntityModel<? super S>> {
 
     // Texture to serve as the background frame
     private static final Identifier FRAME_TEXTURE = Identifier.of("minecraft", "textures/block/light_blue_stained_glass.png");
 
-    // Temporary storage to lock head rotations
-    private float yunosbosses$savedHeadYaw;
-    private float yunosbosses$savedPrevHeadYaw;
-    private float yunosbosses$savedPitch;
-    private float yunosbosses$savedPrevPitch;
+    @Inject(method = "updateRenderState(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;F)V", at = @At("TAIL"))
+    private void yunosbosses$updateFrameFreezeState(T entity, S state, float tickProgress, CallbackInfo ci) {
+        boolean frozen = entity.hasStatusEffect(ModEffects.FRAME_FREEZE);
+        if (state instanceof FrameFreezeStateAccess access) {
+            access.yunosbosses$setFrameFrozen(frozen);
+        }
+        if (frozen) {
+            state.relativeHeadYaw = 0.0F;
+            state.pitch = 0.0F;
+        }
+    }
 
-    @Inject(method = "render*", at = @At("HEAD"))
-    private void yunosbosses$flattenModelAndDrawFrame(T entity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CallbackInfo ci) {
-        if (entity.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
-            // Save current yaw/pitch
-            this.yunosbosses$savedHeadYaw = entity.headYaw;
-            this.yunosbosses$savedPrevHeadYaw = entity.prevHeadYaw;
-            this.yunosbosses$savedPitch = entity.getPitch();
-            this.yunosbosses$savedPrevPitch = entity.prevPitch;
-
-            // Lock head angle
-            entity.headYaw = entity.bodyYaw;
-            entity.prevHeadYaw = entity.prevBodyYaw;
-            entity.setPitch(0.0F);
-            entity.prevPitch = 0.0F;
-
+    @Inject(method = "render(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V", at = @At("HEAD"))
+    private void yunosbosses$flattenModelAndDrawFrame(S state, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light, CallbackInfo ci) {
+        if (state instanceof FrameFreezeStateAccess access && access.yunosbosses$isFrameFrozen()) {
             matrixStack.push();
 
             // Tilt the frame
@@ -56,8 +53,8 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
             Matrix4f positionMatrix = entry.getPositionMatrix();
 
             // Draw a rectangular photo frame backing slightly behind the entity's back (On both sides)
-            float width = Math.max(0.8F, (entity.getWidth() + 0.4F) / 2.0F);
-            float height = Math.max(2.0F, entity.getHeight() + 0.2F);
+            float width = Math.max(0.8F, (state.width + 0.4F) / 2.0F);
+            float height = Math.max(2.0F, state.height + 0.2F);
             float offsetZ = -0.05F;
             float offsetZBack = -0.05F;
 
@@ -77,15 +74,9 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
         }
     }
 
-    @Inject(method = "render*", at = @At("RETURN"))
-    private void yunosbosses$popMatrix(T entity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CallbackInfo ci) {
-        if (entity.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
-            // Restore the original head yaw/pitch
-            entity.headYaw = this.yunosbosses$savedHeadYaw;
-            entity.prevHeadYaw = this.yunosbosses$savedPrevHeadYaw;
-            entity.setPitch(this.yunosbosses$savedPitch);
-            entity.prevPitch = this.yunosbosses$savedPrevPitch;
-
+    @Inject(method = "render(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V", at = @At("RETURN"))
+    private void yunosbosses$popMatrix(S state, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light, CallbackInfo ci) {
+        if (state instanceof FrameFreezeStateAccess access && access.yunosbosses$isFrameFrozen()) {
             matrixStack.pop(); // Restore rendering settings so other entities aren't squished
         }
     }
