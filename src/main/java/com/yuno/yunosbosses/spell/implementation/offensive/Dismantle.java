@@ -168,7 +168,7 @@ public class Dismantle extends Spell {
                         float multiplier = (hitObjects == 0) ? 1.0f : ((hitObjects == 1) ? 0.7f : 0.5f);
                         float finalDamage = trueDamage * multiplier;
 
-                        target.damage(ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC, caster), finalDamage);
+                        target.damage((ServerWorld) world,ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC, caster), finalDamage);
 
                         // Spawn custom Dismantle slash particle on hit entities
                         serverWorld.spawnParticles(ModParticles.DISMANTLE_A_PARTICLE,

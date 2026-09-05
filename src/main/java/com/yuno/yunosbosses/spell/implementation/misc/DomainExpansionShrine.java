@@ -132,7 +132,7 @@ public class DomainExpansionShrine extends DomainExpansion {
                 Vec3d originalVelocity = affectedEntity.getVelocity(); // Store original velocity
                 float damage = 1.5f;
 
-                affectedEntity.damage(source, damage);
+                affectedEntity.damage((ServerWorld) affectedEntity.getWorld(), source, damage);
 
                 affectedEntity.setVelocity(originalVelocity); // Restore original velocity (Undoes knockback)
                 affectedEntity.velocityModified = true;

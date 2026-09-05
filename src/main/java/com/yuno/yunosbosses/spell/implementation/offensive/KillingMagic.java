@@ -106,7 +106,7 @@ public class KillingMagic extends Spell {
                     world.getOtherEntities(caster, attackHitbox, Entity::isAlive).forEach(entity -> {
                     if (hitEntities.contains(entity)) return;
                     if (entity instanceof ItemEntity) return;
-                    entity.damage(world.getDamageSources().indirectMagic(caster, caster), trueDamage);
+                    entity.damage((ServerWorld) world,world.getDamageSources().indirectMagic(caster, caster), trueDamage);
                     hitEntities.add(entity);
                 });
 
@@ -188,7 +188,7 @@ public class KillingMagic extends Spell {
                 world.getOtherEntities(caster, attackHitbox, Entity::isAlive).forEach(entity -> {
                     if (hitEntities.contains(entity)) return;
                     if (entity instanceof ItemEntity) return;
-                    entity.damage(world.getDamageSources().indirectMagic(caster, caster), baseDamage);
+                    entity.damage((ServerWorld) world,world.getDamageSources().indirectMagic(caster, caster), baseDamage);
                     hitEntities.add(entity);
                 });
 

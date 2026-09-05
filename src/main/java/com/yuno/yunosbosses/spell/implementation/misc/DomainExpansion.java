@@ -1,9 +1,6 @@
 package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.block.ModBlocks;
-import com.yuno.yunosbosses.component.ModEntityComponents;
-import com.yuno.yunosbosses.entity.ModEntities;
-import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
@@ -17,7 +14,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -146,7 +142,7 @@ public abstract class DomainExpansion extends Spell {
             if ((dx * dx) + (dz * dz) <= (radius * radius)) {
                 double targetSpawnY = floorY + 1.0;
 
-                // Clear a tiny 2 block safety bubble for the entity, so they don't suffocate
+                // Clear a tiny 2-block safety bubble for the entity, so they don't suffocate
                 BlockPos entityPos = BlockPos.ofFloored(entity.getX(), targetSpawnY, entity.getZ());
                 world.setBlockState(entityPos, airState, Block.NOTIFY_LISTENERS);
                 world.setBlockState(entityPos.up(), airState, Block.NOTIFY_LISTENERS);
@@ -155,7 +151,7 @@ public abstract class DomainExpansion extends Spell {
                 entity.velocityModified = true;
 
                 entity.teleport((ServerWorld) world, entity.getX(), targetSpawnY, entity.getZ(),
-                        java.util.Collections.emptySet(), entity.getYaw(), entity.getPitch());
+                        java.util.Collections.emptySet(), entity.getYaw(), entity.getPitch(), false);
 
                 System.out.println("Teleported " + entity.getName().getString() + " to " + targetSpawnY);
             }
