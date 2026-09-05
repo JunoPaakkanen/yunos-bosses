@@ -1,8 +1,6 @@
 package com.yuno.yunosbosses.entity.other;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -11,16 +9,18 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.PathAwareEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
+import net.minecraft.util.Uuids;
 import net.minecraft.world.World;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public class SeveredTorsoEntity extends PathAwareEntity {
     private int livingTicks = 0;
-    private final int MAX_AGE = 600; // 30 seconds
-    private static final TrackedData<Optional<UUID>> OWNER_UUID = DataTracker.registerData(SeveredTorsoEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
+    private static final int MAX_AGE = 600; // 30 seconds
+    private static final TrackedData<String> OWNER_UUID_STRING = DataTracker.registerData(SeveredTorsoEntity.class, TrackedDataHandlerRegistry.STRING);
 
     public SeveredTorsoEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -39,22 +39,22 @@ public class SeveredTorsoEntity extends PathAwareEntity {
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
         super.initDataTracker(builder);
-        builder.add(OWNER_UUID, Optional.empty());
+        builder.add(OWNER_UUID_STRING, "");
     }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return PathAwareEntity.createLivingAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 10.0)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.0)
-                .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 1.0)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 0.0);
+                .add(EntityAttributes.MAX_HEALTH, 10.0)
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.0)
+                .add(EntityAttributes.KNOCKBACK_RESISTANCE, 1.0)
+                .add(EntityAttributes.FOLLOW_RANGE, 0.0);
     }
 
     @Override
     protected void pushAway(Entity entity) {}
 
     @Override
-    public boolean isCollidable() { return false; }
+    public boolean isCollidable(Entity entity) { return false; }
 
     @Override
     public boolean isPushable() { return false; }
@@ -69,32 +69,38 @@ public class SeveredTorsoEntity extends PathAwareEntity {
     public boolean canHit() { return false; }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource damageSource) { return true; }
-
-    @Override
-    protected void mobTick() {}
-
-    @Override
-    public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
-        if (this.getOwnerUuid() != null) {
-            nbt.putUuid("OwnerUUID", this.getOwnerUuid());
-        }
+    public boolean isInvulnerableTo(ServerWorld world, DamageSource source) {
+        return true;
     }
 
     @Override
-    public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt);
-        if (nbt.containsUuid("OwnerUUID")) {
-            this.setOwnerUuid(nbt.getUuid("OwnerUUID"));
-        }
+    protected void mobTick(ServerWorld world) {}
+
+    @Override
+    protected void writeCustomData(WriteView nbt) {
+        super.writeCustomData(nbt);
+        nbt.putNullable("OwnerUUID", Uuids.INT_STREAM_CODEC, this.getOwnerUuid());
+    }
+
+    @Override
+    protected void readCustomData(ReadView nbt) {
+        super.readCustomData(nbt);
+        nbt.read("OwnerUUID", Uuids.INT_STREAM_CODEC).ifPresent(this::setOwnerUuid);
     }
 
     public void setOwnerUuid(UUID uuid) {
-        this.dataTracker.set(OWNER_UUID, Optional.ofNullable(uuid));
+        this.dataTracker.set(OWNER_UUID_STRING, uuid == null ? "" : uuid.toString());
     }
 
     public UUID getOwnerUuid() {
-        return this.dataTracker.get(OWNER_UUID).orElse(null);
+        String uuidStr = this.dataTracker.get(OWNER_UUID_STRING);
+        if (uuidStr == null || uuidStr.isEmpty()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(uuidStr);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

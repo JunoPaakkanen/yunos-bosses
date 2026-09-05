@@ -14,11 +14,12 @@ import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
-import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animatable.manager.AnimatableManager;
+import software.bernie.geckolib.animatable.processing.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
@@ -34,10 +35,10 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 350.0D)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25f)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 500.0D)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 10.0D);
+                .add(EntityAttributes.MAX_HEALTH, 350.0D)
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.25f)
+                .add(EntityAttributes.FOLLOW_RANGE, 500.0D)
+                .add(EntityAttributes.ATTACK_DAMAGE, 10.0D);
     }
 
     // BOSS HEALTH BAR
@@ -76,11 +77,11 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "controller", 5, event -> {
-            if (event.isMoving()) {
-                return event.setAndContinue(RawAnimation.begin().thenLoop("animation.methode.walk"));
+        controllers.add(new AnimationController<>("controller", 5, state -> {
+            if (state.isMoving()) {
+                return state.setAndContinue(RawAnimation.begin().thenLoop("animation.methode.walk"));
             }
-            return event.setAndContinue(RawAnimation.begin().thenLoop("animation.methode.idle"));
+            return state.setAndContinue(RawAnimation.begin().thenLoop("animation.methode.idle"));
         }));
     }
 
@@ -108,8 +109,8 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
     }
 
     @Override
-    protected void mobTick() {
-        super.mobTick();
+    protected void mobTick(ServerWorld world) {
+        super.mobTick(world);
         // Sets the progress to health percentage (0.0 to 1.0)
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
     }

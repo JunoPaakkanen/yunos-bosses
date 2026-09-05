@@ -7,60 +7,56 @@ import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 
 public class ModEntities {
-    public static final EntityType<UbelEntity> UBEL = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier.of("yunosbosses", "ubel"),
+    public static final EntityType<UbelEntity> UBEL = register(
+            "ubel",
             EntityType.Builder.create(UbelEntity::new, SpawnGroup.CREATURE)
                     .dimensions(0.6f, 1.8f)
-                    .build()
     );
 
-    public static final EntityType<MethodeEntity> METHODE = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier.of("yunosbosses", "methode"),
+    public static final EntityType<MethodeEntity> METHODE = register(
+            "methode",
             EntityType.Builder.create(MethodeEntity::new, SpawnGroup.CREATURE)
                     .dimensions(0.8f, 2.4f)
-                    .build()
     );
 
-    public static final EntityType<SlashProjectileEntity> SLASH_PROJECTILE = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier.of("yunosbosses", "slash_projectile"),
+    public static final EntityType<SlashProjectileEntity> SLASH_PROJECTILE = register(
+            "slash_projectile",
             EntityType.Builder.<SlashProjectileEntity>create(SlashProjectileEntity::new, SpawnGroup.MISC)
                     .dimensions(0.25f, 0.25f)
-                    .build()
     );
 
-    public static final EntityType<SeveredTorsoEntity> SEVERED_TORSO = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier.of("yunosbosses", "severed_torso"),
+    public static final EntityType<SeveredTorsoEntity> SEVERED_TORSO = register(
+            "severed_torso",
             EntityType.Builder.create(SeveredTorsoEntity::new, SpawnGroup.CREATURE)
                     .dimensions(0.5f, 1f)
-                    .build()
     );
 
-    public static final EntityType<UselessChickenEntity> USELESS_CHICKEN = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier.of("yunosbosses", "useless_chicken"),
+    public static final EntityType<UselessChickenEntity> USELESS_CHICKEN = register(
+            "useless_chicken",
             EntityType.Builder.create(UselessChickenEntity::new, SpawnGroup.CREATURE)
                     .dimensions(1f, 1f)
-                    .build()
     );
 
-    public static final EntityType<DomainShrineEntity> DOMAIN_SHRINE = Registry.register(
-            Registries.ENTITY_TYPE,
-            Identifier.of("yunosbosses", "domain_shrine"),
+    public static final EntityType<DomainShrineEntity> DOMAIN_SHRINE = register(
+            "domain_shrine",
             EntityType.Builder.create(DomainShrineEntity::new, SpawnGroup.MISC)
                     .dimensions(7f, 6.5f)
-                    .build()
     );
+
+    private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
+        RegistryKey<EntityType<?>> key = RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of("yunosbosses", name));
+        return Registry.register(Registries.ENTITY_TYPE, key, builder.build(key));
+    }
 
     public static void registerModEntities() {
         FabricDefaultAttributeRegistry.register(UBEL, UbelEntity.setAttributes());

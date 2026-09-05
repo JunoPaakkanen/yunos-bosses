@@ -7,6 +7,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 
 import java.util.EnumSet;
@@ -220,7 +221,7 @@ public class UbelAttackGoal extends Goal {
         }
 
         // Apply damage
-        this.target.damage(this.ubel.getWorld().getDamageSources().mobAttack(this.ubel), damage);
+        this.target.damage((ServerWorld) this.ubel.getWorld(), this.ubel.getWorld().getDamageSources().mobAttack(this.ubel), damage);
         // Apply knockback
         double deltaX = this.target.getX() - this.ubel.getX();
         double deltaZ = this.target.getZ() - this.ubel.getZ();

@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.entity.goal.ability;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 
 public class MeleeAttackAbility implements BossAbility {
@@ -36,7 +37,7 @@ public class MeleeAttackAbility implements BossAbility {
     public void execute(MobEntity boss, LivingEntity target) {
         if (target == null || target.isBlocking()) return;
 
-        target.damage(boss.getWorld().getDamageSources().mobAttack(boss), damage);
+        target.damage((ServerWorld) boss.getWorld(),boss.getWorld().getDamageSources().mobAttack(boss), damage);
 
         double deltaX = target.getX() - boss.getX();
         double deltaZ = target.getZ() - boss.getZ();

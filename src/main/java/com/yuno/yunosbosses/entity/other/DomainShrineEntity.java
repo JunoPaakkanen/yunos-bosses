@@ -2,13 +2,16 @@ package com.yuno.yunosbosses.entity.other;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.math.Box;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.world.World;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animatable.manager.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class DomainShrineEntity extends Entity implements GeoEntity {
@@ -35,7 +38,7 @@ public class DomainShrineEntity extends Entity implements GeoEntity {
     }
 
     @Override
-    public boolean isCollidable() {
+    public boolean isCollidable(Entity entity) {
         return true;
     }
 
@@ -48,17 +51,22 @@ public class DomainShrineEntity extends Entity implements GeoEntity {
     public void pushAwayFrom(Entity entity) {}
 
     @Override
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        return false;
+    }
+
+    @Override
     protected void initDataTracker(DataTracker.Builder builder) {
 
     }
 
     @Override
-    protected void readCustomDataFromNbt(NbtCompound nbt) {
+    protected void readCustomData(ReadView nbt) {
 
     }
 
     @Override
-    protected void writeCustomDataToNbt(NbtCompound nbt) {
+    protected void writeCustomData(WriteView nbt) {
 
     }
 

@@ -19,10 +19,10 @@ public class UselessChickenEntity extends ChickenEntity {
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.GENERIC_MAX_HEALTH, 50.0D)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.15f)
-                .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 50.0D)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 2.0D);
+                .add(EntityAttributes.MAX_HEALTH, 50.0D)
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.15f)
+                .add(EntityAttributes.FOLLOW_RANGE, 50.0D)
+                .add(EntityAttributes.ATTACK_DAMAGE, 2.0D);
     }
 
     @Override

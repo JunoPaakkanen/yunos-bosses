@@ -15,6 +15,8 @@ import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
@@ -48,7 +50,7 @@ public class SlashProjectileEntity extends ProjectileEntity {
     public void tick() {
         super.tick();
 
-        // Store starting position on first tick
+        // Store starting position on the first tick
         if (this.startPos == null) {
             this.startPos = this.getPos();
         }
@@ -94,7 +96,7 @@ public class SlashProjectileEntity extends ProjectileEntity {
                         ModSounds.REELSEIDEN_HIT, SoundCategory.NEUTRAL, 1.0f, 1.0f + (this.random.nextFloat() * 0.2f - 0.1f));
                 // Apply damage to the target
                 DamageSource source = ModDamageTypes.of(this.getWorld(), ModDamageTypes.CUTTING_MAGIC, owner);
-                target.damage(source, this.getDamage());
+                target.damage(((ServerWorld) this.getWorld()), source, this.getDamage());
                 // Spawn particles on hit
                 spawnImpactParticles(hitPos);
 
@@ -132,14 +134,14 @@ public class SlashProjectileEntity extends ProjectileEntity {
     }
 
     @Override
-    public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
+    public void writeCustomData(WriteView nbt) {
+        super.writeCustomData(nbt);
         nbt.putFloat("BaseDamage", this.getDamage());
     }
 
     @Override
-    public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt);
-        this.setDamage(nbt.getFloat("BaseDamage"));
+    public void readCustomData(ReadView nbt) {
+        super.readCustomData(nbt);
+        this.setDamage(nbt.getFloat("BaseDamage", 0.0F));
     }
 }
