@@ -20,7 +20,7 @@ public class SpherePhysics {
             Vec3d currPos = entity.getPos();
             double currDist = currPos.distanceTo(center);
 
-            Vec3d prevPos = new Vec3d(entity.prevX, entity.prevY, entity.prevZ);
+            Vec3d prevPos = new Vec3d(entity.lastX, entity.lastY, entity.lastZ);
             if (prevPos.equals(Vec3d.ZERO)) prevPos = currPos;
             double prevDist = prevPos.distanceTo(center);
 
