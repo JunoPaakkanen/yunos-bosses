@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.effect.MilkProof;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
+import net.minecraft.server.world.ServerWorld;
 
 public class GojoBindingVowEffect extends StatusEffect implements MilkProof {
     public GojoBindingVowEffect(StatusEffectCategory category, int color) {
@@ -12,8 +13,8 @@ public class GojoBindingVowEffect extends StatusEffect implements MilkProof {
 
     // Gets called every tick when a player has this effect
     @Override
-    public boolean applyUpdateEffect(LivingEntity entity, int amplifier) {
-        return super.applyUpdateEffect(entity, amplifier);
+    public boolean applyUpdateEffect(ServerWorld world, LivingEntity entity, int amplifier) {
+        return super.applyUpdateEffect(world, entity, amplifier);
     }
 
     @Override
