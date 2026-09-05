@@ -8,10 +8,9 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.item.consume.UseAction;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
 public class StaffItem extends Item {
@@ -34,9 +33,9 @@ public class StaffItem extends Item {
     }
 
     @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+    public ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack staff = user.getStackInHand(hand);
-        if (world.isClient) return TypedActionResult.pass(staff);
+        if (world.isClient) return ActionResult.PASS;
 
         SpellComponent component = ModEntityComponents.SPELL_DATA.get(user);
         Spell active = component.getActiveSpell();
@@ -46,21 +45,21 @@ public class StaffItem extends Item {
             if (!active.canBeCharged()) {
                 if (SpellCastHelper.tryCastSpell(active, world, user, staff)) {
                     // Success!
-                    return TypedActionResult.success(staff);
+                    return ActionResult.SUCCESS;
                 }
                 // Not enough mana
-                return TypedActionResult.fail(staff);
+                return ActionResult.FAIL;
             }
 
             // --- CHARGED SPELLS ---
             else {
                 if (SpellCastHelper.canStartCasting(active, user)) {
                     user.setCurrentHand(hand);
-                    return TypedActionResult.consume(staff);
+                    return ActionResult.CONSUME;
                 }
             }
         }
-        return TypedActionResult.fail(staff);
+        return ActionResult.FAIL;
     }
 
     @Override
@@ -87,8 +86,8 @@ public class StaffItem extends Item {
     }
 
     @Override
-    public void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
-        if (world.isClient) return;
+    public boolean onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
+        if (world.isClient) return false;
 
         Spell active = ModEntityComponents.SPELL_DATA.get(user).getActiveSpell();
         if (active != null) {
@@ -98,7 +97,9 @@ public class StaffItem extends Item {
 
             // Execute the final cast
             SpellCastHelper.castChargedSpell(active, world, user, stack, chargeLevel);
+            return true;
         }
+        return false;
     }
 
     private int calculateChargeLevel(int ticksUsed) {
