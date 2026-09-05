@@ -99,22 +99,22 @@ public class SpellChargeHudOverlay implements HudRenderCallback {
             // Get text width so we can right-align the text cleanly
             int textWidth = textRenderer.getWidth(text);
 
-            context.getMatrices().push();
+            context.getMatrices().pushMatrix();
 
             if (isActive) {
                 // Shift 10 pixels to the left, and scale up by 15%
-                context.getMatrices().translate(baseX - 10, yPos, 0);
-                context.getMatrices().scale(1.15f, 1.15f, 1.0f);
+                context.getMatrices().translate(baseX - 10, yPos);
+                context.getMatrices().scale(1.15f, 1.15f);
 
                 // Draw at -textWidth so the right edge of the text stays perfectly aligned
                 context.drawTextWithShadow(textRenderer, text, -textWidth, 0, color);
             } else {
                 // Normal size and position
-                context.getMatrices().translate(baseX, yPos, 0);
+                context.getMatrices().translate(baseX, yPos);
                 context.drawTextWithShadow(textRenderer, text, -textWidth, 0, color);
             }
 
-            context.getMatrices().pop();
+            context.getMatrices().popMatrix();
         }
     }
 

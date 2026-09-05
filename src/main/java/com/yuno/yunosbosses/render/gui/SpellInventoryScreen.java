@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.network.EquipSpellPayload;
 import com.yuno.yunosbosses.spell.Spell;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -75,10 +76,11 @@ public class SpellInventoryScreen extends Screen {
 
             // Draw full 32x32 PNG scaled down to fit 16x16 on screen
             context.drawTexture(
+                    RenderPipelines.GUI_TEXTURED,
                     spell.getIconTexture(),
                     x + 2, y + 2,     // Target screen X, Y
-                    16, 16,           // Target width, height on screen
                     0.0F, 0.0F,       // Source U, V start
+                    16, 16,           // Target width, height on screen
                     32, 32,           // Source region width, height to sample (Full 32x32 image)
                     32, 32            // Total file texture width, height
             );
@@ -127,10 +129,11 @@ public class SpellInventoryScreen extends Screen {
             // Draw full 32x32 PNG scaled down to fit 16x16 inside 24x24 slot
             if (equipped != null) {
                 context.drawTexture(
+                        RenderPipelines.GUI_TEXTURED,
                         equipped.getIconTexture(),
                         sidebarX + 4, y + 4, // Target screen X, Y
-                        16, 16,             // Target width, height on screen
                         0.0F, 0.0F,         // Source U, V start
+                        16, 16,             // Target width, height on screen
                         32, 32,             // Source region width, height to sample
                         32, 32              // Total file texture width, height
                 );

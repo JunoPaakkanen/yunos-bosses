@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.render.gui;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.util.Identifier;
@@ -22,7 +23,7 @@ public class AbilityHudOverlay implements HudRenderCallback {
         if (transformData.isTransformed()) {
 
             // Get the currently selected slot
-            int selectedSlot = client.player.getInventory().selectedSlot;
+            int selectedSlot = client.player.getInventory().getSelectedSlot();
 
             // Get the current size of the game window
             int width = context.getScaledWindowWidth();
@@ -40,13 +41,13 @@ public class AbilityHudOverlay implements HudRenderCallback {
             // --- DRAW THE ICONS ---
 
             // Ability 1 (Left side)
-            context.drawTexture(ABILITY_ICONS, slot1X, bottomY, 0, 0, 16, 16, 48, 16);
+            context.drawTexture(RenderPipelines.GUI_TEXTURED, ABILITY_ICONS, slot1X, bottomY, 0, 0, 16, 16, 48, 16);
 
             // Ability 2 (Center)
-            context.drawTexture(ABILITY_ICONS, slot2X, bottomY, 16, 0, 16, 16, 48, 16);
+            context.drawTexture(RenderPipelines.GUI_TEXTURED, ABILITY_ICONS, slot2X, bottomY, 16, 0, 16, 16, 48, 16);
 
             // Ability 3 (Right side)
-            context.drawTexture(ABILITY_ICONS, slot3X, bottomY, 32, 0, 16, 16, 48, 16);
+            context.drawTexture(RenderPipelines.GUI_TEXTURED, ABILITY_ICONS, slot3X, bottomY, 32, 0, 16, 16, 48, 16);
 
             // Determine which icon to highlight based on the selected slot
             int highlightX = slot1X;

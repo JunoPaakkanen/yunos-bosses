@@ -1,6 +1,5 @@
 package com.yuno.yunosbosses.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.spell.ModSpells;
@@ -52,9 +51,6 @@ public class ManaHudRenderer {
             int costXStart = x + 1 + filledWidth - costWidth;
             int costXEnd = x + 1 + filledWidth;
 
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-
             // Render mana cost preview
             if (spellCost > mana) {
                 // Red if not enough mana
@@ -63,8 +59,6 @@ public class ManaHudRenderer {
                 // Lighter overlay color if enough mana
                 guiGraphics.fill(costXStart, y + 1, costXEnd, y + BAR_HEIGHT - 1, 0xAAADD8E6);
             }
-
-            RenderSystem.disableBlend();
         }
 
         // Variables for text rendering
@@ -74,7 +68,7 @@ public class ManaHudRenderer {
 
         // Calculate the text position for the mana count
         int textX = x + BAR_WIDTH / 2;
-        int textY = y -10;
+        int textY = y - 10;
 
         // Render the active spell name
         if (activeSpell != null) {

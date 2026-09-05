@@ -1,7 +1,6 @@
 package com.yuno.yunosbosses.render;
 
 import com.yuno.yunosbosses.mixin.GameRendererAccessor;
-import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -36,13 +35,13 @@ public class ShaderManager {
             // LOAD OR UNLOAD SHADER
             if (insideShrine) {
                 // If the shader isn't already loaded, turn it on!
-                if (client.gameRenderer.getPostProcessor() == null) {
-                    ((GameRendererAccessor) client.gameRenderer).invokeLoadPostProcessor(SHRINE_SHADER);
+                if (!SHRINE_SHADER.equals(client.gameRenderer.getPostProcessorId())) {
+                    ((GameRendererAccessor) client.gameRenderer).invokeSetPostProcessor(SHRINE_SHADER);
                 }
             } else {
                 // If they step out or the domain ends, turn it off!
-                if (client.gameRenderer.getPostProcessor() != null) {
-                    client.gameRenderer.disablePostProcessor();
+                if (SHRINE_SHADER.equals(client.gameRenderer.getPostProcessorId())) {
+                    client.gameRenderer.clearPostProcessor();
                 }
             }
         });
