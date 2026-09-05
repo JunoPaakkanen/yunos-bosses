@@ -12,6 +12,7 @@ import net.minecraft.advancement.criterion.OnKilledCriterion;
 import net.minecraft.advancement.criterion.TickCriterion;
 import net.minecraft.item.Items;
 import net.minecraft.predicate.entity.EntityPredicate;
+import net.minecraft.predicate.entity.EntityTypePredicate;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -56,8 +57,8 @@ public class ModAdvancementProvider extends FabricAdvancementProvider {
                         true,
                         false
                 )
-                .criterion("defeated_ubel", OnKilledCriterion.Conditions.createPlayerKilledEntity(
-                        EntityPredicate.Builder.create().type(ModEntities.UBEL)
+                .criterion("defeat_ubel", OnKilledCriterion.Conditions.createPlayerKilledEntity(
+                        EntityPredicate.Builder.create().type(EntityTypePredicate.create(null,ModEntities.UBEL))
                 ))
                 .build(consumer, "yunosbosses:defeat_ubel");
     }
