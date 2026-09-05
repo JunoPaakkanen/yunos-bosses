@@ -5,9 +5,7 @@ import com.yuno.yunosbosses.effect.ModEffects;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.TypedActionResult;
 
 public class ModEvents {
 
@@ -26,10 +24,9 @@ public class ModEvents {
         // Prevent right-clicking items
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (player.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
-                ItemStack stack = player.getStackInHand(hand);
-                return TypedActionResult.fail(stack); // Cancels using items
+                return ActionResult.FAIL; // Cancels using items
             }
-            return TypedActionResult.pass(player.getStackInHand(hand));
+            return ActionResult.PASS;
         });
 
         // Prevent right-clicking blocks
