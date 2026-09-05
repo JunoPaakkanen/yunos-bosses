@@ -31,8 +31,8 @@ public class DomainFloorBlock extends Block {
                     double y = entity.getY(); // Right at foot level
                     double z = entity.getZ() + (random.nextDouble() - 0.5) * entity.getWidth();
 
-                    // You can change ParticleTypes.SPLASH to ParticleTypes.FISHING if you want smaller water droplets
-                    world.addParticle(ParticleTypes.SPLASH, x, y, z, 0.0, 0.0, 0.0);
+                    // Splash particles
+                    world.addParticleClient(ParticleTypes.SPLASH, x, y, z, 0.0, 0.0, 0.0);
                 }
             }
         }
