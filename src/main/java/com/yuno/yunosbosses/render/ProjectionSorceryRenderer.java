@@ -95,8 +95,7 @@ public class ProjectionSorceryRenderer {
                 client.getEntityRenderDispatcher().render(
                         entity,
                         0, 0, 0,
-                        0.0F,
-                        context.tickCounter().getTickDelta(false),
+                        context.tickCounter().getTickProgress(false),
                         matrixStack,
                         wrappedProvider,
                         maxLight
