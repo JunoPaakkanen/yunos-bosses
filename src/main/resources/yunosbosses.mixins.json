@@ -3,12 +3,15 @@
   "package": "com.yuno.yunosbosses.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "CreeperEntityMixin",
     "DeathInterceptionMixin",
     "EntityMixin",
     "ExampleMixin",
     "ItemEntityMixin",
     "LivingEntityMixin",
     "MilkBucketMixin",
+    "MobEntityMixin",
+    "PlayerEntityMixin",
     "PlayerInventoryMixin"
   ],
   "client": [
