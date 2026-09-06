@@ -62,26 +62,6 @@ public abstract class LivingEntityMixin {
         return amount; // Return original damage if they aren't frozen
     }
 
-    @Inject(method = "damage", at = @At("HEAD"))
-    private void increaseMeterOnDamage(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-        // The entity being attacked/damaged
-        LivingEntity victim = (LivingEntity) (Object) this;
-
-        // Check if the direct attacker is a LivingEntity
-        if (source.getAttacker() instanceof PlayerEntity attacker) {
-
-            // Check if the attacker has projection sorcery as the active spell
-            var component = ModEntityComponents.SPELL_DATA.get(attacker);
-            if (component.getActiveSpell() instanceof ProjectionSorcery) {
-
-                // Ensure it was a direct melee punch rather than a projectile
-                if (source.getSource() == attacker) {
-                    component.addFrameMeter(10);
-                }
-            }
-        }
-    }
-
     @Inject(method = "damage", at = @At("RETURN"))
     private void applyEffectOnSuccessfulHit(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         // cir.getReturnValue() is true ONLY if damage was successfully dealt

@@ -12,7 +12,8 @@
     "MilkBucketMixin",
     "MobEntityMixin",
     "PlayerEntityMixin",
-    "PlayerInventoryMixin"
+    "PlayerInventoryMixin",
+    "SlimeEntityMixin"
   ],
   "client": [
     "AbstractClientPlayerEntityMixin",
