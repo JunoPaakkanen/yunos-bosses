@@ -25,7 +25,7 @@ public class MethodeRenderer<R extends EntityRenderState & GeoRenderState> exten
             @Override
             protected void renderStackForBone(MatrixStack poseStack, GeoBone bone, ItemStack stack, ItemDisplayContext displayContext, R renderState, VertexConsumerProvider bufferSource, int packedLight, int packedOverlay) {
                 // Apply offsets/rotations here
-                poseStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-90));
+                poseStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(0));
                 poseStack.translate(0.0D, 0.2D, 0.0D);
 
                 super.renderStackForBone(poseStack, bone, stack, displayContext, renderState, bufferSource, packedLight, packedOverlay);
