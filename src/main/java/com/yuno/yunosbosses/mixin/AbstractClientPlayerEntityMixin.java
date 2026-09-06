@@ -1,5 +1,10 @@
 package com.yuno.yunosbosses.mixin;
 
+import com.yuno.yunosbosses.animation.ModAnimations;
+import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.zigythebird.playeranim.animation.PlayerAnimationController;
+import com.zigythebird.playeranim.api.PlayerAnimationAccess;
+import com.zigythebird.playeranimcore.animation.RawAnimation;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -8,11 +13,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AbstractClientPlayerEntity.class)
 public abstract class AbstractClientPlayerEntityMixin {
-
 
     @Unique
     private static final Identifier PROJECTION_SPEED_MODIFIER = Identifier.of("yunosbosses", "projection_speed_modifier");
@@ -28,6 +33,25 @@ public abstract class AbstractClientPlayerEntityMixin {
             // 1.30 FOV for sprinting, 1.15 otherwise
             float baseFov = player.isSprinting() ? 1.30F : 1.15F;
             cir.setReturnValue(baseFov);
+        }
+    }
+
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void yunosbosses$updateSprintAnimation(CallbackInfo ci) {
+        AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
+        var layer = PlayerAnimationAccess.getPlayerAnimationLayer(player, ModAnimations.SPRINT_SLOT);
+        if (layer instanceof PlayerAnimationController controller) {
+            var component = ModEntityComponents.SPELL_DATA.get(player);
+            if (player.isSprinting() && component.getSpeedStacks() >= 10) {
+                if (!controller.isActive()) {
+                    RawAnimation anim = ModAnimations.getRunAnimation();
+                    if (anim != null && !anim.getAnimationStages().isEmpty() && anim.getAnimationStages().getFirst().animation() != null) {
+                        controller.triggerAnimation(anim);
+                    }
+                }
+            } else if (controller.isActive()) {
+                controller.stop();
+            }
         }
     }
 }

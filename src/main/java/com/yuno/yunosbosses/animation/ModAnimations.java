@@ -10,8 +10,10 @@ import net.minecraft.util.Identifier;
 
 public class ModAnimations {
 
-    // Animation slot
+    // Action animation slot (for one-shot triggered animations like kicks and domain expansions)
     public static final Identifier ANIM_SLOT = Identifier.of("yunosbosses", "animation");
+    // Continuous movement animation slot (for sprinting / running)
+    public static final Identifier SPRINT_SLOT = Identifier.of("yunosbosses", "sprint_animation");
 
     // Animations
     public static final Identifier KICK_ANIM = Identifier.of("yunosbosses", "kick");
@@ -19,39 +21,30 @@ public class ModAnimations {
     public static final Identifier DOMAIN_EXPANSION_SHRINE_ANIM = Identifier.of("yunosbosses", "domain_expansion");
     public static final Identifier RUN_ANIM = Identifier.of("yunosbosses", "run");
 
-    private static boolean wasSprinting = false;
-    private static RawAnimation runAnimation;
+    private static RawAnimation runRawAnimation;
+
+    public static RawAnimation getRunAnimation() {
+        if (runRawAnimation == null || runRawAnimation.getAnimationStages().isEmpty() || runRawAnimation.getAnimationStages().getFirst().animation() == null) {
+            runRawAnimation = PlayerRawAnimationBuilder.begin()
+                    .then(RUN_ANIM, Animation.LoopType.LOOP)
+                    .build();
+        }
+        return runRawAnimation;
+    }
 
     public static void registerAnimations() {
+        // One-shot action controller
         PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(
                 ANIM_SLOT,
-                42,
+                1500,
                 player -> new PlayerAnimationController(player, (controller, state, animSetter) -> PlayState.STOP)
         );
+
+        // Sprinting movement controller¨¨¨¨
         PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(
-                ANIM_SLOT,
-                42,
-                player -> new PlayerAnimationController(player,
-                        (controller, state, animSetter) -> {
-                            boolean sprinting = player.isSprinting();
-
-                            if (sprinting) {
-                                if (runAnimation == null) {
-                                    runAnimation = PlayerRawAnimationBuilder.begin()
-                                            .then(RUN_ANIM, Animation.LoopType.LOOP)
-                                            .build();
-                                }
-                                if (!wasSprinting) {
-                                    controller.forceAnimationReset();
-                                }
-                                wasSprinting = true;
-                                return animSetter.setAnimation(runAnimation);
-                            }
-
-                            wasSprinting = false;
-                            return PlayState.STOP;
-                        }
-                )
+                SPRINT_SLOT,
+                1000,
+                player -> new PlayerAnimationController(player, (controller, state, animSetter) -> PlayState.STOP)
         );
     }
 }

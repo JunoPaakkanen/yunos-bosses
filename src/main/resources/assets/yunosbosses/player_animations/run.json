@@ -1,12 +1,9 @@
 {
 	"format_version": "1.8.0",
 	"animations": {
-		"model.animation.json": {
-			"loop": true
-		},
 		"run": {
 			"loop": true,
-			"animation_length": 0.5,
+			"animation_length": 0.5417,
 			"bones": {
 				"torso": {
 					"rotation": {
@@ -17,10 +14,10 @@
 					"position": {
 						"0.0": [0, -1, -4],
 						"0.125": [0, -1, -4]
+					},
+					"bend": {
+						"0.0": [0, 0, 0]
 					}
-				},
-				"torso_bend": {
-					"rotation": [0, 0, 0]
 				},
 				"head": {
 					"rotation": {
@@ -77,10 +74,8 @@
 							"post": [0, -2, -4],
 							"lerp_mode": "catmullrom"
 						}
-					}
-				},
-				"right_arm_bend": {
-					"rotation": {
+					},
+					"bend": {
 						"0.0": {
 							"post": [-22.5, 0, 0],
 							"lerp_mode": "catmullrom"
@@ -147,10 +142,8 @@
 							"post": [0, 0, -2],
 							"lerp_mode": "catmullrom"
 						}
-					}
-				},
-				"left_arm_bend": {
-					"rotation": {
+					},
+					"bend": {
 						"0.0": {
 							"post": [-52.5, 0, 0],
 							"lerp_mode": "catmullrom"
@@ -213,10 +206,8 @@
 							"post": [0, 0, 2],
 							"lerp_mode": "catmullrom"
 						}
-					}
-				},
-				"right_leg_bend": {
-					"rotation": {
+					},
+					"bend": {
 						"0.0": {
 							"post": [72.5, 0, 0],
 							"lerp_mode": "catmullrom"
@@ -275,10 +266,8 @@
 							"post": [0, 0, 0],
 							"lerp_mode": "catmullrom"
 						}
-					}
-				},
-				"left_leg_bend": {
-					"rotation": {
+					},
+					"bend": {
 						"0.0": {
 							"post": [80, 0, 0],
 							"lerp_mode": "catmullrom"
