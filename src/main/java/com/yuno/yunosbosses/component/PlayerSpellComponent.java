@@ -10,7 +10,6 @@ import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
@@ -75,6 +74,11 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     @Override
     public void setEquippedSpell(int slot, Spell spell) {
         if (slot >= 0 && slot < this.maxSpellSlots) {
+            // Innate technique spells can ONLY be equipped in slot 0 (Innate Technique slot)
+            if (spell != null && spell.isInnateTechnique() && slot != 0) {
+                return;
+            }
+
             this.equippedSpells[slot] = spell;
 
             // Set as the active spell if the player has none selected
@@ -123,13 +127,19 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             // Find the first empty slot within unlocked maxSpellSlots
             for (int i = 0; i < this.maxSpellSlots; i++) {
                 if (this.equippedSpells[i] == null) {
+                    // Innate technique spells can only auto-equip into slot 0
+                    if (spell.isInnateTechnique() && i != 0) {
+                        continue;
+                    }
                     this.equippedSpells[i] = spell;
                     break; // Stop immediately after equipping into the first empty slot
                 }
             }
 
-            // Set as the active spell
-            this.activeSpell = spell;
+            // Set as the active spell if no active spell exists
+            if (this.activeSpell == null) {
+                this.activeSpell = spell;
+            }
 
             ModEntityComponents.SPELL_DATA.sync(this.player);
         }
@@ -204,7 +214,13 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                 int slot = slotTag.getInt("Slot", -1);
                 slotTag.read("SpellId", Identifier.CODEC).ifPresent(id -> {
                     if (slot >= 0 && slot < 10) {
-                        this.equippedSpells[slot] = ModSpells.getSpell(id);
+                        Spell spell = ModSpells.getSpell(id);
+                        if (spell != null) {
+                            if (spell.isInnateTechnique() && slot != 0) {
+                                return; // Do not load innate technique in invalid slots
+                            }
+                            this.equippedSpells[slot] = spell;
+                        }
                     }
                 });
             }

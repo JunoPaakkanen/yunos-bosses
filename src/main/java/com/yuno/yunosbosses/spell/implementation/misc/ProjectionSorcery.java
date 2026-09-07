@@ -50,7 +50,7 @@ public class ProjectionSorcery extends Spell {
     public static final int INTERVAL_TICKS = 2; // 0.1s delay between frame spawns (2 ticks)
 
     public ProjectionSorcery(Identifier id, SpellRarity rarity) {
-        super(id, true, rarity);
+        super(id, true, rarity, true);
     }
 
     @Override

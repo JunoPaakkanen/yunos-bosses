@@ -8,8 +8,8 @@ import net.minecraft.util.Identifier;
 
 public class ShaderManager {
 
-    // Point this to your post-processing pipeline JSON
-    private static final Identifier SHRINE_SHADER = Identifier.of("yunosbosses", "shaders/post/malevolent_shrine.json");
+    // Post-processing effect id for Malevolent Shrine (assets/yunosbosses/post_effect/malevolent_shrine.json)
+    private static final Identifier SHRINE_SHADER = Identifier.of("yunosbosses", "malevolent_shrine");
 
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

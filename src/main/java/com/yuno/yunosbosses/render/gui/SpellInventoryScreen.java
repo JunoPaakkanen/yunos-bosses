@@ -10,6 +10,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SpellInventoryScreen extends Screen {
@@ -94,13 +95,17 @@ public class SpellInventoryScreen extends Screen {
             if (isHovering(x, y, slotSize, slotSize, mouseX, mouseY)) {
                 context.fill(x, y, x + slotSize, y + slotSize, 0x40FFFFFF);
 
-                // Colored name + rarity subtext
-                List<Text> tooltip = List.of(
-                        Text.literal(spell.getId().getPath().replace('_', ' ').toUpperCase())
-                                .formatted(spell.getRarity().getFormatting()),
-                        Text.literal(spell.getRarity().getName() + " Spell")
-                                .formatted(Formatting.DARK_GRAY)
-                );
+                // Colored name + optional Innate Technique tag + rarity subtext
+                List<Text> tooltip = new ArrayList<>();
+                tooltip.add(Text.literal(spell.getId().getPath().replace('_', ' ').toUpperCase())
+                        .formatted(spell.getRarity().getFormatting()));
+
+                if (spell.isInnateTechnique()) {
+                    tooltip.add(Text.literal("✦ Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC));
+                }
+
+                tooltip.add(Text.literal(spell.getRarity().getName() + " Spell")
+                        .formatted(Formatting.DARK_GRAY));
 
                 context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
             }
@@ -115,16 +120,28 @@ public class SpellInventoryScreen extends Screen {
         for (int i = 0; i < component.getMaxSpellSlots(); i++) {
             int y = sidebarY + (i * (slotSize + 4));
             Spell equipped = component.getEquippedSpell(i);
+            boolean isInnateSlot = (i == 0);
 
             // Slot Box
-            context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0xFF181825);
+            context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, isInnateSlot ? 0xFF221E30 : 0xFF181825);
 
-            // Draw dynamic Border
-            int borderColor = (equipped != null) ? equipped.getRarity().getColorHex() : 0xFF585B70;
+            // Draw dynamic Border (Innate technique slot has a special gold/peach border when empty)
+            int borderColor;
+            if (equipped != null) {
+                borderColor = equipped.getRarity().getColorHex();
+            } else if (isInnateSlot) {
+                borderColor = 0xFFFAB387; // Warm gold / Peach for Innate Slot
+            } else {
+                borderColor = 0xFF585B70; // Standard dark gray
+            }
             context.drawBorder(sidebarX, y, slotSize, slotSize, borderColor);
 
             // Draw Slot Number Label
-            context.drawText(this.textRenderer, String.valueOf(i + 1), sidebarX - 8, y + 8, 0xFF7F849C, false);
+            if (isInnateSlot) {
+                context.drawText(this.textRenderer, "1", sidebarX - 8, y + 8, 0xFFFAB387, false);
+            } else {
+                context.drawText(this.textRenderer, String.valueOf(i + 1), sidebarX - 8, y + 8, 0xFF7F849C, false);
+            }
 
             // Draw full 32x32 PNG scaled down to fit 16x16 inside 24x24 slot
             if (equipped != null) {
@@ -142,23 +159,45 @@ public class SpellInventoryScreen extends Screen {
             // Hover / Target Highlight
             if (isHovering(sidebarX, y, slotSize, slotSize, mouseX, mouseY)) {
                 if (this.selectedSpell != null) {
-                    context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x60A6E3A1); // Green preview
+                    if (this.selectedSpell.isInnateTechnique() && !isInnateSlot) {
+                        context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x60F38BA8); // Red preview: Invalid slot for Innate Technique
+                    } else {
+                        context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x60A6E3A1); // Green preview: Valid slot
+                    }
                 } else {
                     context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x40FFFFFF);
                 }
 
-                // Color-coded tooltip
-                if (equipped != null) {
-                    List<Text> tooltip = List.of(
-                            Text.literal("Slot " + (i + 1) + ": " + equipped.getId().getPath().replace('_', ' ').toUpperCase())
-                                    .formatted(equipped.getRarity().getFormatting()),
-                            Text.literal(equipped.getRarity().getName() + " Spell")
-                                    .formatted(Formatting.GRAY)
-                    );
-                    context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
+                // Tooltip construction
+                List<Text> tooltip = new ArrayList<>();
+                if (isInnateSlot) {
+                    if (equipped != null) {
+                        tooltip.add(Text.literal("Innate Slot: " + equipped.getId().getPath().replace('_', ' ').toUpperCase())
+                                .formatted(equipped.getRarity().getFormatting()));
+                        if (equipped.isInnateTechnique()) {
+                            tooltip.add(Text.literal("✦ Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC));
+                        }
+                        tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell")
+                                .formatted(Formatting.GRAY));
+                    } else {
+                        tooltip.add(Text.literal("Innate Technique Slot: Empty").formatted(Formatting.GOLD));
+                        tooltip.add(Text.literal("Can hold any spell (Required for Innate Techniques)").formatted(Formatting.DARK_GRAY));
+                    }
                 } else {
-                    context.drawTooltip(this.textRenderer, Text.literal("Slot " + (i + 1) + ": Empty").formatted(Formatting.DARK_GRAY), mouseX, mouseY);
+                    if (equipped != null) {
+                        tooltip.add(Text.literal("Slot " + (i + 1) + ": " + equipped.getId().getPath().replace('_', ' ').toUpperCase())
+                                .formatted(equipped.getRarity().getFormatting()));
+                        tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell")
+                                .formatted(Formatting.GRAY));
+                    } else {
+                        tooltip.add(Text.literal("Slot " + (i + 1) + ": Empty").formatted(Formatting.DARK_GRAY));
+                    }
+
+                    if (this.selectedSpell != null && this.selectedSpell.isInnateTechnique()) {
+                        tooltip.add(Text.literal("Cannot equip Innate Technique in this slot!").formatted(Formatting.RED));
+                    }
                 }
+                context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
             }
         }
     }
@@ -196,6 +235,11 @@ public class SpellInventoryScreen extends Screen {
 
                 if (isHovering(sidebarX, y, equipSlotSize, equipSlotSize, (int) mouseX, (int) mouseY)) {
                     if (this.selectedSpell != null) {
+                        // Validate Innate Technique placement (can only be placed in slot 0)
+                        if (this.selectedSpell.isInnateTechnique() && i != 0) {
+                            return true; // Reject equipping Innate Technique to non-innate slot
+                        }
+
                         // Send a packet to Server to equip the selected spell in this slot
                         ClientPlayNetworking.send(new EquipSpellPayload(i, this.selectedSpell.getId().toString()));
 

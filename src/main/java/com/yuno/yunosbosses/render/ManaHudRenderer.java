@@ -10,6 +10,8 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.Arrays;
+
 public class ManaHudRenderer {
     private static final Identifier MANA_BAR_TEXTURE = Identifier.of(YunosBosses.MOD_ID, "textures/gui/mana_bar.png");
 
@@ -20,6 +22,7 @@ public class ManaHudRenderer {
         var manaComponent = ModEntityComponents.MANA.get(player);
         var spellComponent = ModEntityComponents.SPELL_DATA.get(player);
         Spell activeSpell = spellComponent.getActiveSpell();
+        Spell[] equippedSpells = spellComponent.getEquippedSpells();
 
         float mana = manaComponent.getMana();
         float maxMana = manaComponent.getMaxMana();
@@ -86,7 +89,7 @@ public class ManaHudRenderer {
         }
 
         // Render Projection Sorcery-specific HUD elements
-        if (activeSpell != null && activeSpell == ModSpells.PROJECTION_SORCERY) {
+        if (Arrays.asList(equippedSpells).contains(ModSpells.PROJECTION_SORCERY)) {
             int speedStacks = spellComponent.getSpeedStacks();
             int frameMeter = spellComponent.getFrameMeter();
 

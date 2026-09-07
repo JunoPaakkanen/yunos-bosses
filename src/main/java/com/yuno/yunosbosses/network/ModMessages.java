@@ -41,6 +41,9 @@ public class ModMessages {
 
                 // Make sure the spell is known and can be equipped
                 if (spellToEquip != null && component.getKnownSpells().contains(spellToEquip)) {
+                    if (spellToEquip.isInnateTechnique() && payload.slot() != 0) {
+                        return; // Innate technique spells can only be equipped in slot 0
+                    }
                     component.setEquippedSpell(payload.slot(), spellToEquip);
                 }
             });
