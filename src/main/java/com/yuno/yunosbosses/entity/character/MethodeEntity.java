@@ -66,6 +66,9 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
         // Get revenge on the player if she gets hit.
         this.targetSelector.add(1, new RevengeGoal(this));
 
+        // Actively target players
+        this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, true));
+
         // Move towards her targets to attack them.
         this.goalSelector.add(2, new MethodeAttackGoal(this, 2D));
     }
