@@ -4,12 +4,14 @@ import com.mojang.serialization.Codec;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
@@ -336,6 +338,14 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     }
 
     @Override
+    public void setSpeedStacks(int stacks) {
+        this.projectionSpeedStacks = Math.min(Math.max(stacks, 0), 15);
+        this.speedStackDecayTimer = 0;
+        updateSpeedAttribute();
+        ModEntityComponents.SPELL_DATA.sync(this.player);
+    }
+
+    @Override
     public void setFrameMeter(int value) {
         this.frameMeter = clamp(value);
         ModEntityComponents.SPELL_DATA.sync(this.player);
@@ -378,12 +388,12 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                 // FAILURE CONDITION (Projection Sorcery)
                 if (entry.getKey().equals(ModSpells.PROJECTION_SORCERY.getId())) {
                     // Check if the player had images left
-                    if (this.projectionIndex < this.projectionImages.size()) {
+                    if (this.projectionIndex < ProjectionSorcery.IMAGE_COUNT) {
                         // Get the player and apply the penalty
                         this.player.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 40, 0, false, false, true));
-                        this.player.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 255, false, false, true));
                         // Delete speed stacks
                         this.projectionSpeedStacks = 0;
+                        updateSpeedAttribute();
                     }
                     // Clean up the projection images
                     this.projectionImages.clear();
@@ -412,5 +422,22 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                 ModEntityComponents.SPELL_DATA.sync(this.player);
             }
         }
+
+        // Delegate high-speed pass-by ramming to ProjectionSorcery
+        if (this.player instanceof PlayerEntity playerEntity) {
+            ProjectionSorcery.handleHighSpeedRam(playerEntity, this.projectionSpeedStacks);
+        }
+    }
+
+    @Override
+    public void resetCombatState() {
+        this.projectionSpeedStacks = 0;
+        this.speedStackDecayTimer = 0;
+        this.frameMeter = 0;
+        this.projectionImages.clear();
+        this.projectionIndex = 0;
+        this.activeAltCasts.clear();
+        updateSpeedAttribute();
+        ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 }

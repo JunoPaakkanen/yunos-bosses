@@ -22,10 +22,12 @@ public class ModEntityComponents implements EntityComponentInitializer {
     @Override
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
         // Register spells
-        registry.registerForPlayers(SPELL_DATA, player -> {
-            PlayerSpellComponent component = new PlayerSpellComponent(player);
-            return component;
-        }, RespawnCopyStrategy.ALWAYS_COPY);
+        registry.registerForPlayers(SPELL_DATA, PlayerSpellComponent::new, (from, to, registryLookup, lossless, keepInventory, sameCharacter) -> {
+            RespawnCopyStrategy.ALWAYS_COPY.copyForRespawn(from, to, registryLookup, lossless, keepInventory, sameCharacter);
+            if (!lossless) {
+                to.resetCombatState();
+            }
+        });
 
         // Register transformations
         registry.registerForPlayers(TRANSFORMATION_DATA, PlayerTransformationComponent::new,

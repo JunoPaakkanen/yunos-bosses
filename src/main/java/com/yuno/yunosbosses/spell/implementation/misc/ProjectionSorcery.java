@@ -13,6 +13,7 @@ import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -23,6 +24,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
@@ -42,6 +44,10 @@ public class ProjectionSorcery extends Spell {
     Hitting an entity within 0.5 seconds of casting the spell will instead turn the trajectory of the images from a line to a circle, surrounding the hit entity.
     Each time you teleport through these images, you will re-hit that entity (dealing reduced damage per hit).
      */
+
+    public static final int IMAGE_COUNT = 5;
+    public static final int MAX_TICKS = 100; // 5 seconds
+    public static final int INTERVAL_TICKS = 2; // 0.1s delay between frame spawns (2 ticks)
 
     public ProjectionSorcery(Identifier id, SpellRarity rarity) {
         super(id, true, rarity);
@@ -65,38 +71,27 @@ public class ProjectionSorcery extends Spell {
     public void defaultCast(World world, LivingEntity caster, ItemStack staff) {
         SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
 
-        // If images are already active/stored, don't spawn a new set
-        if (!component.getProjectionImages().isEmpty()) {
-            return;
-        }
-
-        // Projection Sorcery Configuration
-        int imageCount = 5;
-        int maxTicks = 100; // 5 seconds
-        int intervalTicks = 2; // 0.1s delay between frame spawns (2 ticks)
         int currentStacks = component.getSpeedStacks();
         double baseDistance = 1.5; // 1.5 blocks base distance between frames
         double frameDistance = baseDistance + (currentStacks * 0.25); // Scales up dynamically based on the number of speed stacks
 
-        // Start the alt cast window
-        component.startAltCastWindow(this, maxTicks);
-
-        // Reset storage
+        // Reset storage & start the alt cast window
         List<Vec3d> imagePositions = new ArrayList<>();
         component.setProjectionImages(imagePositions);
         component.setProjectionIndex(0);
+        component.startAltCastWindow(this, MAX_TICKS);
 
         // Mutable references to keep track of the last spawned frame's position and trajectory direction
         final Vec3d[] lastPos = new Vec3d[]{ caster.getPos() };
         final Vec3d[] currentDir = new Vec3d[]{ caster.getRotationVec(1.0F) };
         final Vec3d[] lastCasterLook = new Vec3d[]{ caster.getRotationVec(1.0F) };
 
-        for (int i = 0; i < imageCount; i++) {
-            int delayTicks = i * intervalTicks; // 0 ticks, 2 ticks, 4 ticks, 6 ticks, 8 ticks
+        for (int i = 0; i < IMAGE_COUNT; i++) {
+            int delayTicks = i * INTERVAL_TICKS; // 0 ticks, 2 ticks, 4 ticks, 6 ticks, 8 ticks
 
             DelayedServerEffects.delay(delayTicks, () -> {
-                // Ensure the caster is still alive/valid when the task runs
-                if (!caster.isAlive() || caster.getWorld().isClient()) return;
+                // Ensure the caster is still alive/valid and that the cast window is still active
+                if (!caster.isAlive() || caster.getWorld().isClient() || !component.hasAltCastWindow(this)) return;
 
                 // Fetch current camera orientation at the EXACT moment this tick fires
                 Vec3d casterLook = caster.getRotationVec(1.0F);
@@ -122,7 +117,7 @@ public class ProjectionSorcery extends Spell {
                 imagePositions.add(nextFramePos);
 
                 // Dispatch packet to nearby clients for rendering
-                SpawnImagePayload payload = new SpawnImagePayload(caster.getId(), nextFramePos, maxTicks);
+                SpawnImagePayload payload = new SpawnImagePayload(caster.getId(), nextFramePos, MAX_TICKS);
                 for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, nextFramePos, 64.0)) {
                     ServerPlayNetworking.send(player, payload);
                 }
@@ -189,9 +184,8 @@ public class ProjectionSorcery extends Spell {
         List<Vec3d> images = component.getProjectionImages();
         int currentIndex = component.getProjectionIndex();
 
-        // Safety check to make sure images exist
+        // If the next frame hasn't finished spawning yet, wait for it instead of destroying the window
         if (images.isEmpty() || currentIndex >= images.size()) {
-            component.clearAltCastWindow(this);
             return;
         }
 
@@ -205,9 +199,8 @@ public class ProjectionSorcery extends Spell {
         currentIndex++;
         component.setProjectionIndex(currentIndex);
 
-        // Did the caster just hit the final image?
-        if (currentIndex >= images.size()) {
-
+        // Did the caster hit the final required image?
+        if (currentIndex >= IMAGE_COUNT) {
             // Apply the Speed Boost reward
             ModEntityComponents.SPELL_DATA.get(caster).addSpeedStack();
 
@@ -215,6 +208,62 @@ public class ProjectionSorcery extends Spell {
             component.clearAltCastWindow(this);
             component.setProjectionImages(new ArrayList<>());
             component.setProjectionIndex(0);
+        }
+    }
+
+    public static void handleHighSpeedRam(PlayerEntity player, int speedStacks) {
+        if (!player.isSprinting() || speedStacks < 10 || !player.isAlive() || player.isSpectator()) {
+            return;
+        }
+
+        if (player.getWorld() instanceof ServerWorld serverWorld) {
+            double range = 1.5;
+            Box damageBox = player.getBoundingBox().expand(range, 0.5, range);
+            List<LivingEntity> nearbyEntities = serverWorld.getEntitiesByClass(
+                    LivingEntity.class,
+                    damageBox,
+                    entity -> entity != player && entity.isAlive() && !entity.isTeammate(player) && !entity.isSpectator()
+            );
+
+            float damage = 8.0F + (speedStacks - 10) * 2.0F;
+
+            for (LivingEntity target : nearbyEntities) {
+                DamageSource damageSource = player.getDamageSources().playerAttack(player);
+                if (target.damage(serverWorld, damageSource, damage)) {
+                    // Play impact sound
+
+                    // Spawn particles
+                    serverWorld.spawnParticles(
+                            ParticleTypes.EXPLOSION,
+                            target.getX(), target.getY() + (target.getHeight() / 2.0), target.getZ(),
+                            1,
+                            0.1, 0.1, 0.1,
+                            0.1
+                    );
+
+                    // Spawn impact / critical hit particles
+                    serverWorld.spawnParticles(
+                            ParticleTypes.CRIT,
+                            target.getX(), target.getY() + (target.getHeight() / 2.0), target.getZ(),
+                            15,
+                            0.2, 0.3, 0.2,
+                            0.1
+                    );
+
+                    // Enable wall slam damage if knocked into a wall
+                    if (target instanceof WallSlamData data) {
+                        data.yunos$setWallSlamTimer(30);
+                    }
+
+                    // Apply push in sprint direction
+                    Vec3d velocity = player.getVelocity();
+                    if (velocity.lengthSquared() > 0.01) {
+                        Vec3d push = new Vec3d(velocity.x, 0, velocity.z).normalize().multiply(0.6);
+                        target.setVelocity(target.getVelocity().add(push.x, 0.25, push.z));
+                        target.velocityModified = true;
+                    }
+                }
+            }
         }
     }
 
@@ -226,7 +275,10 @@ public class ProjectionSorcery extends Spell {
             double z = entity.getZ();
 
             // Play Frame Shatter sound effect (variation depends on damage)
-            if (damage > 0.0) {
+            if (damage > entity.getHealth() * 0.5) { // Trigger Finisher
+                serverWorld.playSound(null, x, y, z, ModSounds.FRAME_SHATTER_FINISHER, SoundCategory.PLAYERS, 1.25F, 1.0F);
+            }
+            else if (damage > 0.0) {
                 serverWorld.playSound(null, x, y, z, ModSounds.FRAME_SHATTER_FROM_DAMAGE, SoundCategory.PLAYERS, 1.0F, 1.0F);
             }
             else {
@@ -266,6 +318,10 @@ public class ProjectionSorcery extends Spell {
             return 5.0F;
         }
         return damage;
+    }
+
+    public static void finisherEvent(LivingEntity entity) {
+
     }
 
     @Override

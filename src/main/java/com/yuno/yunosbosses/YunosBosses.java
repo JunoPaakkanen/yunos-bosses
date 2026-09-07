@@ -76,12 +76,18 @@ public class YunosBosses implements ModInitializer {
 			return ActionResult.PASS;
 		});
 
-		// Stop entity attacks when transformed
+		// Stop entity attacks when transformed or when sprinting with 10+ speed stacks
 		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
 			var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
 			if (transformData.isTransformed()) {
 				return ActionResult.FAIL; // Cancels the vanilla hit
 			}
+
+			var spellData = ModEntityComponents.SPELL_DATA.get(player);
+			if (player.isSprinting() && spellData.getSpeedStacks() >= 10) {
+				return ActionResult.FAIL; // Cancels melee attack when sprinting at high speed stacks
+			}
+
 			return ActionResult.PASS;
 		});
 	}

@@ -47,6 +47,14 @@ public abstract class PlayerAttackAnimationMixin {
     @Inject(method = "swingHand(Lnet/minecraft/util/Hand;)V", at = @At("HEAD"), cancellable = true)
     private void onSwingHand(Hand hand, CallbackInfo ci) {
         ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
+        var spellData = ModEntityComponents.SPELL_DATA.get(player);
+
+        // If sprinting with 10+ projection speed stacks, disable melee attack and swinging
+        if (player.isSprinting() && spellData.getSpeedStacks() >= 10) {
+            ci.cancel();
+            return;
+        }
+
         var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
 
         // If the player is transformed (Legs), play the kick animation

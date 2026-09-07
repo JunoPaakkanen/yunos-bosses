@@ -175,10 +175,16 @@ public abstract class LivingEntityMixin {
                 this.limbAnimator.reset();
             }
 
-            // Decay status effect on the server
-            if (!entity.getWorld().isClient()) {
-                this.tickStatusEffects();
+            // Decay invulnerability and hurt timers so damage can still be dealt
+            if (entity.timeUntilRegen > 0) {
+                entity.timeUntilRegen--;
             }
+            if (entity.hurtTime > 0) {
+                entity.hurtTime--;
+            }
+
+            // Decay status effects on both server and client
+            this.tickStatusEffects();
 
             entity.onLanding();
             ci.cancel();
