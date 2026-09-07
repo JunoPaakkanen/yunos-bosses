@@ -27,10 +27,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class Dismantle extends Spell {
+public class Shrine extends Spell {
 
-    public Dismantle(Identifier id, SpellRarity rarity) {
-        super(id, true, rarity);
+    public Shrine(Identifier id, SpellRarity rarity) {
+        super(id, true, rarity, true);
     }
 
     @Override
@@ -213,7 +213,7 @@ public class Dismantle extends Spell {
 
     @Override
     public Text getName() {
-        return Text.translatable("yunosbosses.spell.dismantle");
+        return Text.translatable("yunosbosses.spell.shrine");
     }
 
     @Override

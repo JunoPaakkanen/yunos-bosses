@@ -7,7 +7,7 @@ import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import com.yuno.yunosbosses.spell.implementation.misc.ReverseCursedTechnique;
 import com.yuno.yunosbosses.spell.implementation.offensive.CuttingMagicReelseiden;
-import com.yuno.yunosbosses.spell.implementation.offensive.Dismantle;
+import com.yuno.yunosbosses.spell.implementation.offensive.Shrine;
 import com.yuno.yunosbosses.spell.implementation.offensive.KillingMagic;
 import com.yuno.yunosbosses.spell.implementation.offensive.KillingMagicBarrage;
 import com.yuno.yunosbosses.spell.implementation.summon.SummonUselessChicken;
@@ -27,7 +27,7 @@ public class ModSpells {
     public static final Spell KILLING_MAGIC = registerSpell(new KillingMagic(Identifier.of("yunosbosses", "killingmagic"), SpellRarity.COMMON));
     public static final Spell KILLING_MAGIC_BARRAGE = registerSpell(new KillingMagicBarrage(Identifier.of("yunosbosses", "killingmagicbarrage"), SpellRarity.COMMON));
     public static final Spell CUTTING_MAGIC_REELSEIDEN = registerSpell(new CuttingMagicReelseiden(Identifier.of("yunosbosses", "cuttingmagicreelseiden"), SpellRarity.UNCOMMON));
-    public static final Spell DISMANTLE = registerSpell(new Dismantle(Identifier.of("yunosbosses", "dismantle"), SpellRarity.RARE));
+    public static final Spell DISMANTLE = registerSpell(new Shrine(Identifier.of("yunosbosses", "dismantle"), SpellRarity.RARE));
 
     // Defensive spells
     public static final Spell DEFENSIVE_MAGIC = registerSpell(new DefensiveMagic(Identifier.of("yunosbosses", "defensivemagic"), SpellRarity.COMMON));

@@ -2,7 +2,7 @@ package com.yuno.yunosbosses.entity.goal;
 
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.spell.ModSpells;
-import com.yuno.yunosbosses.spell.implementation.offensive.Dismantle;
+import com.yuno.yunosbosses.spell.implementation.offensive.Shrine;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -156,7 +156,7 @@ public class UbelAttackGoal extends Goal {
                     this.ubel.setBodyYaw(this.ubel.getHeadYaw());
                     this.ubel.setYaw(this.ubel.getHeadYaw());
 
-                    var spell = (Dismantle) ModSpells.DISMANTLE;
+                    var spell = (Shrine) ModSpells.DISMANTLE;
                     spell.fireDismantle(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack(), 3.0F);
                 }
 
