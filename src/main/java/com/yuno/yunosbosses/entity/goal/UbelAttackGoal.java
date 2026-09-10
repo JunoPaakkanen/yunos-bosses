@@ -156,7 +156,7 @@ public class UbelAttackGoal extends Goal {
                     this.ubel.setBodyYaw(this.ubel.getHeadYaw());
                     this.ubel.setYaw(this.ubel.getHeadYaw());
 
-                    var spell = (Shrine) ModSpells.DISMANTLE;
+                    var spell = (Shrine) ModSpells.SHRINE;
                     spell.fireDismantle(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack(), 3.0F);
                 }
 
@@ -194,7 +194,7 @@ public class UbelAttackGoal extends Goal {
                         spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
                     } else if (this.currentAttackType == 2) {
                         // Long range Dismantle
-                        var spell = ModSpells.DISMANTLE;
+                        var spell = ModSpells.SHRINE;
                         spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
                     }
                 }

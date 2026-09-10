@@ -27,7 +27,7 @@ public class ModSpells {
     public static final Spell KILLING_MAGIC = registerSpell(new KillingMagic(Identifier.of("yunosbosses", "killingmagic"), SpellRarity.COMMON));
     public static final Spell KILLING_MAGIC_BARRAGE = registerSpell(new KillingMagicBarrage(Identifier.of("yunosbosses", "killingmagicbarrage"), SpellRarity.COMMON));
     public static final Spell CUTTING_MAGIC_REELSEIDEN = registerSpell(new CuttingMagicReelseiden(Identifier.of("yunosbosses", "cuttingmagicreelseiden"), SpellRarity.UNCOMMON));
-    public static final Spell DISMANTLE = registerSpell(new Shrine(Identifier.of("yunosbosses", "dismantle"), SpellRarity.RARE));
+    public static final Spell SHRINE = registerSpell(new Shrine(Identifier.of("yunosbosses", "shrine"), SpellRarity.EPIC));
 
     // Defensive spells
     public static final Spell DEFENSIVE_MAGIC = registerSpell(new DefensiveMagic(Identifier.of("yunosbosses", "defensivemagic"), SpellRarity.COMMON));
