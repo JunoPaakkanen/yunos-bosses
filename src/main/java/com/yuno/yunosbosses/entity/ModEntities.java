@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.entity.character.modified.UselessChickenEntity;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
+import com.yuno.yunosbosses.entity.projectile.FlameArrowEntity;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.entity.Entity;
@@ -33,6 +34,12 @@ public class ModEntities {
             "slash_projectile",
             EntityType.Builder.<SlashProjectileEntity>create(SlashProjectileEntity::new, SpawnGroup.MISC)
                     .dimensions(0.25f, 0.25f)
+    );
+
+    public static final EntityType<FlameArrowEntity> FLAME_ARROW = register(
+            "flame_arrow",
+            EntityType.Builder.<FlameArrowEntity>create(FlameArrowEntity::new, SpawnGroup.MISC)
+                    .dimensions(0.5f, 0.5f)
     );
 
     public static final EntityType<SeveredTorsoEntity> SEVERED_TORSO = register(

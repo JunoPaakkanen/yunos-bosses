@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.entity.projectile.FlameArrowEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
@@ -121,6 +122,14 @@ public class BarrierManager {
                 if (dist > radius + 0.5 || dist < radius - 0.5) {
                     return;
                 }
+            }
+
+            // Do NOT deflect Flame Arrow! Cause it to explode on impact with defensive magic!
+            if (projectile instanceof FlameArrowEntity flameArrow) {
+                world.playSound(null, barrier.getPosition().x, barrier.getPosition().y, barrier.getPosition().z,
+                        SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.5F, 1.2F);
+                flameArrow.detonate(flameArrow.getPos());
+                return;
             }
 
             // Reflect projectile

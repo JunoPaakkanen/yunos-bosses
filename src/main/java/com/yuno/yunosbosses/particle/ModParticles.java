@@ -21,6 +21,13 @@ public class ModParticles {
     public static final SimpleParticleType FRAME_SHATTER_PARTICLE =
             registerParticle("frame_shatter_particle", FabricParticleTypes.simple(true));
 
+    public static final SimpleParticleType FLAME_EXPLOSION_PARTICLE =
+            registerParticle("flame_explosion_particle", FabricParticleTypes.simple(true));
+    public static final SimpleParticleType FLAME_EMBER_PARTICLE =
+            registerParticle("flame_ember_particle", FabricParticleTypes.simple(true));
+    public static final SimpleParticleType FLAME_SHOCKWAVE_PARTICLE =
+            registerParticle("flame_shockwave_particle", FabricParticleTypes.simple(true));
+
     private static SimpleParticleType registerParticle(String name, SimpleParticleType particleType) {
         return Registry.register(Registries.PARTICLE_TYPE, Identifier.of(YunosBosses.MOD_ID, name), particleType);
     }

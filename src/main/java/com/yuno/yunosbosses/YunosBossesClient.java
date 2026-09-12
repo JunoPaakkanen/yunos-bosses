@@ -43,6 +43,7 @@ public class YunosBossesClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
         EntityRendererRegistry.register(ModEntities.METHODE, MethodeRenderer::new);
         EntityRendererRegistry.register(ModEntities.SLASH_PROJECTILE, SlashProjectileRenderer::new);
+        EntityRendererRegistry.register(ModEntities.FLAME_ARROW, FlameArrowRenderer::new);
         EntityRendererRegistry.register(ModEntities.SEVERED_TORSO, SeveredTorsoRenderer::new);
         EntityRendererRegistry.register(ModEntities.USELESS_CHICKEN, UselessChickenRenderer::new);
         EntityRendererRegistry.register(ModEntities.DOMAIN_SHRINE, DomainShrineRenderer::new);
@@ -54,6 +55,9 @@ public class YunosBossesClient implements ClientModInitializer {
         ParticleFactoryRegistry.getInstance().register(ModParticles.DISMANTLE_A_PARTICLE, DismantleAParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.DISMANTLE_B_PARTICLE, DismantleBParticle.Factory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.FRAME_SHATTER_PARTICLE, FrameShatterParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.FLAME_EXPLOSION_PARTICLE, FlameExplosionParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.FLAME_EMBER_PARTICLE, FlameEmberParticle.Factory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.FLAME_SHOCKWAVE_PARTICLE, FlameShockwaveParticle.Factory::new);
 
         // Register animations
         ModAnimations.registerAnimations();

@@ -24,6 +24,7 @@
     "LivingEntityRenderStateMixin",
     "MinecraftClientMixin",
     "PlayerAttackAnimationMixin",
+    "PlayerFirstPersonRendererMixin",
     "PlayerLegsModelMixin"
   ],
   "injectors": {
@@ -31,5 +32,5 @@
   },
   "overwrites": {
     "requireAnnotations": true
-	}
+  }
 }
