@@ -1,6 +1,8 @@
 package com.yuno.yunosbosses.spell.implementation.offensive;
 
 import com.yuno.yunosbosses.animation.ModAnimations;
+import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
@@ -8,6 +10,8 @@ import com.yuno.yunosbosses.entity.projectile.FlameArrowEntity;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.particle.ModParticles;
+import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.InnateHudData;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.ActiveBarrier;
@@ -18,6 +22,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -43,15 +48,18 @@ public class Shrine extends Spell {
 
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
-        if (caster.isSneaking()) {
-            shootFlameArrow(world, caster, staff, 1.0F);
-        } else {
-            fireDismantle(world, caster, staff, 1.0F);
-        }
+        this.cast(world, caster, staff, 1);
     }
 
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
+        if (world.isClient) return;
+
+        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
+        if (component.getShrineCooldown() > 0) {
+            return;
+        }
+
         float potency = switch (chargeLevel) {
             case 2 -> 1.5F; // Charge level 2 = 150% potency
             case 3 -> 3.0F; // Charge level 3 = 300% potency
@@ -59,8 +67,17 @@ public class Shrine extends Spell {
         };
 
         if (caster.isSneaking()) {
+            if (component.getMeter(this) < 100) {
+                // Refund mana since flame arrow could not be cast without 100% meter
+                ModEntityComponents.MANA.get(caster).addMana(this.getManaCost(caster));
+                return;
+            }
+            component.setMeter(this, 0);
+            component.setShrineCooldown(40);
             shootFlameArrow(world, caster, staff, potency);
         } else {
+            component.setShrineCooldown(10);
+            component.addMeter(this, 10);
             fireDismantle(world, caster, staff, potency);
         }
     }
@@ -72,6 +89,9 @@ public class Shrine extends Spell {
     public void shootFlameArrow(World world, LivingEntity caster, ItemStack staff, float potency) {
         if (world.isClient) return;
         ServerWorld serverWorld = (ServerWorld) world;
+
+        // Fuga sound effect
+        world.playSound(null, caster.getX(), caster.getY(), caster.getZ(), ModSounds.FUGA, SoundCategory.NEUTRAL, 1.0f, 1.0f + (caster.getRandom().nextFloat() * 0.2f - 0.1f));
 
         // Apply staff power multiplier if using a staff
         float finalPotency = potency;
@@ -265,7 +285,7 @@ public class Shrine extends Spell {
         Vec3d arrowSpawnPos = eyePos.add(lookDir.multiply(0.2));
         FlameArrowEntity arrow = new FlameArrowEntity(ModEntities.FLAME_ARROW, serverWorld, caster, potency);
         arrow.setPosition(arrowSpawnPos.x, arrowSpawnPos.y, arrowSpawnPos.z);
-        arrow.setVelocity(lookDir.multiply(2.8));
+        arrow.setVelocity(lookDir.multiply(2.1));
         serverWorld.spawnEntity(arrow);
     }
 
@@ -289,13 +309,13 @@ public class Shrine extends Spell {
         }
         Vec3d upDir = rightDir.crossProduct(lookDir).normalize();
 
-        //  Randomly select 1 of 4 orientations (Horizontal, Vertical, Diagonal /, Diagonal \\)
+        //  Randomly select 1 of 4 orientations (Horizontal, Vertical, Diagonal /, Diagonal \)
         int orientation = caster.getRandom().nextInt(4);
         Vec3d slashAxis = switch (orientation) {
             case 0 -> rightDir; // Horizontal (-)
             case 1 -> upDir;    // Vertical (|)
             case 2 -> rightDir.add(upDir).normalize(); // Diagonal (/)
-            case 3 -> rightDir.subtract(upDir).normalize(); // Diagonal (\\\\)
+            case 3 -> rightDir.subtract(upDir).normalize(); // Diagonal (\)
             default -> rightDir;
         };
 
@@ -304,7 +324,6 @@ public class Shrine extends Spell {
         int rayCount = Math.max(10, (int) (slashWidth * 4));    // Shoots parallel rays to form the "blade"
         float maxDistance = 20.0f + (5.0f * potency);   // How far the slash travels
         float baseDamage = 20.0f;    // 100% Damage value
-        float cooldown = 15.0F;      // TODO: Implement this later
         float damageMultiplier = potency;  // Damage multiplier granted by Staff item
         int penetrationDepth = Math.max(1, (int) (4 * potency)); // How many blocks/entities the slash penetrates
 
@@ -388,7 +407,7 @@ public class Shrine extends Spell {
                         float multiplier = (hitObjects == 0) ? 1.0f : ((hitObjects == 1) ? 0.7f : 0.5f);
                         float finalDamage = trueDamage * multiplier;
 
-                        target.damage((ServerWorld) world, ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC, caster), finalDamage);
+                        target.damage((ServerWorld) world, ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster), finalDamage);
 
                         // Spawn custom Dismantle slash particle on hit entities
                         serverWorld.spawnParticles(ModParticles.DISMANTLE_A_PARTICLE,
@@ -444,5 +463,10 @@ public class Shrine extends Spell {
     @Override
     public float getManaCost(LivingEntity caster) {
         return 50.0F;
+    }
+
+    @Override
+    public InnateHudData getRightInnateHudData(PlayerEntity player, SpellComponent component) {
+        return new InnateHudData("Open: " + component.getMeter(this) + "%", 0xFFFF6600);
     }
 }

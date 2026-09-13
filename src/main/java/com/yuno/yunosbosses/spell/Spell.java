@@ -1,7 +1,9 @@
 package com.yuno.yunosbosses.spell;
 
 import com.yuno.yunosbosses.YunosBosses;
+import com.yuno.yunosbosses.component.SpellComponent;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;
@@ -63,4 +65,13 @@ public abstract class Spell {
     public SpellRarity getRarity() { return rarity; }
 
     public boolean isInnateTechnique() { return isInnateTechnique; }
+
+    // Innate Technique HUD Display Data
+    public InnateHudData getLeftInnateHudData(PlayerEntity player, SpellComponent component) {
+        return null;
+    }
+
+    public InnateHudData getRightInnateHudData(PlayerEntity player, SpellComponent component) {
+        return null;
+    }
 }

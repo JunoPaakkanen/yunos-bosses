@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.component;
 
+import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.util.math.Vec3d;
 import org.ladysnake.cca.api.v3.component.Component;
@@ -49,11 +50,17 @@ public interface SpellComponent extends Component, AutoSyncedComponent, ServerTi
     void addSpeedStack();
     int getSpeedStacks();
     void setSpeedStacks(int stacks);
-    void setFrameMeter(int value);
-    void incrementFrameMeter();
-    void addFrameMeter(int value);
-    int getFrameMeter();
+
+    // Spell Meters (Generic)
+    int getMeter(Spell spell);
+    void setMeter(Spell spell, int value);
+    void addMeter(Spell spell, int value);
+    void incrementMeter(Spell spell);
+
     int clamp(int newValue);
     void resetCombatState();
 
+    // Shrine Data
+    void setShrineCooldown(int ticks);
+    int getShrineCooldown();
 }

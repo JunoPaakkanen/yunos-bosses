@@ -43,7 +43,12 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     private int projectionSpeedStacks = 0;
     private int speedStackDecayTimer = 0;
     private static final Identifier PROJECTION_SPEED_MODIFIER = Identifier.of("yunosbosses", "projection_speed_modifier");
-    private int frameMeter = 0;
+
+    // Spell Meters (Generic)
+    private final Map<Identifier, Integer> spellMeters = new HashMap<>();
+
+    // Shrine Data
+    private int shrineCooldown = 0;
 
     // Constructor to grab the player
     public PlayerSpellComponent(LivingEntity player) {
@@ -226,9 +231,21 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             }
         });
 
-        // Read Projection Sorcery data
+        // Read Projection Sorcery speed stacks
         this.projectionSpeedStacks = readView.getInt("ProjectionSpeedStacks", 0);
-        this.frameMeter = readView.getInt("FrameMeter", 0);
+
+        // Read spell meters
+        this.spellMeters.clear();
+        readView.read("SpellMeters", Codec.unboundedMap(Identifier.CODEC, Codec.INT)).ifPresent(this.spellMeters::putAll);
+        if (!this.spellMeters.containsKey(ModSpells.PROJECTION_SORCERY.getId())) {
+            int oldFrame = readView.getInt("FrameMeter", 0);
+            if (oldFrame > 0) {
+                this.spellMeters.put(ModSpells.PROJECTION_SORCERY.getId(), oldFrame);
+            }
+        }
+
+        // Read Shrine cooldown
+        this.shrineCooldown = readView.getInt("ShrineCooldown", 0);
     }
 
     @Override
@@ -267,7 +284,15 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
 
         // Persist Projection Sorcery data
         writeView.putInt("ProjectionSpeedStacks", this.projectionSpeedStacks);
-        writeView.putInt("FrameMeter", this.frameMeter);
+
+        // Persist spell meters
+        if (!this.spellMeters.isEmpty()) {
+            writeView.put("SpellMeters", Codec.unboundedMap(Identifier.CODEC, Codec.INT), this.spellMeters);
+        }
+        writeView.putInt("FrameMeter", getMeter(ModSpells.PROJECTION_SORCERY));
+
+        // Persist Shrine cooldown
+        writeView.putInt("ShrineCooldown", this.shrineCooldown);
     }
 
     @Override
@@ -361,27 +386,42 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
         ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 
+    // Generic Meter Implementation
     @Override
-    public void setFrameMeter(int value) {
-        this.frameMeter = clamp(value);
+    public int getMeter(Spell spell) {
+        if (spell == null) return 0;
+        return this.spellMeters.getOrDefault(spell.getId(), 0);
+    }
+
+    @Override
+    public void setMeter(Spell spell, int value) {
+        if (spell == null) return;
+        this.spellMeters.put(spell.getId(), clamp(value));
         ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 
     @Override
-    public void incrementFrameMeter() {
-        this.frameMeter = clamp(this.frameMeter + 1);
+    public void addMeter(Spell spell, int value) {
+        if (spell == null) return;
+        setMeter(spell, getMeter(spell) + value);
+    }
+
+    @Override
+    public void incrementMeter(Spell spell) {
+        if (spell == null) return;
+        addMeter(spell, 1);
+    }
+
+    // Shrine Data
+    @Override
+    public void setShrineCooldown(int ticks) {
+        this.shrineCooldown = Math.max(ticks, 0);
         ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 
     @Override
-    public void addFrameMeter(int value) {
-        this.frameMeter = clamp(this.frameMeter + value);
-        ModEntityComponents.SPELL_DATA.sync(this.player);
-    }
-
-    @Override
-    public int getFrameMeter() {
-        return this.frameMeter;
+    public int getShrineCooldown() {
+        return this.shrineCooldown;
     }
 
     @Override
@@ -422,6 +462,15 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             }
             return false; // Keep counting down
         });
+
+        // Tick down Shrine cooldown
+        if (this.shrineCooldown > 0) {
+            this.shrineCooldown--;
+            if (this.shrineCooldown == 0) {
+                needsSync[0] = true;
+            }
+        }
+
         // If a timer expired naturally, sync the component to the client
         if (needsSync[0]) ModEntityComponents.SPELL_DATA.sync(this.player);
 
@@ -449,10 +498,11 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     public void resetCombatState() {
         this.projectionSpeedStacks = 0;
         this.speedStackDecayTimer = 0;
-        this.frameMeter = 0;
+        this.spellMeters.clear();
         this.projectionImages.clear();
         this.projectionIndex = 0;
         this.activeAltCasts.clear();
+        this.shrineCooldown = 0;
         updateSpeedAttribute();
         ModEntityComponents.SPELL_DATA.sync(this.player);
     }

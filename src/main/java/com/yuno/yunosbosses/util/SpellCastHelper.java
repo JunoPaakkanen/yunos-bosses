@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansion;
 import net.minecraft.entity.LivingEntity;
@@ -12,6 +13,11 @@ public class SpellCastHelper {
     // Check if the player has enough mana to start casting the spell
     public static boolean canStartCasting(Spell spell, LivingEntity caster) {
         if (spell instanceof DomainExpansion && BarrierManager.hasActiveDomain(caster.getUuid())) {
+            return false;
+        }
+
+        var spellComponent = ModEntityComponents.SPELL_DATA.get(caster);
+        if (spell == ModSpells.SHRINE && spellComponent.getShrineCooldown() > 0) {
             return false;
         }
 
@@ -40,4 +46,3 @@ public class SpellCastHelper {
         return false;
     }
 }
-

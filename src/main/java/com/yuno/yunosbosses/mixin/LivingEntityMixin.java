@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.mixin;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import com.yuno.yunosbosses.util.EffectRemovalContext;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -74,9 +75,9 @@ public abstract class LivingEntityMixin {
 
         if (attacker instanceof PlayerEntity player) {
             var component = ModEntityComponents.SPELL_DATA.get(player);
-            if (component.getFrameMeter() >= 100) {
+            if (component.getMeter(ModSpells.PROJECTION_SORCERY) >= 100) {
                 target.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 40, 0, false, false, true));
-                component.setFrameMeter(0);
+                component.setMeter(ModSpells.PROJECTION_SORCERY, 0);
             }
         }
     }

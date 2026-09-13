@@ -2,15 +2,13 @@ package com.yuno.yunosbosses.render;
 
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.component.ModEntityComponents;
-import com.yuno.yunosbosses.spell.ModSpells;
+import com.yuno.yunosbosses.spell.InnateHudData;
 import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-
-import java.util.Arrays;
 
 public class ManaHudRenderer {
     private static final Identifier MANA_BAR_TEXTURE = Identifier.of(YunosBosses.MOD_ID, "textures/gui/mana_bar.png");
@@ -88,23 +86,30 @@ public class ManaHudRenderer {
             guiGraphics.drawCenteredTextWithShadow(textRenderer, Text.literal(manaString), textX, textY, 0xFFFFFFFF);
         }
 
-        // Render Projection Sorcery-specific HUD elements
-        if (Arrays.asList(equippedSpells).contains(ModSpells.PROJECTION_SORCERY)) {
-            int speedStacks = spellComponent.getSpeedStacks();
-            int frameMeter = spellComponent.getFrameMeter();
+        // Render Innate Technique HUD elements
+        Spell innateSpell = null;
+        for (Spell spell : equippedSpells) {
+            if (spell != null && spell.isInnateTechnique()) {
+                innateSpell = spell;
+                break;
+            }
+        }
 
+        if (innateSpell != null) {
             int gap = 10;
             int sideTextY = y - 10;
 
-            // Speed stacks on the LEFT of the mana bar
-            String speedText = "Speed: " + speedStacks + "/15";
-            int speedTextX = x - gap - textRenderer.getWidth(speedText);
-            guiGraphics.drawTextWithShadow(textRenderer, Text.literal(speedText), speedTextX, sideTextY, 0xFF55FFFF);
+            InnateHudData leftData = innateSpell.getLeftInnateHudData(player, spellComponent);
+            if (leftData != null && leftData.text() != null) {
+                int leftX = x - gap - textRenderer.getWidth(leftData.text());
+                guiGraphics.drawTextWithShadow(textRenderer, leftData.text(), leftX, sideTextY, leftData.color());
+            }
 
-            // Frame meter on the RIGHT of the mana bar
-            String frameText = "Frame: " + frameMeter + "%";
-            int frameTextX = x + BAR_WIDTH + gap;
-            guiGraphics.drawTextWithShadow(textRenderer, Text.literal(frameText), frameTextX, sideTextY, 0xFF55FF55);
+            InnateHudData rightData = innateSpell.getRightInnateHudData(player, spellComponent);
+            if (rightData != null && rightData.text() != null) {
+                int rightX = x + BAR_WIDTH + gap;
+                guiGraphics.drawTextWithShadow(textRenderer, rightData.text(), rightX, sideTextY, rightData.color());
+            }
         }
     }
 }

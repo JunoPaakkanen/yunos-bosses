@@ -3,7 +3,6 @@ package com.yuno.yunosbosses.mixin;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
-import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,7 +24,7 @@ public abstract class PlayerEntityMixin {
             var component = ModEntityComponents.SPELL_DATA.get(player);
             Spell[] equippedSpells = component.getEquippedSpells();
             if (Arrays.asList(equippedSpells).contains(ModSpells.PROJECTION_SORCERY)) {
-                component.addFrameMeter(25);
+                component.addMeter(ModSpells.PROJECTION_SORCERY, 25);
             }
         }
     }

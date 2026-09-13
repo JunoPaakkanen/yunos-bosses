@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.network.SpawnImagePayload;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.InnateHudData;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
@@ -343,5 +344,15 @@ public class ProjectionSorcery extends Spell {
         else {
             return 50.0F; // Cost for default cast
         }
+    }
+
+    @Override
+    public InnateHudData getLeftInnateHudData(PlayerEntity player, SpellComponent component) {
+        return new InnateHudData("Speed: " + component.getSpeedStacks() + "/15", 0xFF55FFFF);
+    }
+
+    @Override
+    public InnateHudData getRightInnateHudData(PlayerEntity player, SpellComponent component) {
+        return new InnateHudData("Frame: " + component.getMeter(this) + "%", 0xFF55FF55);
     }
 }
