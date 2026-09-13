@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "yunosbosses:cutting_magic"
+    "yunosbosses:cutting_magic",
+    "yunosbosses:cutting_magic_shallow"
   ]
 }

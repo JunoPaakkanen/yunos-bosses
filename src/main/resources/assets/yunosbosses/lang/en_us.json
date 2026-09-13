@@ -13,6 +13,10 @@
 
   "death.attack.cutting_magic": "%1$s was sliced apart by %2$s",
   "death.attack.cutting_magic.item": "%1$s was sliced apart by %2$s using %3$s",
+  "death.attack.cutting_magic_shallow": "%1$s was sliced apart by %2$s",
+  "death.attack.cutting_magic_shallow.item": "%1$s was sliced apart by %2$s using %3$s",
+  "death.attack.fire_magic": "%1$s was incinerated by %2$s",
+  "death.attack.fire_magic.item": "%1$s was incinerated by %2$s using %3$s",
 
   "yunosbosses.spell.defensive_magic": "Defensive Magic",
   "yunosbosses.spell.killing_magic": "Killing Magic",
@@ -25,12 +29,12 @@
   "yunosbosses.spell.summon_vex": "Summon Vex",
   "yunosbosses.spell.dismantle": "Dismantle",
   "yunosbosses.spell.projection_sorcery": "Projection Sorcery",
+  "yunosbosses.spell.shrine": "Shrine",
 
   "itemGroup.yunosbosses.yunos_bosses_items": "Yuno's Bosses",
 
   "advancements.yunosbosses.root.title": "Yuno's Bosses",
   "advancements.yunosbosses.root.description": "Thanks For Playing!",
   "advancements.yunosbosses.ubel.title": "Killing Feels Good",
-  "advancements.yunosbosses.ubel.description": "Defeat Ubel",
-  "yunosbosses.spell.shrine": "Shrine"
+  "advancements.yunosbosses.ubel.description": "Defeat Ubel"
 }

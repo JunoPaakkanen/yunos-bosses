@@ -54,5 +54,10 @@
   "frame_freeze": {
     "subtitle": "subtitles.yunosbosses.frame_freeze",
     "sounds": [ "yunosbosses:frame_freeze" ]
+  },
+
+  "fuga": {
+    "subtitle": "subtitles.yunosbosses.fuga",
+    "sounds": [ "yunosbosses:fuga" ]
   }
 }

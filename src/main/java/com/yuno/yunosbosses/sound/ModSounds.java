@@ -18,6 +18,7 @@ public class ModSounds {
     public static final SoundEvent FRAME_SHATTER = registerSoundEvent("frame_shatter");
     public static final SoundEvent FRAME_SHATTER_FROM_DAMAGE = registerSoundEvent("frame_shatter_from_damage");
     public static final SoundEvent FRAME_SHATTER_FINISHER = registerSoundEvent("frame_shatter_finisher");
+    public static final SoundEvent FUGA = registerSoundEvent("fuga");
 
     private static SoundEvent registerSoundEvent(String name) {
         Identifier id = Identifier.of("yunosbosses", name);

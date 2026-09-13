@@ -128,7 +128,7 @@ public class DomainExpansionShrine extends DomainExpansion {
                         ModSounds.REELSEIDEN_HIT, SoundCategory.NEUTRAL, 1.0f, 1.5f + (affectedEntity.getRandom().nextFloat() * 0.2f - 0.1f));
 
                 // Apply damage to the target
-                DamageSource source = ModDamageTypes.of(affectedEntity.getWorld(), ModDamageTypes.CUTTING_MAGIC, caster);
+                DamageSource source = ModDamageTypes.of(affectedEntity.getWorld(), ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster);
                 Vec3d originalVelocity = affectedEntity.getVelocity(); // Store original velocity
                 float damage = 1.5f;
 

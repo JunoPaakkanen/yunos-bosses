@@ -79,7 +79,7 @@ public class FlameArrowEntity extends ProjectileEntity {
 
         // 1. Check Max Range (100 blocks max) or lifetime: detonate if reached
         double traveled = this.getPos().distanceTo(this.startPos);
-        if (traveled >= MAX_RANGE || this.age > 40) {
+        if (traveled >= MAX_RANGE || this.age > 55) {
             if (!this.getWorld().isClient()) {
                 detonate(this.getPos());
             } else {
@@ -452,7 +452,7 @@ public class FlameArrowEntity extends ProjectileEntity {
                 float falloff = (float) Math.max(0.40, 1.0 - (dist / effectRadius));
                 float finalDamage = totalDamage * falloff;
 
-                DamageSource source = ModDamageTypes.of(serverWorld, ModDamageTypes.CUTTING_MAGIC, this.getOwner());
+                DamageSource source = ModDamageTypes.of(serverWorld, ModDamageTypes.FIRE_MAGIC, this.getOwner());
                 target.damage(serverWorld, source, finalDamage);
 
                 // Set victim on fire (15 - 30 seconds based on potency)
@@ -493,7 +493,7 @@ public class FlameArrowEntity extends ProjectileEntity {
 
     /**
      * Checks whether an entity is shielded from the explosion at explosionPos by an active barrier
-     * (e.g. Hex Shield Defensive Magic or Spherical Domain Barrier).
+     * (e.g., Hex Shield Defensive Magic or Spherical Domain Barrier).
      */
     public static boolean isShieldedByBarrier(Vec3d explosionPos, LivingEntity target) {
         Vec3d targetCenter = target.getBoundingBox().getCenter();
