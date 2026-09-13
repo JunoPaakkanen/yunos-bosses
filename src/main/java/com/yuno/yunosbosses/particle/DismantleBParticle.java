@@ -49,7 +49,7 @@ public class DismantleBParticle extends SpriteBillboardParticle {
 
         @Override
         public Particle createParticle(SimpleParticleType parameters, ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ) {
-            return new DismantleAParticle(world, x, y, z, velocityX, velocityY, velocityZ, this.spriteProvider);
+            return new DismantleBParticle(world, x, y, z, velocityX, velocityY, velocityZ, this.spriteProvider);
         }
     }
 }

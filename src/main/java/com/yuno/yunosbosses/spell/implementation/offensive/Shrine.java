@@ -19,17 +19,22 @@ import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -289,28 +294,63 @@ public class Shrine extends Spell {
         serverWorld.spawnEntity(arrow);
     }
 
+    /**
+     * Sukuna's Kai Technique (Dismantle)
+     * High-velocity razor-sharp flying crescent shockwave that cleaves through targets and the environment.
+     * Higher potency creates multi-cut / cross-cut / grid barrages identical to JJK S2 Ep 17.
+     * Damage is shared equally across slashes so total cumulative damage matches the original single-slash value.
+     */
     public void fireDismantle(World world, LivingEntity caster, ItemStack staff, float potency) {
         if (world.isClient) return;
         ServerWorld serverWorld = (ServerWorld) world;
 
-        // Calculate the Local Camera Vectors
-        Vec3d eyePos = caster.getEyePos();
-        Vec3d lookDir = caster.getRotationVec(1.0F);
+        // Visual hand swing
+        caster.swingHand(Hand.MAIN_HAND, true);
 
-        // Find the "Right" and "Up" directions relative to where the caster is looking
-        Vec3d globalUp = new Vec3d(0, 1, 0);
-        Vec3d rightDir;
-
-        // Prevent math errors if looking perfectly straight up or down
-        if (Math.abs(lookDir.y) > 0.99) {
-            rightDir = new Vec3d(1, 0, 0);
+        // Slash composition based on charge level / potency:
+        if (potency >= 2.5F) {
+            // Charge 3: Grid (4 rapid crisscrossing cuts forming a devastating lattice)
+            // Damage divided by 4 so landing all cuts deals the original total (60 base damage)
+            int slashCount = 4;
+            fireSingleDismantle(serverWorld, caster, staff, potency, 0, slashCount); // Horizontal (-)
+            DelayedServerEffects.delay(2, () -> {
+                if (caster.isAlive()) fireSingleDismantle(serverWorld, caster, staff, potency, 1, slashCount); // Vertical (|)
+            });
+            DelayedServerEffects.delay(4, () -> {
+                if (caster.isAlive()) fireSingleDismantle(serverWorld, caster, staff, potency, 2, slashCount); // Diagonal (/)
+            });
+            DelayedServerEffects.delay(6, () -> {
+                if (caster.isAlive()) fireSingleDismantle(serverWorld, caster, staff, potency, 3, slashCount); // Diagonal (\)
+            });
+        } else if (potency >= 1.4F) {
+            // Charge 2: Double Cross Slash (X-cut)
+            // Damage divided by 2 so landing both cuts deals the original total (30 base damage)
+            int slashCount = 2;
+            fireSingleDismantle(serverWorld, caster, staff, potency, 2, slashCount); // Diagonal (/)
+            DelayedServerEffects.delay(2, () -> {
+                if (caster.isAlive()) fireSingleDismantle(serverWorld, caster, staff, potency, 3, slashCount); // Diagonal (\)
+            });
         } else {
-            rightDir = lookDir.crossProduct(globalUp).normalize();
+            // Charge 1 (Instant): Single razor-sharp crescent slash with random orientation (20 base damage)
+            int orientation = caster.getRandom().nextInt(4);
+            fireSingleDismantle(serverWorld, caster, staff, potency, orientation, 1);
         }
+    }
+
+    /**
+     * Executes a single high-velocity traveling crescent Dismantle wave.
+     * Propagates forward across rapid consecutive ticks with authentic JJK curved blade visuals.
+     */
+    public void fireSingleDismantle(ServerWorld serverWorld, LivingEntity caster, ItemStack staff, float potency, int orientation, int slashCount) {
+        Vec3d eyePos = caster.getEyePos();
+        Vec3d lookDir = caster.getRotationVec(1.0F).normalize();
+
+        // Local transverse camera axes
+        Vec3d globalUp = new Vec3d(0, 1, 0);
+        Vec3d rightDir = Math.abs(lookDir.y) > 0.99 ? new Vec3d(1, 0, 0) : lookDir.crossProduct(globalUp).normalize();
         Vec3d upDir = rightDir.crossProduct(lookDir).normalize();
 
-        //  Randomly select 1 of 4 orientations (Horizontal, Vertical, Diagonal /, Diagonal \)
-        int orientation = caster.getRandom().nextInt(4);
+        // Slash orientation axis
         Vec3d slashAxis = switch (orientation) {
             case 0 -> rightDir; // Horizontal (-)
             case 1 -> upDir;    // Vertical (|)
@@ -319,58 +359,147 @@ public class Shrine extends Spell {
             default -> rightDir;
         };
 
-        // Slash Configuration
-        float slashWidth = 5.0f * potency;     // Total width of the slash in blocks
-        int rayCount = Math.max(10, (int) (slashWidth * 4));    // Shoots parallel rays to form the "blade"
-        float maxDistance = 20.0f + (5.0f * potency);   // How far the slash travels
-        float baseDamage = 20.0f;    // 100% Damage value
-        float damageMultiplier = potency;  // Damage multiplier granted by Staff item
-        int penetrationDepth = Math.max(1, (int) (4 * potency)); // How many blocks/entities the slash penetrates
-
-        // Apply damage multipliers
+        // Slash physical configuration
+        float slashWidth = 5.5f * Math.min(potency, 2.2f);
+        float maxDistance = 22.0f + (5.0f * potency);
+        float baseDamage = 20.0f;
+        float damageMultiplier = potency;
         if (staff.getItem() instanceof StaffItem staffItem) {
             damageMultiplier *= staffItem.getPowerMultiplier();
         }
-        float trueDamage = baseDamage * damageMultiplier;
+        // Divide across the number of slashes in the cast so total damage matches original
+        float trueDamage = (baseDamage * damageMultiplier) / slashCount;
+        int penetrationDepth = Math.max(2, (int) (4 * potency));
 
-        // Trackers to prevent double-hitting the same entity or block across parallel rays
-        Set<Entity> hitEntitiesThisCast = new HashSet<>();
-        Set<BlockPos> brokenBlocksThisCast = new HashSet<>();
+        // 1. Initial cast audio: Sudden high-velocity razor whip & vacuum displacement
+        serverWorld.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 1.8f, 1.3f + (caster.getRandom().nextFloat() * 0.2f));
+        serverWorld.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                SoundEvents.ITEM_TRIDENT_THROW, SoundCategory.PLAYERS, 1.4f, 1.85f);
+        serverWorld.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                ModSounds.REELSEIDEN_HIT, SoundCategory.PLAYERS, 1.2f, 1.45f);
 
-        // 4. Fire the Parallel Rays
-        for (int i = 0; i <= rayCount; i++) {
-            // Offset this specific ray from the center point to build the width of the blade
-            double offset = ((double) i / rayCount - 0.5) * slashWidth;
-            Vec3d rayStart = eyePos.add(slashAxis.multiply(offset));
+        // Muzzle vacuum burst in front of caster
+        Vec3d muzzlePos = eyePos.add(lookDir.multiply(0.8));
+        serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK, muzzlePos.x, muzzlePos.y, muzzlePos.z, 1, 0, 0, 0, 0);
+        serverWorld.spawnParticles(ParticleTypes.ELECTRIC_SPARK, muzzlePos.x, muzzlePos.y, muzzlePos.z, 4, 0.1, 0.1, 0.1, 0.05);
 
-            // hitObjects acts as our "Penetration Layer" tracker (0 = 100%, 1 = 70%, 2+ = 50%)
+        // 2. High-speed traveling wave: 4 blocks per tick
+        double stepDistance = 4.0;
+        int totalSteps = (int) Math.ceil(maxDistance / stepDistance);
+
+        Set<Entity> hitEntities = new HashSet<>();
+        Set<BlockPos> brokenBlocks = new HashSet<>();
+        boolean[] barrierBlocked = new boolean[]{false};
+
+        for (int step = 0; step < totalSteps; step++) {
+            final int currentStep = step;
+            double startD = currentStep * stepDistance;
+            double endD = Math.min(maxDistance, (currentStep + 1) * stepDistance);
+
+            if (currentStep == 0) {
+                // Immediate execution for zero-latency point-blank hit
+                executeSlashStep(serverWorld, caster, eyePos, lookDir, slashAxis, slashWidth, startD, endD,
+                        trueDamage, penetrationDepth, hitEntities, brokenBlocks, barrierBlocked);
+            } else {
+                // Staggered propagation: travels forward over the next 4-6 ticks
+                DelayedServerEffects.delay(currentStep, () -> {
+                    if (!caster.isAlive() || barrierBlocked[0]) return;
+                    executeSlashStep(serverWorld, caster, eyePos, lookDir, slashAxis, slashWidth, startD, endD,
+                            trueDamage, penetrationDepth, hitEntities, brokenBlocks, barrierBlocked);
+                });
+            }
+        }
+    }
+
+    /**
+     * Advances one segment of the traveling crescent blade.
+     * Renders the crescent arc and checks for collision with barriers, entities, and blocks.
+     */
+    private void executeSlashStep(ServerWorld serverWorld, LivingEntity caster, Vec3d eyePos, Vec3d lookDir,
+                                  Vec3d slashAxis, float slashWidth, double startD, double endD,
+                                  float trueDamage, int penetrationDepth,
+                                  Set<Entity> hitEntities, Set<BlockPos> brokenBlocks, boolean[] barrierBlocked) {
+        if (barrierBlocked[0]) return;
+
+        double midD = (startD + endD) * 0.5;
+        Vec3d centerPos = eyePos.add(lookDir.multiply(midD));
+
+        // Travel swoosh sound in flight along trajectory
+        serverWorld.playSound(null, centerPos.x, centerPos.y, centerPos.z,
+                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 1.2f, 1.4f + (float) (midD * 0.015));
+
+        // High-pitch air shearing whistle
+        if (serverWorld.getRandom().nextFloat() < 0.55f) {
+            serverWorld.playSound(null, centerPos.x, centerPos.y, centerPos.z,
+                    SoundEvents.ITEM_TRIDENT_THROW, SoundCategory.PLAYERS, 0.7f, 1.95f);
+        }
+
+        // --- RENDER THE CRESCENT BLADE ---
+        // A wide curved arc with forward curvature at the center tip
+        int sampleCount = Math.max(16, (int) (slashWidth * 3.5));
+        double curveDepth = 1.35; // How far the blade center is bowed forward
+
+        for (int i = 0; i <= sampleCount; i++) {
+            double t = ((double) i / sampleCount - 0.5) * slashWidth;
+            double normT = (2.0 * t) / slashWidth; // -1.0 to 1.0
+            double forwardCurve = (1.0 - (normT * normT)) * curveDepth;
+
+            Vec3d bladePoint = centerPos.add(slashAxis.multiply(t)).add(lookDir.multiply(forwardCurve));
+
+            // Razor leading edge: bright critical Sparks
+            serverWorld.spawnParticles(ParticleTypes.CRIT, bladePoint.x, bladePoint.y, bladePoint.z, 1, 0, 0, 0, 0);
+
+            // Supernatural cutting aura sparks
+            if (i % 2 == 0) {
+                serverWorld.spawnParticles(ParticleTypes.ELECTRIC_SPARK, bladePoint.x, bladePoint.y, bladePoint.z, 1, 0.02, 0.02, 0.02, 0.01);
+            }
+
+            // Sweeping cutting waves along the blade
+            if (i % 4 == 0) {
+                serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK, bladePoint.x, bladePoint.y, bladePoint.z, 1, 0, 0, 0, 0);
+            }
+
+            // Supersonic vacuum air wake behind the blade
+            if (i % 3 == 0) {
+                Vec3d wakePos = bladePoint.subtract(lookDir.multiply(0.45));
+                serverWorld.spawnParticles(ParticleTypes.WHITE_SMOKE, wakePos.x, wakePos.y, wakePos.z, 1,
+                        -lookDir.x * 0.06, -lookDir.y * 0.06, -lookDir.z * 0.06, 0.02);
+            }
+        }
+
+        // --- PHYSICAL COLLISION & SEVERANCE ---
+        int rayCount = Math.max(12, (int) (slashWidth * 3.0));
+        int blocksBrokenThisStep = 0;
+
+        for (int r = 0; r <= rayCount; r++) {
+            if (barrierBlocked[0]) break;
+
+            double offset = ((double) r / rayCount - 0.5) * slashWidth;
+            double normR = (2.0 * offset) / slashWidth;
+            double forwardCurve = (1.0 - (normR * normR)) * curveDepth;
+
+            Vec3d rayStart = eyePos.add(slashAxis.multiply(offset)).add(lookDir.multiply(forwardCurve));
             int hitObjects = 0;
 
-            // Step forward along the look direction
-            for (double d = 0; d < maxDistance; d += 0.25) {
+            for (double d = startD; d <= endD; d += 0.35) {
                 Vec3d currentPos = rayStart.add(lookDir.multiply(d));
 
-                // --- BARRIER INTERCEPT CHECK ---
+                // 1. Barrier check
                 boolean hitBarrier = false;
                 for (ActiveBarrier barrier : BarrierManager.ACTIVE_BARRIERS) {
                     boolean isSphere = barrier.getDirection().equals(Vec3d.ZERO);
-
-                    // Allow the caster to safely shoot through their own directional Hex Shields
                     if (!isSphere && barrier.getOwnerUuid().equals(caster.getUuid())) {
                         continue;
                     }
 
                     if (isSphere) {
-                        // SPHERICAL/DOMAIN BARRIER CHECK
                         double dist = currentPos.distanceTo(barrier.getPosition());
-                        // Check if the ray has hit the 1-block thick skin of the domain
                         if (dist <= barrier.getRadius() + 0.5 && dist >= barrier.getRadius() - 0.5) {
                             hitBarrier = true;
                             break;
                         }
                     } else {
-                        // HEX SHIELD CHECK
-                        // Uses the exact same hitbox math found in BarrierManager
                         Box hexBox = Box.from(barrier.getPosition()).expand(0.8F);
                         if (hexBox.contains(currentPos)) {
                             hitBarrier = true;
@@ -380,64 +509,67 @@ public class Shrine extends Spell {
                 }
 
                 if (hitBarrier) {
-                    // Shield hit sound
-                    world.playSound(null, currentPos.x, currentPos.y, currentPos.z, SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0F, 1.5F);
-                    // Spawn a spark particle
-                    serverWorld.spawnParticles(ParticleTypes.CRIT, currentPos.x, currentPos.y, currentPos.z, 2, 0.1, 0.1, 0.1, 0.1);
-                    // Spawn Dismantle particle
+                    serverWorld.playSound(null, currentPos.x, currentPos.y, currentPos.z,
+                            SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.2F, 1.5F);
+                    serverWorld.spawnParticles(ParticleTypes.CRIT, currentPos.x, currentPos.y, currentPos.z, 4, 0.1, 0.1, 0.1, 0.1);
                     serverWorld.spawnParticles(ModParticles.DISMANTLE_B_PARTICLE, currentPos.x, currentPos.y, currentPos.z, 1, 0, 0, 0, 0);
-                    // Terminate this specific ray, moving on to the next parallel ray
+                    barrierBlocked[0] = true;
                     break;
                 }
 
-                // --- A. ENTITY CHECK ---
-                Box checkBox = new Box(currentPos.x - 0.3, currentPos.y - 0.3, currentPos.z - 0.3,
-                        currentPos.x + 0.3, currentPos.y + 0.3, currentPos.z + 0.3);
-
+                // 2. Entity cleave check
+                Box checkBox = new Box(currentPos.x - 0.45, currentPos.y - 0.45, currentPos.z - 0.45,
+                        currentPos.x + 0.45, currentPos.y + 0.45, currentPos.z + 0.45);
                 List<Entity> entitiesNear = serverWorld.getOtherEntities(caster, checkBox);
 
                 for (Entity entity : entitiesNear) {
-                    // Ignore non-living entities and ensure we haven't already hit them
-                    if (entity instanceof DomainShrineEntity) continue; // Explicitly ignore Shrine entity
+                    if (entity instanceof DomainShrineEntity) continue;
 
-                    if (entity instanceof LivingEntity target && !hitEntitiesThisCast.contains(target)) {
-                        hitEntitiesThisCast.add(target);
+                    if (entity instanceof LivingEntity target && !hitEntities.contains(target)) {
+                        hitEntities.add(target);
 
-                        // Calculate falloff damage based on what layer this is
                         float multiplier = (hitObjects == 0) ? 1.0f : ((hitObjects == 1) ? 0.7f : 0.5f);
                         float finalDamage = trueDamage * multiplier;
 
-                        target.damage((ServerWorld) world, ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster), finalDamage);
+                        target.damage(serverWorld, ModDamageTypes.of(serverWorld, ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster), finalDamage);
 
-                        // Spawn custom Dismantle slash particle on hit entities
-                        serverWorld.spawnParticles(ModParticles.DISMANTLE_A_PARTICLE,
-                                currentPos.x, currentPos.y, currentPos.z,
-                                1, 0, 0, 0, 0);
+                        // Visceral target cleaving visuals
+                        Vec3d targetCenter = target.getBoundingBox().getCenter();
+                        serverWorld.spawnParticles(ModParticles.DISMANTLE_A_PARTICLE, targetCenter.x, targetCenter.y, targetCenter.z, 2, 0.2, 0.2, 0.2, 0);
+                        serverWorld.spawnParticles(ModParticles.DISMANTLE_B_PARTICLE, targetCenter.x, targetCenter.y, targetCenter.z, 2, 0.2, 0.2, 0.2, 0);
+                        serverWorld.spawnParticles(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, targetCenter.x, targetCenter.y, targetCenter.z, 1, 0, 0, 0, 0);
+                        serverWorld.spawnParticles(ParticleTypes.CRIT, targetCenter.x, targetCenter.y, targetCenter.z, 12, 0.25, 0.25, 0.25, 0.15);
+                        serverWorld.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, targetCenter.x, targetCenter.y, targetCenter.z, 5, 0.2, 0.2, 0.2, 0.1);
 
-                        // Hitting a mob counts as penetrating a layer!
+                        // Sharp incision audio
+                        serverWorld.playSound(null, targetCenter.x, targetCenter.y, targetCenter.z,
+                                ModSounds.REELSEIDEN_HIT, SoundCategory.PLAYERS, 1.4f, 1.15f + caster.getRandom().nextFloat() * 0.25f);
+                        serverWorld.playSound(null, targetCenter.x, targetCenter.y, targetCenter.z,
+                                SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, SoundCategory.PLAYERS, 1.5f, 1.2f);
+
                         hitObjects++;
                     }
                 }
 
-                // If this specific ray has penetrated 4 objects/blocks, stop it and move to the next ray
                 if (hitObjects >= penetrationDepth) break;
 
-                // --- B. BLOCK CHECK ---
+                // 3. Environmental block cleave check
                 BlockPos bPos = BlockPos.ofFloored(currentPos);
-                if (!brokenBlocksThisCast.contains(bPos)) {
-                    BlockState state = world.getBlockState(bPos);
+                if (!brokenBlocks.contains(bPos)) {
+                    BlockState state = serverWorld.getBlockState(bPos);
+                    if (!state.isAir() && state.getFluidState().isEmpty() && state.getHardness(serverWorld, bPos) >= 0.0F) {
+                        brokenBlocks.add(bPos);
+                        serverWorld.setBlockState(bPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
 
-                    // Only interact with solid, breakable blocks (ignores air and water)
-                    if (!state.isAir() && state.getFluidState().isEmpty() && state.getHardness(world, bPos) >= 0.0F) {
-                        brokenBlocksThisCast.add(bPos);
+                        // Eject pulverized block fragments
+                        serverWorld.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, state),
+                                currentPos.x, currentPos.y, currentPos.z, 10, 0.25, 0.25, 0.25, 0.12);
+                        // Pulverized dust puff along the severed incision
+                        serverWorld.spawnParticles(ParticleTypes.POOF, currentPos.x, currentPos.y, currentPos.z, 2, 0.2, 0.2, 0.2, 0.04);
+                        // Incision friction sparks
+                        serverWorld.spawnParticles(ParticleTypes.CRIT, currentPos.x, currentPos.y, currentPos.z, 2, 0.15, 0.15, 0.15, 0.05);
 
-                        // Silently shred the block for maximum performance
-                        world.setBlockState(bPos, net.minecraft.block.Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_LISTENERS);
-
-                        // Spawn dust particles
-                        serverWorld.spawnParticles(ParticleTypes.POOF, currentPos.x, currentPos.y, currentPos.z, 1, 0.2, 0.2, 0.2, 0.05);
-
-                        // Hitting a solid block counts as penetrating a layer!
+                        blocksBrokenThisStep++;
                         hitObjects++;
                     }
                 }
@@ -446,8 +578,11 @@ public class Shrine extends Spell {
             }
         }
 
-        // Play an aggressive swoosh sound at the caster's location
-        world.playSound(null, caster.getX(), caster.getY(), caster.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 1.5f, 0.8f);
+        // Play crisp masonry / wood severing audio if blocks were sliced
+        if (blocksBrokenThisStep > 0) {
+            serverWorld.playSound(null, centerPos.x, centerPos.y, centerPos.z,
+                    SoundEvents.BLOCK_STONE_BREAK, SoundCategory.BLOCKS, 1.1f, 1.25f);
+        }
     }
 
     @Override
