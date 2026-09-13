@@ -9,6 +9,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -47,11 +48,13 @@ public class CuttingMagicReelseiden extends Spell {
 
             projectile.setPosition(start);
 
-            //projectile.refreshPositionAndAngles(start.x, start.y, start.z, caster.getYaw(), caster.getPitch());
+            projectile.refreshPositionAndAngles(start.x, start.y, start.z, caster.getYaw(), caster.getPitch());
             // Velocity of 2.5 so the slash travels 2.5 blocks per tick, 5 blocks in 2 ticks
             projectile.setVelocity(look.multiply(2.5));
             projectile.setOwner(caster);
 
+            boolean isServerPlayer = caster instanceof PlayerEntity;
+            caster.swingHand(Hand.MAIN_HAND, isServerPlayer);
             world.spawnEntity(projectile);
         }
     }
