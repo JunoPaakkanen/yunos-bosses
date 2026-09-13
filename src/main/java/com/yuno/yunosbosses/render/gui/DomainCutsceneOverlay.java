@@ -95,8 +95,8 @@ public class DomainCutsceneOverlay implements HudRenderCallback {
         // Pin text to the true center so it doesn't move while the banner opens
         int textY = (screenHeight / 4) - 4;
 
-        // Draw with a shadow
-        drawContext.drawTextWithShadow(client.textRenderer, text, textX, textY, 0xFFFFFF);
+        // Draw with a shadow (Full ARGB with alpha 0xFF)
+        drawContext.drawTextWithShadow(client.textRenderer, text, textX, textY, 0xFFFFFFFF);
 
         // Disable Scissor
         drawContext.disableScissor();

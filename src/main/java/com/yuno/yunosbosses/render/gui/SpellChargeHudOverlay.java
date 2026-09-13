@@ -93,8 +93,8 @@ public class SpellChargeHudOverlay implements HudRenderCallback {
             int yOffset = (3 - i) * 15;
             int yPos = centerY + yOffset;
 
-            // Dark red for active, white for inactive
-            int color = isActive ? 0xAA0000 : 0xFFFFFF;
+            // Full ARGB: Dark red for active, white for inactive (alpha 0xFF required in 1.21.2+)
+            int color = isActive ? 0xFFAA0000 : 0xFFFFFFFF;
 
             // Get text width so we can right-align the text cleanly
             int textWidth = textRenderer.getWidth(text);
