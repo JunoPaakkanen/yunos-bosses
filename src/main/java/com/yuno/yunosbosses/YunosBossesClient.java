@@ -88,7 +88,16 @@ public class YunosBossesClient implements ClientModInitializer {
         // Receiver for Beams
         ClientPlayNetworking.registerGlobalReceiver(BeamPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
-                BeamManager.addBeam(payload.ownerUuid(), payload.start(), payload.range(), 40, payload.useCustomStart(), payload.direction());
+                BeamManager.addBeam(
+                        payload.ownerUuid(),
+                        payload.start(),
+                        payload.range(),
+                        payload.chargeTicks(),
+                        payload.durationTicks(),
+                        payload.radius(),
+                        payload.useCustomStart(),
+                        payload.direction()
+                );
             });
         });
 

@@ -10,12 +10,13 @@ public class BeamManager {
     // List for active beams
     public static final List<ActiveBeam> ACTIVE_BEAMS = new ArrayList<>();
 
-    public static void addBeam(UUID ownerUuid, Vec3d start, int range, int maxTicks) {
-        ACTIVE_BEAMS.add(new ActiveBeam(ownerUuid, start, range, maxTicks, 0));
+    public static void addBeam(UUID ownerUuid, Vec3d start, int range, int chargeTicks, int durationTicks, float radius, boolean useCustomStart, Vec3d direction) {
+        ACTIVE_BEAMS.add(new ActiveBeam(ownerUuid, start, range, chargeTicks, durationTicks, radius, useCustomStart, direction));
     }
 
+    // Legacy overload
     public static void addBeam(UUID ownerUuid, Vec3d start, int range, int maxTicks, boolean useCustomStart, Vec3d direction) {
-        ACTIVE_BEAMS.add(new ActiveBeam(ownerUuid, start, range, maxTicks, 0, useCustomStart, direction));
+        ACTIVE_BEAMS.add(new ActiveBeam(ownerUuid, start, range, 20, Math.max(1, maxTicks - 20), 0.4F, useCustomStart, direction));
     }
 
     public static void tick() {
