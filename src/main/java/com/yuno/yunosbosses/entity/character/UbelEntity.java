@@ -67,8 +67,8 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         // Get revenge on the player if she gets hit.
         this.targetSelector.add(1, new RevengeGoal(this));
 
-        // Actively target players
-        this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, true));
+        // Actively target players (checkVisibility = false so boss does not lose target behind blocks/grass)
+        this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
 
         // Move towards her targets to attack them.
         this.goalSelector.add(2, new UbelAttackGoal(this, 2D));

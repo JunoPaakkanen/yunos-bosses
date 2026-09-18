@@ -11,8 +11,8 @@ public class MeleeAttackAbility implements BossAbility {
     private final int recoveryTicks;
     private final float damage;
 
-    public MeleeAttackAbility(double maxDistanceSq, int windupTicks, int recoveryTicks, float damage) {
-        this.maxDistanceSq = maxDistanceSq;
+    public MeleeAttackAbility(double maxDistance, int windupTicks, int recoveryTicks, float damage) {
+        this.maxDistanceSq = maxDistance * maxDistance;
         this.windupTicks = windupTicks;
         this.recoveryTicks = recoveryTicks;
         this.damage = damage;
@@ -35,15 +35,15 @@ public class MeleeAttackAbility implements BossAbility {
 
     @Override
     public void execute(MobEntity boss, LivingEntity target) {
-        if (target == null || target.isBlocking()) return;
+        if (target == null || !target.isAlive()) return;
+        boss.setTarget(target);
+        boss.setAttacking(true);
 
-        target.damage((ServerWorld) boss.getWorld(),boss.getWorld().getDamageSources().mobAttack(boss), damage);
-
-        double deltaX = target.getX() - boss.getX();
-        double deltaZ = target.getZ() - boss.getZ();
-        target.takeKnockback(1.5, -deltaX, -deltaZ);
-
-        boss.getWorld().playSound(null, boss.getX(), boss.getY(), boss.getZ(),
-                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, boss.getSoundCategory(), 1.0F, 1.0F);
+        // Apply damage if target is still within melee reach
+        if (boss.squaredDistanceTo(target) <= maxDistanceSq * 1.5) {
+            target.damage((ServerWorld) boss.getWorld(), boss.getWorld().getDamageSources().mobAttack(boss), damage);
+            boss.getWorld().playSound(null, boss.getX(), boss.getY(), boss.getZ(),
+                    SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, boss.getSoundCategory(), 1.0F, 1.0F);
+        }
     }
 }

@@ -7,8 +7,12 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 
 import java.util.EnumSet;
 
@@ -34,8 +38,23 @@ public class UbelAttackGoal extends Goal {
     @Override
     public boolean canStart() {
         this.target = this.ubel.getTarget();
-        // Start if there is a target and the cooldown is over
-        return this.target != null;
+        if (this.target == null || !this.target.isAlive()) {
+            findTarget();
+        }
+        return this.target != null && this.target.isAlive();
+    }
+
+    @Override
+    public boolean shouldContinue() {
+        return this.canStart();
+    }
+
+    private void findTarget() {
+        PlayerEntity nearest = this.ubel.getWorld().getClosestPlayer(this.ubel, 32.0);
+        if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
+            this.ubel.setTarget(nearest);
+            this.target = nearest;
+        }
     }
 
     @Override
@@ -51,47 +70,54 @@ public class UbelAttackGoal extends Goal {
         this.ubel.getNavigation().stop();
     }
 
+    private void snapLookAtTarget() {
+        if (this.target == null) return;
+        this.ubel.getLookControl().lookAt(this.target, 180.0F, 180.0F);
+        double dx = this.target.getX() - this.ubel.getX();
+        double dy = (this.target.getEyeY() - 0.2) - this.ubel.getEyeY();
+        double dz = this.target.getZ() - this.ubel.getZ();
+        double horizDist = Math.sqrt(dx * dx + dz * dz);
+        float targetYaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+        float targetPitch = (float) (-(Math.atan2(dy, horizDist) * (180.0 / Math.PI)));
+        this.ubel.setHeadYaw(targetYaw);
+        this.ubel.setBodyYaw(targetYaw);
+        this.ubel.setYaw(targetYaw);
+        this.ubel.setPitch(targetPitch);
+    }
+
     @Override
     public void tick() {
-        if (this.target == null) return;
+        if (this.target == null || !this.target.isAlive()) {
+            findTarget();
+            if (this.target == null) return;
+        }
 
         if (this.attackDurationTimer > 0) {
-            // Superfast tracking during the attack
-            this.ubel.getLookControl().lookAt(
-                    this.target.getX(), this.target.getEyeY() - 0.5, this.target.getZ(), 180.0F, 180.0F);
+            snapLookAtTarget();
         } else {
-            // Normal smooth tracking while walking
             this.ubel.getLookControl().lookAt(this.target, 30.0F, 30.0F);
         }
 
-        // --- TELEPORT LOGIC ---
+        // --- TELEPORT COOLDOWN ---
         if (this.teleportCooldown > 0) {
             this.teleportCooldown--;
         }
 
-        double distanceSq = this.ubel.squaredDistanceTo(this.target); // Squared distance
-        double directDistance = this.ubel.distanceTo(this.target); // Straight line distance
+        double distanceSq = this.ubel.squaredDistanceTo(this.target);
+        double directDistance = this.ubel.distanceTo(this.target);
 
-        var path = this.ubel.getNavigation().findPathTo(this.target, 0);
-        boolean shouldTeleport = false;
-
-        // --- TELEPORT LOGIC ---
-        if (path == null || !path.reachesTarget()) {
-            // Condition A: No path to target exists
-            if (directDistance > 5.0) {
+        // --- SAFE TELEPORT LOGIC (periodically evaluated to avoid pathfinding spam) ---
+        if (this.teleportCooldown <= 0 && directDistance > 6.0 && this.ubel.age % 10 == 0) {
+            var path = this.ubel.getNavigation().findPathTo(this.target, 0);
+            boolean shouldTeleport = (path == null || !path.reachesTarget());
+            if (!shouldTeleport && path != null && path.getLength() > directDistance * 2.0 && directDistance > 10.0) {
                 shouldTeleport = true;
             }
-        } else {
-            // Condition B: Path exists, but it's too long
-            double pathLength = path.getLength();
-            if (pathLength > directDistance * 2.0 && directDistance > 8.0) {
-                shouldTeleport = true;
-            }
-        }
 
-        if (shouldTeleport && this.teleportCooldown <= 0) {
-            this.teleportToTarget();
-            this.teleportCooldown = 100; // 5-second cooldown
+            if (shouldTeleport) {
+                this.teleportToTarget();
+                this.teleportCooldown = 100; // 5-second cooldown
+            }
         }
 
         // --- DOMAIN EXPANSION ---
@@ -112,19 +138,21 @@ public class UbelAttackGoal extends Goal {
         }
 
         // --- MOVEMENT LOGIC ---
-        // Mover closer to target
-        this.ubel.getNavigation().startMovingTo(this.target, this.speed);
+        // Move closer to target unless charging Enhanced Dismantle
+        if (this.currentAttackType != 3) {
+            this.ubel.getNavigation().startMovingTo(this.target, this.speed);
+        }
 
         // --- ATTACK TRIGGER ---
         // Ready to hit
         if (this.cooldownTimer <= 0 && this.attackDurationTimer <= 0) {
-            // Check if the target is within a 20-block range to start the attack sequence.
-            if (distanceSq <= 400.0) {
-                // Decide whether to use enhanced dismantle or not
-                if (this.enhancedDismantleCooldown <= 0 && distanceSq > 25.0 && this.ubel.getRandom().nextFloat() <= 0.25F){
+            // Check if the target is within 25-block range to start the attack sequence
+            if (distanceSq <= 625.0) {
+                // Enhanced Dismantle chance when at range (> 6 blocks)
+                if (this.enhancedDismantleCooldown <= 0 && distanceSq > 36.0 && this.ubel.getRandom().nextFloat() <= 0.30F) {
                     this.currentAttackType = 3; // Enhanced Dismantle
                     this.attackDurationTimer = 100;
-                    this.enhancedDismantleCooldown = 1200; // 60-second cooldown
+                    this.enhancedDismantleCooldown = 600; // 30-second cooldown
 
                     // Levitate Ubel
                     this.ubel.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 60, 1));
@@ -138,7 +166,7 @@ public class UbelAttackGoal extends Goal {
                     this.currentAttackType = 0;
                     this.attackDurationTimer = 20;
                 }
-            } else {return;}
+            }
         }
 
         // --- THE ATTACK SEQUENCE ---
@@ -147,24 +175,20 @@ public class UbelAttackGoal extends Goal {
 
             if (this.currentAttackType == 3) {
                 // Enhanced Dismantle
-                // Keep her staring at the player while floating
-                this.ubel.getLookControl().lookAt(this.target, 360.0F, 360.0F);
+                snapLookAtTarget();
 
                 // Fire the spell after 30 ticks
                 if (this.attackDurationTimer == 70) {
-                    // Snap to face the target
-                    this.ubel.setBodyYaw(this.ubel.getHeadYaw());
-                    this.ubel.setYaw(this.ubel.getHeadYaw());
+                    snapLookAtTarget();
 
                     var spell = (Shrine) ModSpells.SHRINE;
                     spell.fireDismantle(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack(), 3.0F);
                 }
 
                 if (this.attackDurationTimer == 0) {
-                    this.cooldownTimer = 20; // 1-second cooldown after she lands
+                    this.cooldownTimer = 20; // 1-second cooldown after landing
                 }
-            }
-            else {
+            } else {
                 // Trigger attack animation
                 if (this.attackDurationTimer == 15) {
                     this.ubel.triggerMeleeAnim();
@@ -172,44 +196,29 @@ public class UbelAttackGoal extends Goal {
 
                 // Attack halfway through the attack phase (at tick 10)
                 if (this.attackDurationTimer == 10) {
-                    // Check if the target is within melee range
-                    if (distanceSq <= 4.0) {
-                        this.currentAttackType = 1; // Melee (0 to 2 blocks)
-                    } else if (distanceSq <= 25.0) {
-                        this.currentAttackType = 0; // Cutting Magic Reelseiden (2 to 5 blocks)
-                    } else {
-                        this.currentAttackType = 2; // Long range Dismantle (5 to 20 blocks)
-                    }
+                    snapLookAtTarget();
 
-                    // Snap to face the target
-                    this.ubel.setBodyYaw(this.ubel.getHeadYaw());
-                    this.ubel.setYaw(this.ubel.getHeadYaw());
-
-                    if (this.currentAttackType == 1) {
-                        // Melee attack
+                    // Check ranges
+                    if (distanceSq <= 9.0) {
+                        this.currentAttackType = 1; // Melee (0 to 3 blocks)
                         meleeAttack();
-                    } else if (this.currentAttackType == 0) {
-                        // Cast Cutting Magic Reelseiden
+                    } else if (distanceSq <= 36.0) {
+                        this.currentAttackType = 0; // Cutting Magic Reelseiden (3 to 6 blocks)
                         var spell = ModSpells.CUTTING_MAGIC_REELSEIDEN;
                         spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
-                    } else if (this.currentAttackType == 2) {
-                        // Long range Dismantle
-                        var spell = ModSpells.SHRINE;
-                        spell.cast(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack());
+                    } else {
+                        this.currentAttackType = 2; // Long range Dismantle (6 to 25 blocks)
+                        var spell = (Shrine) ModSpells.SHRINE;
+                        spell.fireDismantle(this.ubel.getWorld(), this.ubel, this.ubel.getMainHandStack(), 1.0F);
                     }
                 }
 
                 // Once the animation ends, set the next cooldown
                 if (this.attackDurationTimer == 0) {
-                    this.cooldownTimer = 10; // Reset 1-second attack cooldown
+                    this.cooldownTimer = 10; // 0.5s cadence between strikes
                 }
             }
         }
-    }
-
-    @Override
-    public boolean shouldContinue() {
-        return this.canStart() || !this.ubel.getNavigation().isIdle();
     }
 
     public void meleeAttack() {
@@ -230,7 +239,6 @@ public class UbelAttackGoal extends Goal {
         this.ubel.getWorld().playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
                 SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP,
                 this.ubel.getSoundCategory(), 1.0F, 1.0F);
-
     }
 
     public void domainExpansion() {
@@ -242,19 +250,35 @@ public class UbelAttackGoal extends Goal {
     }
 
     private void teleportToTarget() {
-        // Attempt to find a valid ground position near the target
-        // Look in a 3-block radius around the target
-        double tx = this.target.getX() + (this.ubel.getRandom().nextDouble() - 0.5) * 4.0;
-        double ty = this.target.getY() + 0.1;
-        double tz = this.target.getZ() + (this.ubel.getRandom().nextDouble() - 0.5) * 4.0;
+        Vec3d safePos = findSafePositionNear(this.target.getPos(), 3.0, 5.0);
+        if (safePos != null) {
+            this.ubel.refreshPositionAndAngles(safePos.x, safePos.y, safePos.z, this.ubel.getYaw(), this.ubel.getPitch());
+            this.ubel.getNavigation().stop();
+            snapLookAtTarget();
+        }
+    }
 
-        // Move her
-        this.ubel.refreshPositionAndAngles(tx, ty, tz, this.ubel.getYaw(), this.ubel.getPitch());
+    private Vec3d findSafePositionNear(Vec3d center, double minR, double maxR) {
+        World world = this.ubel.getWorld();
+        for (int i = 0; i < 10; i++) {
+            double angle = this.ubel.getRandom().nextDouble() * Math.PI * 2.0;
+            double r = minR + this.ubel.getRandom().nextDouble() * (maxR - minR);
+            double x = center.x + Math.cos(angle) * r;
+            double z = center.z + Math.sin(angle) * r;
+            BlockPos targetBlock = BlockPos.ofFloored(x, center.y, z);
 
-        // Clear the current (bad) path so she recalculates from her new spot
-        this.ubel.getNavigation().stop();
+            for (int dy = 3; dy >= -3; dy--) {
+                BlockPos feetPos = targetBlock.up(dy);
+                BlockPos floorPos = feetPos.down();
+                BlockPos headPos = feetPos.up();
 
-        // Immediate snap-look at player
-        this.ubel.getLookControl().lookAt(this.target, 360.0F, 360.0F);
+                if (world.getBlockState(floorPos).isSolidBlock(world, floorPos)
+                        && world.getBlockState(feetPos).isAir()
+                        && world.getBlockState(headPos).isAir()) {
+                    return new Vec3d(feetPos.getX() + 0.5, feetPos.getY(), feetPos.getZ() + 0.5);
+                }
+            }
+        }
+        return null;
     }
 }

@@ -11,19 +11,19 @@ public class MethodeAttackGoal extends AbstractBossAttackGoal {
     public MethodeAttackGoal(MethodeEntity methode, double speed) {
         super(methode, speed);
 
-        // Set the ideal distance
-        this.setIdealDistance(7);
+        // Ideal distance: maintains 7.5 blocks spacing (tolerance 2.0 -> 5.5 to 9.5 blocks)
+        this.setIdealDistance(7.5);
 
-        // Register Defensive Magic (Blocks incoming projectiles)
-        this.registerAbility(new DefensiveProjectileShieldAbility(10.0, 0, 30, () -> ModSpells.DEFENSIVE_MAGIC));
+        // 1. Reactive Defensive Barrier (intercepts incoming projectiles within 12 blocks, 100-tick / 5-second cooldown)
+        this.registerAbility(new DefensiveProjectileShieldAbility(12.0, 0, 100, () -> ModSpells.DEFENSIVE_MAGIC));
 
-        // Register Melee Attack (Range 0 - 4 blocks)
-        this.registerAbility(new MeleeAttackAbility(4.0, 10, 15, 7.5F));
+        // 2. Point Blank Melee Staff Strike (0.0 to 3.5 blocks)
+        this.registerAbility(new MeleeAttackAbility(3.5, 8, 14, 9.0F));
 
-        // Register Killing Magic Barrage (Range 4 - 25 blocks)
-        this.registerAbility(new SpellCastAbility(25.0, 10, 20, () -> ModSpells.KILLING_MAGIC_BARRAGE));
+        // 3. Medium Range Killing Magic Barrage (3.0 to 24.0 blocks)
+        this.registerAbility(new SpellCastAbility(3.0, 24.0, 10, 22, () -> ModSpells.KILLING_MAGIC_BARRAGE));
 
-        // Register Long-Range Dismantle (Range 25 - 400 blocks)
-        //this.registerAbility(new SpellCastAbility(400.0, 20, 30, () -> ModSpells.DISMANTLE));
+        // 4. Long Range Zoltraak Beam (16.0 to 38.0 blocks — snipes retreating targets)
+        this.registerAbility(new SpellCastAbility(16.0, 38.0, 14, 28, () -> ModSpells.KILLING_MAGIC));
     }
 }
