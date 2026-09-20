@@ -7,13 +7,19 @@ import net.minecraft.entity.mob.MobEntity;
 import java.util.function.Supplier;
 
 public class SpellCastAbility implements BossAbility {
+    private final double minDistanceSq;
     private final double maxDistanceSq;
     private final int windupTicks;
     private final int recoveryTicks;
     private final Supplier<Spell> spellSupplier;
 
-    public SpellCastAbility(double maxDistanceSq, int windupTicks, int recoveryTicks, Supplier<Spell> spellSupplier) {
-        this.maxDistanceSq = maxDistanceSq;
+    public SpellCastAbility(double maxDistance, int windupTicks, int recoveryTicks, Supplier<Spell> spellSupplier) {
+        this(0.0, maxDistance, windupTicks, recoveryTicks, spellSupplier);
+    }
+
+    public SpellCastAbility(double minDistance, double maxDistance, int windupTicks, int recoveryTicks, Supplier<Spell> spellSupplier) {
+        this.minDistanceSq = minDistance * minDistance;
+        this.maxDistanceSq = maxDistance * maxDistance;
         this.windupTicks = windupTicks;
         this.recoveryTicks = recoveryTicks;
         this.spellSupplier = spellSupplier;
@@ -21,7 +27,7 @@ public class SpellCastAbility implements BossAbility {
 
     @Override
     public boolean canUse(MobEntity boss, LivingEntity target, double distanceSq) {
-        return distanceSq <= maxDistanceSq;
+        return distanceSq >= minDistanceSq && distanceSq <= maxDistanceSq;
     }
 
     @Override
@@ -36,9 +42,10 @@ public class SpellCastAbility implements BossAbility {
 
     @Override
     public void execute(MobEntity boss, LivingEntity target) {
-        Spell spell = spellSupplier.get();
-        if (spell != null) {
-            spell.cast(boss.getWorld(), boss, boss.getMainHandStack());
+        if (target != null && target.isAlive()) {
+            boss.setTarget(target);
+            boss.setAttacking(true);
+            spellSupplier.get().cast(boss.getWorld(), boss, boss.getMainHandStack());
         }
     }
 }

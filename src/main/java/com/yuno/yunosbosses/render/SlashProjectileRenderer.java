@@ -20,9 +20,11 @@ public class SlashProjectileRenderer extends EntityRenderer<SlashProjectileEntit
     public static class SlashProjectileRenderState extends EntityRenderState {
         public float yaw;
         public float pitch;
-        public float spin;
+        public float roll;
         public float scale;
+        public float width;
         public int alpha;
+        public boolean isFinisher;
     }
 
     public SlashProjectileRenderer(EntityRendererFactory.Context context) {
@@ -39,108 +41,126 @@ public class SlashProjectileRenderer extends EntityRenderer<SlashProjectileEntit
         super.updateRenderState(entity, state, tickDelta);
         state.yaw = entity.getYaw(tickDelta);
         state.pitch = entity.getPitch(tickDelta);
+        state.roll = entity.getRollAngle();
+        state.isFinisher = entity.isFinisher();
+        state.width = entity.getSlashWidth();
 
         float totalAge = entity.age + tickDelta;
-        state.spin = entity.randomRoll + totalAge * 5.0f;
-        float ageProgress = totalAge / 20.0f;
-        state.scale = 1.0f - (ageProgress * 0.3f);
-        state.alpha = (int) ((1.0f - ageProgress) * 255);
+        // Projectile travels ~2-3 ticks over 5 blocks
+        float progress = Math.min(1.0f, totalAge / 3.0f);
+
+        // Snappy scale: snaps out fast, cuts forward
+        state.scale = 1.0f + (float) Math.sin(progress * Math.PI * 0.5) * 0.25f;
+
+        // Fade out in the final 50%
+        float fade = progress > 0.5f ? 1.0f - ((progress - 0.5f) / 0.5f) : 1.0f;
+        state.alpha = Math.max(0, Math.min(255, (int) (fade * 255)));
     }
 
     @Override
     public void render(SlashProjectileRenderState state, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light) {
+        if (state.alpha <= 0) return;
+
         matrices.push();
 
-        // Make the slash face the camera
+        // Orient facing forward along entity trajectory
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - state.yaw));
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-state.pitch));
 
-        // Optional: Add a slight spin for energy effect
-        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(state.spin));
+        // Apply roll angle corresponding to the combo slash plane
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(state.roll));
 
-        // Scale effect: start small, grow, then shrink
-        matrices.scale(state.scale, state.scale, state.scale);
+        // Apply width and scale
+        matrices.scale(state.scale * state.width, state.scale, state.scale);
 
-        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(TEXTURE));
+        // Single entity translucent buffer for all layers to guarantee render pipeline stability
+        VertexConsumer buffer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(TEXTURE));
         Matrix4f posMatrix = matrices.peek().getPositionMatrix();
 
-        // Draw the slash arc as a curved ribbon
-        drawSlashArc(buffer, posMatrix, state.alpha);
+        // 1. Layer: Ethereal Translucent Vacuum Aura (Pale Jade / Turquoise Shimmer)
+        drawSlashArc(buffer, posMatrix, (int) (state.alpha * 0.75f), 160, 250, 220, 0.44f, 1.2f);
+
+        // 2. Layer: Inner Razor Incision Core (Brilliant Incandescent White Line)
+        drawSlashArc(buffer, posMatrix, state.alpha, 255, 255, 255, 0.14f, 1.25f);
+
+        // If finisher (Cross-Slash), render the crossing blade to form the iconic execution "X"
+        if (state.isFinisher) {
+            matrices.push();
+            matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(90.0F));
+            Matrix4f crossMatrix = matrices.peek().getPositionMatrix();
+
+            // Outer shroud and inner core for crossing blade
+            drawSlashArc(buffer, crossMatrix, (int) (state.alpha * 0.65f), 160, 250, 220, 0.44f, 1.2f);
+            drawSlashArc(buffer, crossMatrix, (int) (state.alpha * 0.90f), 255, 255, 255, 0.14f, 1.25f);
+
+            matrices.pop();
+        }
 
         matrices.pop();
         super.render(state, matrices, vertexConsumers, light);
     }
 
-    private void drawSlashArc(VertexConsumer buffer, Matrix4f matrix, int alpha) {
-        // Define the slash arc curve
-        int segments = 8; // Number of segments in the arc
-        float size = 1f; // Overall size of the slash
-        float thickness = 0.4f; // Thickness of the slash ribbon
+    private void drawSlashArc(VertexConsumer buffer, Matrix4f matrix, int alpha,
+                              int r, int g, int b, float thickness, float size) {
+        int segments = 16;
 
-        // Create a crescent/arc shape
         for (int i = 0; i < segments; i++) {
             float t1 = (float) i / segments;
             float t2 = (float) (i + 1) / segments;
 
-            // Calculate curve points (crescent shape)
             Vec3d p1 = getArcPoint(t1, size);
             Vec3d p2 = getArcPoint(t2, size);
 
-            // Calculate perpendicular offset for thickness
             Vec3d dir = p2.subtract(p1).normalize();
             Vec3d perpendicular = new Vec3d(-dir.y, dir.x, 0).multiply(thickness);
 
-            // Four corners of the quad
             Vec3d v1 = p1.subtract(perpendicular);
             Vec3d v2 = p1.add(perpendicular);
             Vec3d v3 = p2.add(perpendicular);
             Vec3d v4 = p2.subtract(perpendicular);
 
-            // Calculate alpha fade along the arc (brightest in middle)
-            float fadeStart = Math.abs(t1 - 0.5f) * 2.0f; // 0 at center, 1 at edges
-            float fadeEnd = Math.abs(t2 - 0.5f) * 2.0f;
-            int alphaStart = (int) (alpha * (1.0f - fadeStart * 0.5f));
-            int alphaEnd = (int) (alpha * (1.0f - fadeEnd * 0.5f));
+            // Fade toward tips
+            float fade1 = 1.0f - Math.abs(t1 - 0.5f) * 1.8f;
+            float fade2 = 1.0f - Math.abs(t2 - 0.5f) * 1.8f;
+            int a1 = (int) (alpha * Math.max(0.05f, Math.min(1.0f, fade1)));
+            int a2 = (int) (alpha * Math.max(0.05f, Math.min(1.0f, fade2)));
 
-            // Draw the quad segment (front and back)
-            drawSlashQuad(buffer, matrix, v1, v2, v3, v4, t1, t2, alphaStart, alphaEnd);
+            drawSlashQuad(buffer, matrix, v1, v2, v3, v4, t1, t2, a1, a2, r, g, b);
         }
     }
 
     private Vec3d getArcPoint(float t, float size) {
-        // Create a curved crescent shape
-        // t goes from 0 to 1 along the arc
         float angle = (t - 0.5f) * (float) Math.PI; // -PI/2 to PI/2
-
-        // Crescent curve formula
         float x = (float) Math.sin(angle) * size;
-        float y = (float) (Math.cos(angle) - 1.0f) * size * 0.6f; // Creates the arc
-
-        return new Vec3d(x, y, 0);
+        float y = (float) (Math.cos(angle) - 1.0f) * size * 0.55f;
+        // Crescent center bows forward along Z (the direction of travel)
+        float z = (float) Math.cos(angle) * size * 0.35f;
+        return new Vec3d(x, y, z);
     }
 
     private void drawSlashQuad(VertexConsumer buffer, Matrix4f matrix, Vec3d v1, Vec3d v2, Vec3d v3, Vec3d v4,
-                               float u1, float u2, int alpha1, int alpha2) {
+                               float u1, float u2, int a1, int a2, int r, int g, int b) {
         // Front face
-        drawVertex(buffer, matrix, v1, u1, 0, alpha1);
-        drawVertex(buffer, matrix, v2, u1, 1, alpha1);
-        drawVertex(buffer, matrix, v3, u2, 1, alpha2);
-        drawVertex(buffer, matrix, v4, u2, 0, alpha2);
+        drawVertex(buffer, matrix, v1, u1, 0, r, g, b, a1);
+        drawVertex(buffer, matrix, v2, u1, 1, r, g, b, a1);
+        drawVertex(buffer, matrix, v3, u2, 1, r, g, b, a2);
+        drawVertex(buffer, matrix, v4, u2, 0, r, g, b, a2);
 
         // Back face (reversed winding order)
-        drawVertex(buffer, matrix, v4, u2, 0, alpha2);
-        drawVertex(buffer, matrix, v3, u2, 1, alpha2);
-        drawVertex(buffer, matrix, v2, u1, 1, alpha1);
-        drawVertex(buffer, matrix, v1, u1, 0, alpha1);
+        drawVertex(buffer, matrix, v4, u2, 0, r, g, b, a2);
+        drawVertex(buffer, matrix, v3, u2, 1, r, g, b, a2);
+        drawVertex(buffer, matrix, v2, u1, 1, r, g, b, a1);
+        drawVertex(buffer, matrix, v1, u1, 0, r, g, b, a1);
     }
 
-    private void drawVertex(VertexConsumer buffer, Matrix4f matrix, Vec3d pos, float u, float v, int alpha) {
+    private void drawVertex(VertexConsumer buffer, Matrix4f matrix, Vec3d pos, float u, float v,
+                            int r, int g, int b, int alpha) {
         buffer.vertex(matrix, (float) pos.x, (float) pos.y, (float) pos.z)
-                .color(200, 220, 255, alpha) // Light blue-white color
+                .color(r, g, b, alpha)
                 .texture(u, v)
                 .overlay(OverlayTexture.DEFAULT_UV)
-                .light(15728880) // Full brightness
-                .normal(0, 0, 1);
+                .light(15728880) // Max glowing brightness
+                .normal(0, 1, 0);
     }
 }
