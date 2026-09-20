@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -70,6 +71,10 @@ public class KillingMagicBarrage extends KillingMagic {
 
                 // Target acquisition: track actual entity target if present, otherwise shoot toward current crosshair
                 LivingEntity target = caster.getAttacking();
+                if ((target == null || !target.isAlive()) && caster instanceof MobEntity mob) {
+                    target = mob.getTarget();
+                }
+
                 Vec3d direction;
                 if (target != null && target.isAlive()) {
                     Vec3d targetAim = target.getBoundingBox().getCenter();

@@ -15,6 +15,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -114,11 +115,18 @@ public class KillingMagic extends Spell {
         world.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
                 SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1.2F, 1.5F);
 
-        Vec3d look = caster.getRotationVector();
+        Vec3d look;
+        boolean customDir = false;
+        if (caster instanceof MobEntity mob && mob.getTarget() != null && mob.getTarget().isAlive()) {
+            look = mob.getTarget().getEyePos().subtract(caster.getEyePos()).normalize();
+            customDir = true;
+        } else {
+            look = caster.getRotationVector();
+        }
         Vec3d start = caster.getEyePos().add(look.multiply(1.0));
 
         fireBeam(world, caster, start, maxRange, delay, durationTicks, beamRadius, damageRadius,
-                trueDamage, tunnelRadius, impactRadius, soundPitch, knockbackHoriz, knockbackVert, false, null);
+                trueDamage, tunnelRadius, impactRadius, soundPitch, knockbackHoriz, knockbackVert, customDir, customDir ? look : null);
     }
 
     @Override
