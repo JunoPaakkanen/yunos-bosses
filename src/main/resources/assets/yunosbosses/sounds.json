@@ -59,5 +59,74 @@
   "fuga": {
     "subtitle": "subtitles.yunosbosses.fuga",
     "sounds": [ "yunosbosses:fuga" ]
+  },
+
+  "black_flash": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [
+      "yunosbosses:black_flash_1",
+      "yunosbosses:black_flash_2",
+      "yunosbosses:black_flash_3",
+      "yunosbosses:black_flash_4",
+      "yunosbosses:black_flash_5",
+      "yunosbosses:black_flash_6",
+      "yunosbosses:black_flash_7",
+      "yunosbosses:black_flash_8"
+    ]
+  },
+
+  "black_flash_finisher": {
+    "subtitle": "subtitles.yunosbosses.black_flash_finisher",
+    "sounds": [
+      "yunosbosses:black_flash_finisher_1",
+      "yunosbosses:black_flash_finisher_2",
+      "yunosbosses:black_flash_finisher_3"
+    ]
+  },
+
+  "black_flash_1": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [ "yunosbosses:black_flash_1" ]
+  },
+  "black_flash_2": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [ "yunosbosses:black_flash_2" ]
+  },
+  "black_flash_3": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [ "yunosbosses:black_flash_3" ]
+  },
+  "black_flash_4": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [ "yunosbosses:black_flash_4" ]
+  },
+  "black_flash_5": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [ "yunosbosses:black_flash_5" ]
+  },
+  "black_flash_6": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [ "yunosbosses:black_flash_6" ]
+  },
+  "black_flash_7": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [ "yunosbosses:black_flash_7" ]
+  },
+  "black_flash_8": {
+    "subtitle": "subtitles.yunosbosses.black_flash",
+    "sounds": [ "yunosbosses:black_flash_8" ]
+  },
+
+  "black_flash_finisher_1": {
+    "subtitle": "subtitles.yunosbosses.black_flash_finisher",
+    "sounds": [ "yunosbosses:black_flash_finisher_1" ]
+  },
+  "black_flash_finisher_2": {
+    "subtitle": "subtitles.yunosbosses.black_flash_finisher",
+    "sounds": [ "yunosbosses:black_flash_finisher_2" ]
+  },
+  "black_flash_finisher_3": {
+    "subtitle": "subtitles.yunosbosses.black_flash_finisher",
+    "sounds": [ "yunosbosses:black_flash_finisher_3" ]
   }
 }

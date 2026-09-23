@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.mixin;
 
 import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.render.BlackFlashClientHelper;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationAccess;
 import com.zigythebird.playeranimcore.animation.RawAnimation;
@@ -33,6 +34,12 @@ public abstract class AbstractClientPlayerEntityMixin {
             // 1.30 FOV for sprinting, 1.15 otherwise
             float baseFov = player.isSprinting() ? 1.30F : 1.15F;
             cir.setReturnValue(baseFov);
+        }
+
+        // Apply Black Flash FOV punch / camera recoil
+        float bfFovMultiplier = BlackFlashClientHelper.getFovMultiplier();
+        if (bfFovMultiplier != 1.0F) {
+            cir.setReturnValue(cir.getReturnValue() * bfFovMultiplier);
         }
     }
 

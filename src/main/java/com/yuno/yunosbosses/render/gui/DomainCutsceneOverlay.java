@@ -5,7 +5,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
 
 public class DomainCutsceneOverlay implements HudRenderCallback {
@@ -25,18 +24,23 @@ public class DomainCutsceneOverlay implements HudRenderCallback {
         float progress = 1.0f - ((float) DomainCutsceneManager.ticksRemaining / DomainCutsceneManager.maxTicks);
 
         float animScale = 1.0f;
-        float transitionThreshold = 0.15f; // Spends 5% of the time opening, and 5% closing
+        float transitionThreshold = 0.15f; // Spends 15% opening, and 15% closing
 
         if (progress < transitionThreshold) {
-            // Opening phase
             animScale = progress / transitionThreshold;
         } else if (progress > 1.0f - transitionThreshold) {
-            // Closing phase
             animScale = (1.0f - progress) / transitionThreshold;
         }
 
         // Apply a Cubic Ease-Out curve to make it snap open smoothly
         animScale = (float) (1.0 - Math.pow(1.0 - animScale, 3));
+
+        // Cinematic anamorphic bars (letterboxing)
+        int letterboxHeight = (int) ((screenHeight / 12) * animScale);
+        if (letterboxHeight > 0) {
+            drawContext.fill(0, 0, screenWidth, letterboxHeight, 0xD0000000);
+            drawContext.fill(0, screenHeight - letterboxHeight, screenWidth, screenHeight, 0xD0000000);
+        }
 
         // Banner dimensions
         int maxBannerHeight = 80;
@@ -46,8 +50,10 @@ public class DomainCutsceneOverlay implements HudRenderCallback {
 
         int bannerY = (screenHeight / 4) - (bannerHeight / 2); // Placed in the upper-mid screen
 
-        // Draw a dark red background rectangle
-        drawContext.fill(0, bannerY, screenWidth, bannerY + bannerHeight, 0xCC440000); // 80% opacity dark red
+        // Draw deep crimson-black background rectangle with subtle cursed border lines
+        drawContext.fill(0, bannerY, screenWidth, bannerY + bannerHeight, 0xEE180204);
+        drawContext.fill(0, bannerY - 1, screenWidth, bannerY, 0xFF991122);
+        drawContext.fill(0, bannerY + bannerHeight, screenWidth, bannerY + bannerHeight + 1, 0xFF991122);
 
         // Enable scissor (clipping)
         drawContext.enableScissor(0, bannerY, screenWidth, bannerY + bannerHeight);
@@ -92,11 +98,26 @@ public class DomainCutsceneOverlay implements HudRenderCallback {
         String text = "Domain Expansion: " + DomainCutsceneManager.domainName;
         int textWidth = client.textRenderer.getWidth(text);
         int textX = (screenWidth / 2) - (textWidth / 2) + 40; // Offset to the right of the face
-        // Pin text to the true center so it doesn't move while the banner opens
-        int textY = (screenHeight / 4) - 4;
 
-        // Draw with a shadow (Full ARGB with alpha 0xFF)
-        drawContext.drawTextWithShadow(client.textRenderer, text, textX, textY, 0xFFFFFFFF);
+        if (DomainCutsceneManager.isOpenBarrier) {
+            int mainY = (screenHeight / 4) - 9;
+            drawContext.drawTextWithShadow(client.textRenderer, text, textX, mainY, 0xFFFF3344);
+
+            String subText = "Open Barrier";
+            float subScale = 0.8f;
+            int subTextWidth = client.textRenderer.getWidth(subText);
+            float mainCenterX = textX + (textWidth / 2.0f);
+            float subX = (mainCenterX / subScale) - (subTextWidth / 2.0f);
+            float subY = (mainY + 13) / subScale;
+
+            drawContext.getMatrices().pushMatrix();
+            drawContext.getMatrices().scale(subScale, subScale);
+            drawContext.drawTextWithShadow(client.textRenderer, subText, (int) subX, (int) subY, 0xFFFF8855);
+            drawContext.getMatrices().popMatrix();
+        } else {
+            int textY = (screenHeight / 4) - 4;
+            drawContext.drawTextWithShadow(client.textRenderer, text, textX, textY, 0xFFFF3344);
+        }
 
         // Disable Scissor
         drawContext.disableScissor();

@@ -2,11 +2,15 @@ package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.entity.projectile.FlameArrowEntity;
+import com.yuno.yunosbosses.particle.ModParticles;
+import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -54,8 +58,13 @@ public class BarrierManager {
             if (!world.isClient && world instanceof ServerWorld serverWorld) {
                 if (barrier.getDirection().equals(Vec3d.ZERO)) {
                     double radius = barrier.getRadius();
-                    // Apply the spherical pushing physics
-                    SpherePhysics.apply(world, barrier, radius);
+                    boolean isOpen = barrier.isOpenBarrier();
+
+                    // Only apply spherical wall collision physics if this domain is NOT an open barrier.
+                    // Open barrier domains (Malevolent Shrine) allow entities to physically attempt an escape!
+                    if (!isOpen) {
+                        SpherePhysics.apply(world, barrier, radius);
+                    }
 
                     // Apply domain effect on entities inside
                     Box domainBox = new Box(barrier.getPosition().subtract(radius, radius, radius), barrier.getPosition().add(radius, radius, radius));
@@ -75,20 +84,25 @@ public class BarrierManager {
                     // Projectile logic for SPHERE
                     Box sphereBox = new Box(barrier.getPosition().subtract(radius, radius, radius),
                             barrier.getPosition().add(radius, radius, radius));
-                    handleProjectiles(world, barrier, sphereBox, radius, true);
+
+                    if (isOpen && barrier.getDomainExpansion() instanceof DomainExpansionShrine) {
+                        // Open Barrier shredder: slices incoming projectiles out of the air
+                        handleOpenDomainProjectiles(serverWorld, barrier, sphereBox, radius);
+                    } else {
+                        // Closed Barrier: reflects off outer barrier shell
+                        handleProjectiles(world, barrier, sphereBox, radius, true);
+                    }
                 }
                 // --- 2. HEX SHIELD LOGIC ---
                 else {
-                    // Keep the small box for the directional shield
-                    Box hexBox = Box.from(barrier.getPosition()).expand(0.8F);
-                    handleProjectiles(world, barrier, hexBox, 0.8, false);
+                    // Expanded search box to reliably catch fast-moving projectiles (arrows travel at 3+ blocks/tick)
+                    Box hexBox = Box.from(barrier.getPosition()).expand(2.2F);
+                    handleProjectiles(world, barrier, hexBox, 2.2, false);
                 }
             }
 
             if (barrier.isExpired()) {
-                long currentTime = System.currentTimeMillis();
                 if (!world.isClient) {
-                    System.out.println("[SERVER] Barrier Expired at: " + currentTime + " ms");
                     BlockPos blockPos = BlockPos.ofFloored(barrier.getPosition());
                     // Glass shatter effect, visual and sound
                     world.syncWorldEvent(2001, blockPos, Block.getRawIdFromState(Blocks.GLASS.getDefaultState()));
@@ -98,16 +112,46 @@ public class BarrierManager {
                         barrier.getDomainExpansion().removeDomainFloor(world, barrier);
                         barrier.getDomainExpansion().onDomainRemoved(serverWorld, barrier);
                     }
-
-                } else {
-                    System.out.println("[CLIENT] Barrier Removed at: " + currentTime + " ms");
                 }
                 listToTick.remove(i);
             }
         }
     }
 
+    /**
+     * Handles projectiles entering an Open Barrier domain (Malevolent Shrine).
+     * Unlike a closed barrier which bounces projectiles off the skin, the open domain's
+     * slashes slice incoming hostile projectiles into pieces mid-flight.
+     */
+    public static void handleOpenDomainProjectiles(ServerWorld serverWorld, ActiveBarrier barrier, Box domainBox, double radius) {
+        serverWorld.getEntitiesByClass(ProjectileEntity.class, domainBox, p -> true).forEach(projectile -> {
+            Entity owner = projectile.getOwner();
+            if (owner != null && owner.getUuid().equals(barrier.getOwnerUuid())) {
+                return;
+            }
+
+            // Do not shred caster's Flame Arrow
+            if (projectile instanceof FlameArrowEntity) {
+                return;
+            }
+
+            Vec3d projPos = projectile.getPos();
+            if (projPos.distanceTo(barrier.getPosition()) < radius) {
+                // Sliced out of mid-air by domain slashes!
+                serverWorld.playSound(null, projPos.x, projPos.y, projPos.z,
+                        ModSounds.REELSEIDEN_HIT, SoundCategory.PLAYERS, 0.9F, 1.6F);
+                serverWorld.spawnParticles(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE,
+                        projPos.x, projPos.y, projPos.z, 1, 0, 0, 0, 0);
+                serverWorld.spawnParticles(ParticleTypes.CRIT,
+                        projPos.x, projPos.y, projPos.z, 6, 0.15, 0.15, 0.15, 0.08);
+
+                projectile.discard();
+            }
+        });
+    }
+
     public static void handleProjectiles(World world, ActiveBarrier barrier, Box shieldBox, double radius, boolean isSphere) {
+        if (!(world instanceof ServerWorld serverWorld)) return;
 
         world.getEntitiesByClass(ProjectileEntity.class, shieldBox, p -> true).forEach(projectile -> {
             Entity owner = projectile.getOwner();
@@ -115,18 +159,39 @@ public class BarrierManager {
                 return;
             }
 
-            // Distance check
+            Vec3d projPos = projectile.getPos();
+            Vec3d barrierPos = barrier.getPosition();
+
+            // Distance & Directional check
             if (isSphere) {
-                double dist = projectile.getPos().distanceTo(barrier.getPosition());
-                // Only reflect if it's hitting the "skin" (radius +/- 0.5 blocks)
-                if (dist > radius + 0.5 || dist < radius - 0.5) {
+                double dist = projPos.distanceTo(barrierPos);
+                // Only reflect if it's hitting the "skin" (radius +/- 0.6 blocks)
+                if (dist > radius + 0.6 || dist < radius - 0.6) {
                     return;
+                }
+            } else {
+                Vec3d shieldDir = barrier.getDirection().normalize();
+                Vec3d toProj = projPos.subtract(barrierPos);
+                double dist = toProj.length();
+
+                // Check distance to shield center
+                if (dist > 1.5) {
+                    return;
+                }
+
+                // Check projectile velocity direction: ignore projectiles moving away from the shield
+                Vec3d motion = projectile.getVelocity();
+                if (motion.lengthSquared() > 0.01) {
+                    double approachDot = motion.normalize().dotProduct(shieldDir);
+                    if (approachDot > 0.35 && dist > 1.0) {
+                        return; // Moving away from the shield
+                    }
                 }
             }
 
             // Do NOT deflect Flame Arrow! Cause it to explode on impact with defensive magic!
             if (projectile instanceof FlameArrowEntity flameArrow) {
-                world.playSound(null, barrier.getPosition().x, barrier.getPosition().y, barrier.getPosition().z,
+                serverWorld.playSound(null, barrierPos.x, barrierPos.y, barrierPos.z,
                         SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.5F, 1.2F);
                 flameArrow.detonate(flameArrow.getPos());
                 return;
@@ -134,20 +199,37 @@ public class BarrierManager {
 
             // Reflect projectile
             Vec3d motion = projectile.getVelocity();
-            Vec3d reflectedMotion = new Vec3d(-motion.x, -motion.y + 0.2, -motion.z).multiply(2);
+            Vec3d shieldDir = barrier.getDirection().equals(Vec3d.ZERO)
+                    ? projPos.subtract(barrierPos).normalize()
+                    : barrier.getDirection().normalize();
+
+            Vec3d reflectedMotion = new Vec3d(-motion.x, -motion.y + 0.15, -motion.z).multiply(1.5);
+            if (reflectedMotion.lengthSquared() < 0.25) {
+                reflectedMotion = shieldDir.multiply(1.2);
+            }
             projectile.setVelocity(reflectedMotion);
+
+            // Nudge projectile slightly outside the barrier so it doesn't re-collide
+            projectile.setPosition(projPos.add(shieldDir.multiply(0.35)));
 
             // Update visual rotation
             float yaw = (float) (Math.atan2(reflectedMotion.x, reflectedMotion.z) * (180 / Math.PI));
             float pitch = (float) (Math.atan2(reflectedMotion.y, reflectedMotion.horizontalLength()) * (180 / Math.PI));
             projectile.setYaw(yaw);
             projectile.setPitch(pitch);
-
             projectile.velocityModified = true;
-            projectile.setOwner(world.getPlayerByUuid(barrier.getOwnerUuid()));
 
-            world.playSound(null, barrier.getPosition().x, barrier.getPosition().y, barrier.getPosition().z,
-                    SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0F, 1.5F);
+            // Set new owner to barrier caster (support both player and mob bosses)
+            Entity barrierOwner = serverWorld.getEntity(barrier.getOwnerUuid());
+            if (barrierOwner != null) {
+                projectile.setOwner(barrierOwner);
+            }
+
+            // Sound and spark particles
+            serverWorld.playSound(null, barrierPos.x, barrierPos.y, barrierPos.z,
+                    SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.2F, 1.5F);
+            serverWorld.spawnParticles(ParticleTypes.ELECTRIC_SPARK, barrierPos.x, barrierPos.y, barrierPos.z, 6, 0.2, 0.2, 0.2, 0.1);
+            serverWorld.spawnParticles(ParticleTypes.CRIT, barrierPos.x, barrierPos.y, barrierPos.z, 8, 0.2, 0.2, 0.2, 0.15);
         });
     }
 
@@ -155,8 +237,38 @@ public class BarrierManager {
     public static boolean hasActiveDomain(UUID playerUuid) {
         for (ActiveBarrier barrier : ACTIVE_BARRIERS) {
             // If we find a barrier owned by this player that is a Domain Expansion
-            if (barrier.getOwnerUuid().equals(playerUuid) && barrier.getDomainExpansion() != null) {
+            if (barrier.getOwnerUuid().equals(playerUuid) && barrier.getDomainExpansion() != null && !barrier.isExpired()) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gets the active Domain Expansion barrier owned by the given entity UUID, if one exists and has not expired.
+     */
+    public static ActiveBarrier getActiveDomainBarrier(UUID playerUuid) {
+        for (ActiveBarrier barrier : ACTIVE_BARRIERS) {
+            if (barrier.getOwnerUuid().equals(playerUuid) && barrier.getDomainExpansion() != null && !barrier.isExpired()) {
+                return barrier;
+            }
+        }
+        return null;
+    }
+
+    // Checks if an owner already has an active barrier covering a specific direction
+    public static boolean hasActiveBarrierFor(UUID ownerUuid, Vec3d direction) {
+        for (ActiveBarrier barrier : ACTIVE_BARRIERS) {
+            if (barrier.getOwnerUuid().equals(ownerUuid) && !barrier.isExpired()) {
+                if (barrier.getDirection().equals(Vec3d.ZERO)) {
+                    return true;
+                }
+                if (direction != null) {
+                    double dot = barrier.getDirection().normalize().dotProduct(direction.normalize());
+                    if (dot > 0.35) {
+                        return true;
+                    }
+                }
             }
         }
         return false;

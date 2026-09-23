@@ -20,9 +20,9 @@ public class PlayerTransformationComponent implements TransformationComponent {
     private final PlayerEntity player;
     private boolean transformed = false;
 
-    // The chance of a Black Flash is 3% by default
-    float chance = 0.05f;
-    int blackFlashChain = 0;
+    private int blackFlashChain = 0;
+    private boolean inTheZone = false;
+    private int zoneTimer = 0;
 
     public PlayerTransformationComponent(PlayerEntity player) {
         this.player = player;
@@ -54,6 +54,44 @@ public class PlayerTransformationComponent implements TransformationComponent {
             }
             // Drop absolutely everything in the standard inventory/hotbar
             this.player.getInventory().dropAll();
+        }
+    }
+
+    @Override
+    public boolean isInTheZone() {
+        return this.inTheZone;
+    }
+
+    @Override
+    public void setInTheZone(boolean inTheZone, int ticks) {
+        this.inTheZone = inTheZone;
+        this.zoneTimer = ticks;
+    }
+
+    @Override
+    public int getBlackFlashChain() {
+        return this.blackFlashChain;
+    }
+
+    @Override
+    public void setBlackFlashChain(int chain) {
+        this.blackFlashChain = chain;
+    }
+
+    @Override
+    public void resetBlackFlashChain() {
+        this.blackFlashChain = 0;
+    }
+
+    @Override
+    public void serverTick() {
+        // Count down "The Zone" timer
+        if (this.inTheZone) {
+            this.zoneTimer--;
+            if (this.zoneTimer <= 0) {
+                this.inTheZone = false;
+                this.blackFlashChain = 0;
+            }
         }
     }
 
@@ -103,28 +141,12 @@ public class PlayerTransformationComponent implements TransformationComponent {
                         0.02
                 );
                 // --- NORMAL VARIANT EFFECT ---
-                // Apply Black Flash
+                // Apply Black Flash to the primary target
                 var targets = player.getWorld().getOtherEntities(player, hitbox);
                 for (var target : targets) {
                     if (target instanceof LivingEntity livingTarget) {
-
-                        if (blackFlashChain >= 4) {
-                            // After 4 consecutive Black Flashes, apply the finisher
-                            BlackFlash.blackFlashFinisher(player, livingTarget);
-                            blackFlashChain = 0;
-                        } else {
-                            // Try Black Flash
-                            boolean successfulBlackFlash = BlackFlash.blackFlashChance(player, livingTarget, chance);
-
-                            // Calculate the chance of the next Black Flash
-                            if (successfulBlackFlash) {
-                                chance = 0.90f;
-                                blackFlashChain++;
-                            } else {
-                                chance = 0.03f;
-                                blackFlashChain = 0;
-                            }
-                        }
+                        BlackFlash.blackFlashChance(player, livingTarget, 0.05f);
+                        break;
                     }
                 }
             }

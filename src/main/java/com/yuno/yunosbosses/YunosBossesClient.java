@@ -27,6 +27,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 
 public class YunosBossesClient implements ClientModInitializer {
     @Override
@@ -38,6 +39,7 @@ public class YunosBossesClient implements ClientModInitializer {
         KillingMagicRenderer.register();
         DefensiveMagicRenderer.register();
         ProjectionSorceryRenderer.register();
+        BlackFlashRenderer.register();
 
         // Register Entity Renderers
         EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
@@ -79,6 +81,9 @@ public class YunosBossesClient implements ClientModInitializer {
                     BeamManager.tick();
                     BarrierManager.tick(client.world);
                     DomainCutsceneManager.tick();
+                    DomainAtmosphereRenderer.tick(client);
+                    BlackFlashRenderer.tick();
+                    BlackFlashClientHelper.tick();
                 }
             }
         });
@@ -131,14 +136,13 @@ public class YunosBossesClient implements ClientModInitializer {
         // Receiver for Domain Cutscenes
         ClientPlayNetworking.registerGlobalReceiver(DomainCutscenePayload.ID, (payload, context) -> {
             context.client().execute(() -> {
-                DomainCutsceneManager.startCutscene(payload.casterUuid(), payload.domainName(), payload.durationTicks());
+                DomainCutsceneManager.startCutscene(payload.casterUuid(), payload.domainName(), payload.durationTicks(), payload.isOpenBarrier());
             });
         });
 
         // Receiver for Projection Sorcery image rendering
         ClientPlayNetworking.registerGlobalReceiver(SpawnImagePayload.ID, (payload, context) -> {
             context.client().execute(() -> {
-
                 // Look up the entity on the client's side using the ID from the packet
                 if (context.client().world != null) {
                     Entity entity = context.client().world.getEntityById(payload.entityId());
@@ -147,6 +151,19 @@ public class YunosBossesClient implements ClientModInitializer {
                         ProjectionSorceryRenderer.addImage(livingCaster, payload.position(), payload.ticks());
                     }
                 }
+            });
+        });
+
+        // Receiver for Black Flash visual and camera effects
+        ClientPlayNetworking.registerGlobalReceiver(BlackFlashPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                BlackFlashClientHelper.handleBlackFlashPacket(
+                        new Vec3d(payload.x(), payload.y(), payload.z()),
+                        payload.attackerUuid(),
+                        payload.targetUuid(),
+                        payload.isFinisher(),
+                        payload.chainCount()
+                );
             });
         });
     }

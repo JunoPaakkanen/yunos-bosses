@@ -1,6 +1,8 @@
 package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.block.ModBlocks;
+import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.network.BarrierPayload;
 import com.yuno.yunosbosses.network.DomainCutscenePayload;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
@@ -33,16 +35,35 @@ public abstract class DomainExpansion extends Spell {
     }
 
     public abstract Identifier getBarrierTexture();
+
+    /**
+     * Barrier texture to use when casting in closed/contained mode.
+     */
+    public Identifier getClosedBarrierTexture() {
+        return getBarrierTexture();
+    }
+
     public abstract int getLifetimeTicks();
     public abstract float getRadius();
     public abstract void onDomainEffect(Entity affectedEntity, ActiveBarrier barrier);
+
+    /**
+     * Whether this domain defaults to an Open Barrier domain (e.g. Malevolent Shrine).
+     * Open barrier domains do not confine entities with physical wall collision physics,
+     * allowing entities to attempt an escape while enforcing binding vows (such as extended radius/lethality).
+     */
+    public boolean isOpenBarrier() {
+        return false;
+    }
 
     // Default mana cost
     public float manaCost = 100.0F;
     protected Identifier castAnimation;
 
     @Override
-    public float getManaCost(LivingEntity caster) {return manaCost;}
+    public float getManaCost(LivingEntity caster) {
+        return manaCost;
+    }
 
     public float getRadius(int chargeLevel) {
         return switch (chargeLevel) {
@@ -52,7 +73,7 @@ public abstract class DomainExpansion extends Spell {
         };
     }
 
-    public void startDomainExpansionCast(World world, LivingEntity caster, String domainName) {
+    public void startDomainExpansionCast(World world, LivingEntity caster, String domainName, boolean isOpenBarrier) {
         for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
 
             // 3D Player Animation
@@ -60,19 +81,30 @@ public abstract class DomainExpansion extends Spell {
 
             int durationTicks;
             // 2-second cast duration for players, 3-seconds for bosses
-            if (caster.isPlayer()) {durationTicks = 40;}
-            else {durationTicks = 60;}
+            if (caster.isPlayer()) {
+                durationTicks = 40;
+            } else {
+                durationTicks = 60;
+            }
 
             // 2D Cutscene
-            ServerPlayNetworking.send(player, new DomainCutscenePayload(caster.getUuid(), domainName, durationTicks));
+            ServerPlayNetworking.send(player, new DomainCutscenePayload(caster.getUuid(), domainName, durationTicks, isOpenBarrier));
         }
     }
 
+    public void startDomainExpansionCast(World world, LivingEntity caster, String domainName) {
+        startDomainExpansionCast(world, caster, domainName, isOpenBarrier());
+    }
+
     public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff, float radius) {
+        finishDomainExpansionCast(world, caster, staff, radius, isOpenBarrier());
+    }
+
+    public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff, float radius, boolean isOpenBarrier) {
         if (!world.isClient) {
             Vec3d pos = caster.getPos().add(0, 2, 0); // Center of the sphere
 
-            Identifier texture = getBarrierTexture();
+            Identifier texture = isOpenBarrier ? getBarrierTexture() : getClosedBarrierTexture();
             int lifetime = getLifetimeTicks();
 
             // Create the floor
@@ -83,7 +115,7 @@ public abstract class DomainExpansion extends Spell {
 
             // Create the barrier
             BarrierManager.ACTIVE_BARRIERS.add(
-                    new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, radius, texture, this::onDomainEffect, this)
+                    new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, radius, texture, this::onDomainEffect, this, isOpenBarrier)
             );
 
             // Broadcast to ALL nearby players so they can see the barrier and animation
@@ -162,7 +194,7 @@ public abstract class DomainExpansion extends Spell {
         // Reverse-engineer the floor height from the barrier position
         BlockPos centerPos = BlockPos.ofFloored(
                 barrier.getPosition().x,
-                barrier.getPosition().y -2,
+                barrier.getPosition().y - 2,
                 barrier.getPosition().z
         );
         int floorY = centerPos.getY() - 1;

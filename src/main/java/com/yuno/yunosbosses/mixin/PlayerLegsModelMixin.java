@@ -15,6 +15,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(PlayerEntityModel.class)
 public class PlayerLegsModelMixin {
 
+    @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V", at = @At("HEAD"))
+    private void yunosbosses$resetHeadVisibility(PlayerEntityRenderState state, CallbackInfo ci) {
+        // In 1.21.2+, Minecraft's PlayerEntityModel#setAngles resets the visibility of body, arms, legs,
+        // jacket, sleeves, hat, and pants each frame, but omits resetting head.visible.
+        // Once head.visible is set to false during transformation, it never gets restored automatically.
+        // We explicitly reset it here before angles and transformations are evaluated.
+        PlayerEntityModel model = (PlayerEntityModel) (Object) this;
+        model.head.visible = !state.spectator;
+    }
+
     @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V", at = @At("TAIL"))
     private void hideTopHalf(PlayerEntityRenderState state, CallbackInfo ci) {
         MinecraftClient client = MinecraftClient.getInstance();

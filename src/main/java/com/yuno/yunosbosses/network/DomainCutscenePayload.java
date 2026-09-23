@@ -10,7 +10,7 @@ import net.minecraft.util.Uuids;
 
 import java.util.UUID;
 
-public record DomainCutscenePayload(UUID casterUuid, String domainName, int durationTicks) implements CustomPayload {
+public record DomainCutscenePayload(UUID casterUuid, String domainName, int durationTicks, boolean isOpenBarrier) implements CustomPayload {
 
     public static final CustomPayload.Id<DomainCutscenePayload> ID = new CustomPayload.Id<>(Identifier.of("yunosbosses", "domain_cutscene"));
 
@@ -18,6 +18,7 @@ public record DomainCutscenePayload(UUID casterUuid, String domainName, int dura
             Uuids.PACKET_CODEC, DomainCutscenePayload::casterUuid,
             PacketCodecs.STRING, DomainCutscenePayload::domainName,
             PacketCodecs.INTEGER, DomainCutscenePayload::durationTicks,
+            PacketCodecs.BOOLEAN, DomainCutscenePayload::isOpenBarrier,
             DomainCutscenePayload::new
     );
 

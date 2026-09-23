@@ -37,6 +37,10 @@ public interface SpellComponent extends Component, AutoSyncedComponent, ServerTi
 
     boolean canChangeSpell();
 
+    // Unlocks
+    boolean unlockedOpenDomain();
+    void unlockOpenDomain();
+
     // Alternate Casting
     boolean hasAltCastWindow(Spell spell);
     void startAltCastWindow(Spell spell, int ticks);

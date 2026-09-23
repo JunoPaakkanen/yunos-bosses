@@ -3,7 +3,9 @@ package com.yuno.yunosbosses.mixin;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
+import com.yuno.yunosbosses.util.BlackFlash;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,6 +28,16 @@ public abstract class PlayerEntityMixin {
             if (Arrays.asList(equippedSpells).contains(ModSpells.PROJECTION_SORCERY)) {
                 component.addMeter(ModSpells.PROJECTION_SORCERY, 25);
             }
+        }
+    }
+
+    @Inject(method = "attack", at = @At("HEAD"))
+    private void yunosbosses$blackFlashChanceOnFullChargeAttack(Entity target, CallbackInfo ci) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+
+        // Check if the attack cooldown is fully charged
+        if (player.getAttackCooldownProgress(0.5F) >= 0.9F && target instanceof LivingEntity livingTarget) {
+            BlackFlash.blackFlashChance(player, livingTarget, 0.01F);
         }
     }
 }

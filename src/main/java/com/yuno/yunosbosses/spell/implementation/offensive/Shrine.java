@@ -14,6 +14,7 @@ import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.InnateHudData;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
+import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
@@ -72,14 +73,27 @@ public class Shrine extends Spell {
         };
 
         if (caster.isSneaking()) {
+            ActiveBarrier activeBarrier = BarrierManager.getActiveDomainBarrier(caster.getUuid());
+            boolean insideShrineDomain = activeBarrier != null &&
+                    activeBarrier.getDomainExpansion() instanceof DomainExpansionShrine &&
+                    activeBarrier.getPosition().distanceTo(caster.getPos()) <= activeBarrier.getRadius();
+
+            int remainingTicks = activeBarrier != null ? (activeBarrier.getMaxTicks() - activeBarrier.getCurrentTicks()) : 0;
+            boolean isFinisherWindow = insideShrineDomain && remainingTicks <= 160 && remainingTicks > 0;
+
             if (component.getMeter(this) < 100) {
                 // Refund mana since flame arrow could not be cast without 100% meter
                 ModEntityComponents.MANA.get(caster).addMana(this.getManaCost(caster));
                 return;
             }
             component.setMeter(this, 0);
-            component.setShrineCooldown(40);
-            shootFlameArrow(world, caster, staff, potency);
+            component.setShrineCooldown(isFinisherWindow ? 60 : 40);
+
+            if (isFinisherWindow) {
+                DomainExpansionShrine.triggerKaminoFinisher(world, caster, staff, chargeLevel, activeBarrier);
+            } else {
+                shootFlameArrow(world, caster, staff, potency);
+            }
         } else {
             component.setShrineCooldown(10);
             component.addMeter(this, 10);
@@ -602,6 +616,21 @@ public class Shrine extends Spell {
 
     @Override
     public InnateHudData getRightInnateHudData(PlayerEntity player, SpellComponent component) {
+        ActiveBarrier activeBarrier = BarrierManager.getActiveDomainBarrier(player.getUuid());
+        if (activeBarrier != null && activeBarrier.getDomainExpansion() instanceof DomainExpansionShrine) {
+            int remaining = activeBarrier.getMaxTicks() - activeBarrier.getCurrentTicks();
+            if (remaining <= 160 && remaining > 0) {
+                // Brief second (first 25 ticks / 1.25s) announces "Furnace: Open"
+                if (remaining > 135) {
+                    return new InnateHudData("Furnace: Open", 0xFFFF2200);
+                } else {
+                    int secondsLeft = (remaining + 19) / 20;
+                    int meter = component.getMeter(this);
+                    int color = meter >= 100 ? 0xFFFF2200 : 0xFFFF8800;
+                    return new InnateHudData("Furnace: " + meter + "% (" + secondsLeft + "s)", color);
+                }
+            }
+        }
         return new InnateHudData("Open: " + component.getMeter(this) + "%", 0xFFFF6600);
     }
 }

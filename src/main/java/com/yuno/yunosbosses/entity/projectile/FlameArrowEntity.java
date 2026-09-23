@@ -33,6 +33,7 @@ import net.minecraft.world.World;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public class FlameArrowEntity extends ProjectileEntity {
     private static final TrackedData<Float> POTENCY = DataTracker.registerData(FlameArrowEntity.class, TrackedDataHandlerRegistry.FLOAT);
@@ -40,6 +41,10 @@ public class FlameArrowEntity extends ProjectileEntity {
 
     private boolean hasDetonated = false;
     private Vec3d startPos = null;
+
+    // --- Thermobaric Domain Finisher (Kamino / Furnace) Fields ---
+    private boolean isThermobaricFinisher = false;
+    private float domainRadius = 0.0f;
 
     public FlameArrowEntity(EntityType<? extends ProjectileEntity> entityType, World world) {
         super(entityType, world);
@@ -64,6 +69,26 @@ public class FlameArrowEntity extends ProjectileEntity {
 
     public void setPotency(float potency) {
         this.dataTracker.set(POTENCY, potency);
+    }
+
+    public void setThermobaricFinisher(float domainRadius) {
+        this.isThermobaricFinisher = true;
+        this.domainRadius = domainRadius;
+    }
+
+    @Override
+    public void handleStatus(byte status) {
+        if (status == 67) {
+            if (this.getWorld().isClient()) {
+                com.yuno.yunosbosses.render.FlameArrowClientHelper.onThermobaricDetonation();
+            }
+        } else {
+            super.handleStatus(status);
+        }
+    }
+
+    public boolean isThermobaricFinisher() {
+        return this.isThermobaricFinisher;
     }
 
     @Override
@@ -174,6 +199,11 @@ public class FlameArrowEntity extends ProjectileEntity {
                 continue;
             }
 
+            // In an active domain finisher, the arrow freely detonates inside the caster's domain
+            if (this.isThermobaricFinisher && owner != null && barrier.getOwnerUuid().equals(owner.getUuid())) {
+                continue;
+            }
+
             if (isSphere) {
                 Vec3d center = barrier.getPosition();
                 double radius = barrier.getRadius();
@@ -270,7 +300,7 @@ public class FlameArrowEntity extends ProjectileEntity {
         Vec3d rightDir = Math.abs(dir.y) > 0.99 ? new Vec3d(1, 0, 0) : dir.crossProduct(globalUp).normalize();
         Vec3d upDir = rightDir.crossProduct(dir).normalize();
 
-        int steps = 6;
+        int steps = this.isThermobaricFinisher ? 10 : 6;
         for (int i = 0; i <= steps; i++) {
             double fraction = (double) i / steps;
             Vec3d pt = prevPos.lerp(newPos, fraction);
@@ -283,7 +313,7 @@ public class FlameArrowEntity extends ProjectileEntity {
                         -dir.x * 0.15, -dir.y * 0.15, -dir.z * 0.15, 0.08);
 
                 // Lava spark burst
-                if (this.random.nextFloat() < 0.25f) {
+                if (this.random.nextFloat() < (this.isThermobaricFinisher ? 0.45f : 0.25f)) {
                     spawnForcedParticles(serverWorld, ParticleTypes.LAVA, pt.x, pt.y, pt.z, 1, 0.02, 0.02, 0.02, 0.0);
                 }
 
@@ -294,6 +324,10 @@ public class FlameArrowEntity extends ProjectileEntity {
                         .add(upDir.multiply(Math.sin(spiralAngle) * spiralRadius));
                 Vec3d spiralPt = pt.add(spiralOffset);
                 spawnForcedParticles(serverWorld, ParticleTypes.SMALL_FLAME, spiralPt.x, spiralPt.y, spiralPt.z, 1, 0.01, 0.01, 0.01, 0.005);
+
+                if (this.isThermobaricFinisher) {
+                    spawnForcedParticles(serverWorld, ParticleTypes.CAMPFIRE_COSY_SMOKE, pt.x, pt.y, pt.z, 1, 0.05, 0.05, 0.05, 0.01);
+                }
             } else {
                 world.addParticleClient(ParticleTypes.FLAME, pt.x, pt.y, pt.z, 0.0, 0.0, 0.0);
             }
@@ -339,32 +373,37 @@ public class FlameArrowEntity extends ProjectileEntity {
         }
 
         ServerWorld serverWorld = (ServerWorld) this.getWorld();
+        if (this.isThermobaricFinisher) {
+            serverWorld.sendEntityStatus(this, (byte) 67);
+        }
         float potency = getPotency();
 
-        // 1. Audio: Layered apocalyptic explosion sounds with high volume (volume 12.0 = 192 block reach!)
+        // 1. Audio: Layered apocalyptic explosion sounds with high volume
+        float volumeMultiplier = this.isThermobaricFinisher ? 1.5f : 1.0f;
         serverWorld.playSound(null, hitPos.x, hitPos.y, hitPos.z,
-                SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 12.0f, 0.5f);
+                SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 12.0f * volumeMultiplier, 0.5f);
         serverWorld.playSound(null, hitPos.x, hitPos.y, hitPos.z,
-                SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 10.0f, 0.45f);
+                SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 10.0f * volumeMultiplier, 0.45f);
         serverWorld.playSound(null, hitPos.x, hitPos.y, hitPos.z,
-                SoundEvents.ENTITY_DRAGON_FIREBALL_EXPLODE, SoundCategory.PLAYERS, 10.0f, 0.6f);
+                SoundEvents.ENTITY_DRAGON_FIREBALL_EXPLODE, SoundCategory.PLAYERS, 10.0f * volumeMultiplier, 0.6f);
         serverWorld.playSound(null, hitPos.x, hitPos.y, hitPos.z,
-                SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, SoundCategory.PLAYERS, 8.0f, 0.75f);
+                SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, SoundCategory.PLAYERS, 8.0f * volumeMultiplier, 0.75f);
 
         // 2. Base Explosion Dome: Forced particle emission visible up to 512 blocks
-        spawnForcedParticles(serverWorld, ParticleTypes.EXPLOSION_EMITTER, hitPos.x, hitPos.y + 0.5, hitPos.z, 6, 1.5, 0.5, 1.5, 0.0);
-        spawnForcedParticles(serverWorld, ParticleTypes.EXPLOSION_EMITTER, hitPos.x, hitPos.y + 3.5, hitPos.z, 4, 2.0, 1.0, 2.0, 0.0);
-        spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, hitPos.x, hitPos.y + 1.0, hitPos.z, 16, 2.5, 1.0, 2.5, 0.12);
+        int domeSparks = this.isThermobaricFinisher ? 12 : 6;
+        spawnForcedParticles(serverWorld, ParticleTypes.EXPLOSION_EMITTER, hitPos.x, hitPos.y + 0.5, hitPos.z, domeSparks, 1.5, 0.5, 1.5, 0.0);
+        spawnForcedParticles(serverWorld, ParticleTypes.EXPLOSION_EMITTER, hitPos.x, hitPos.y + 3.5, hitPos.z, domeSparks / 2, 2.0, 1.0, 2.0, 0.0);
+        spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, hitPos.x, hitPos.y + 1.0, hitPos.z, this.isThermobaricFinisher ? 32 : 16, 2.5, 1.0, 2.5, 0.12);
 
-        // 3. Colossal Vertical Pillar of Fire & Rolling Clouds (rising up to 24-32 blocks!)
-        double pillarHeight = 22.0 + (potency * 6.0);
+        // 3. Colossal Vertical Pillar of Fire & Rolling Clouds
+        double pillarHeight = this.isThermobaricFinisher ? (36.0 + (potency * 8.0)) : (22.0 + (potency * 6.0));
         for (double yOffset = 0; yOffset <= pillarHeight; yOffset += 0.6) {
-            double baseRadius = 1.4 + (potency * 0.5);
+            double baseRadius = (this.isThermobaricFinisher ? 2.2 : 1.4) + (potency * 0.5);
             // Top mushroom expansion
-            double expansion = Math.max(0, (yOffset - 12.0) / (pillarHeight - 12.0)) * 3.8;
+            double expansion = Math.max(0, (yOffset - 12.0) / (pillarHeight - 12.0)) * (this.isThermobaricFinisher ? 5.5 : 3.8);
             double radius = baseRadius + expansion;
 
-            int count = Math.max(8, (int) (radius * 7));
+            int count = Math.max(8, (int) (radius * (this.isThermobaricFinisher ? 9 : 7)));
             for (int i = 0; i < count; i++) {
                 double angle = (2 * Math.PI * i) / count;
                 double px = hitPos.x + Math.cos(angle) * radius * (0.8 + serverWorld.random.nextDouble() * 0.4);
@@ -372,30 +411,39 @@ public class FlameArrowEntity extends ProjectileEntity {
 
                 spawnForcedParticles(serverWorld, ParticleTypes.FLAME, px, hitPos.y + yOffset, pz, 1, 0, 0.4, 0, 0.08);
 
-                if (serverWorld.random.nextFloat() < 0.25f) {
+                if (serverWorld.random.nextFloat() < (this.isThermobaricFinisher ? 0.40f : 0.25f)) {
                     spawnForcedParticles(serverWorld, ParticleTypes.LAVA, px, hitPos.y + yOffset, pz, 1, 0, 0.15, 0, 0.02);
                 }
             }
 
             // Custom animated explosion clouds climbing along the pillar
             if (yOffset % 1.8 < 0.6) {
-                spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, hitPos.x, hitPos.y + yOffset, hitPos.z, 2, radius * 0.4, 0.3, radius * 0.4, 0.08);
+                spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, hitPos.x, hitPos.y + yOffset, hitPos.z,
+                        this.isThermobaricFinisher ? 4 : 2, radius * 0.4, 0.3, radius * 0.4, 0.08);
             }
 
             // Smoke core inside the pillar
-            spawnForcedParticles(serverWorld, ParticleTypes.CAMPFIRE_COSY_SMOKE, hitPos.x, hitPos.y + yOffset, hitPos.z, 2, 0.6, 0.2, 0.6, 0.06);
+            spawnForcedParticles(serverWorld, ParticleTypes.CAMPFIRE_COSY_SMOKE, hitPos.x, hitPos.y + yOffset, hitPos.z,
+                    this.isThermobaricFinisher ? 4 : 2, 0.6, 0.2, 0.6, 0.06);
         }
 
         // Mushroom head plume burst at the summit
-        spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, hitPos.x, hitPos.y + pillarHeight, hitPos.z, 16, 3.0, 1.2, 3.0, 0.15);
-        spawnForcedParticles(serverWorld, ModParticles.FLAME_SHOCKWAVE_PARTICLE, hitPos.x, hitPos.y + pillarHeight, hitPos.z, 4, 1.2, 0.2, 1.2, 0.0);
+        spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, hitPos.x, hitPos.y + pillarHeight, hitPos.z,
+                this.isThermobaricFinisher ? 32 : 16, 4.0, 1.5, 4.0, 0.15);
+        spawnForcedParticles(serverWorld, ModParticles.FLAME_SHOCKWAVE_PARTICLE, hitPos.x, hitPos.y + pillarHeight, hitPos.z,
+                this.isThermobaricFinisher ? 8 : 4, 1.5, 0.2, 1.5, 0.0);
 
         // 4. Expanding Horizontal Fiery Shockwave Rings
-        spawnForcedParticles(serverWorld, ModParticles.FLAME_SHOCKWAVE_PARTICLE, hitPos.x, hitPos.y + 0.3, hitPos.z, 6, 1.0, 0.1, 1.0, 0.08);
+        spawnForcedParticles(serverWorld, ModParticles.FLAME_SHOCKWAVE_PARTICLE, hitPos.x, hitPos.y + 0.3, hitPos.z,
+                this.isThermobaricFinisher ? 12 : 6, 1.0, 0.1, 1.0, 0.08);
 
-        float maxShockwaveRadius = 7.0f + (potency * 4.0f);
-        for (double r = 1.5; r <= maxShockwaveRadius; r += 1.5) {
-            int ringPoints = (int) (r * 14);
+        float maxShockwaveRadius = this.isThermobaricFinisher
+                ? Math.max(this.domainRadius, 25.0f)
+                : (7.0f + (potency * 4.0f));
+
+        double ringStep = this.isThermobaricFinisher ? 2.5 : 1.5;
+        for (double r = 1.5; r <= maxShockwaveRadius; r += ringStep) {
+            int ringPoints = (int) (r * (this.isThermobaricFinisher ? 10 : 14));
             for (int i = 0; i < ringPoints; i++) {
                 double angle = (2 * Math.PI * i) / ringPoints;
                 double rx = Math.cos(angle);
@@ -412,11 +460,13 @@ public class FlameArrowEntity extends ProjectileEntity {
         }
 
         // 5. Blazing Cinders & Embers raining and billowing around the crater
-        int emberCount = (int) (70 + potency * 35);
+        int emberCount = this.isThermobaricFinisher
+                ? (int) (140 + potency * 60)
+                : (int) (70 + potency * 35);
         for (int i = 0; i < emberCount; i++) {
             double rx = (serverWorld.random.nextDouble() - 0.5) * (maxShockwaveRadius * 1.5);
             double rz = (serverWorld.random.nextDouble() - 0.5) * (maxShockwaveRadius * 1.5);
-            double ry = serverWorld.random.nextDouble() * 8.0;
+            double ry = serverWorld.random.nextDouble() * 12.0;
             double vx = (rx / maxShockwaveRadius) * 0.3;
             double vy = 0.2 + serverWorld.random.nextDouble() * 0.4;
             double vz = (rz / maxShockwaveRadius) * 0.3;
@@ -424,12 +474,21 @@ public class FlameArrowEntity extends ProjectileEntity {
             spawnForcedParticles(serverWorld, ModParticles.FLAME_EMBER_PARTICLE,
                     hitPos.x + rx, hitPos.y + ry, hitPos.z + rz,
                     1, vx, vy, vz, 0.2);
+
+            // Falling white ash in thermobaric aftermath
+            if (this.isThermobaricFinisher && i % 2 == 0) {
+                spawnForcedParticles(serverWorld, ParticleTypes.WHITE_ASH,
+                        hitPos.x + rx, hitPos.y + ry, hitPos.z + rz,
+                        1, 0.05, -0.05, 0.05, 0.02);
+            }
         }
 
         // 6. Devastating Area Damage & Severe Knockback (With Barrier Shielding!)
-        float baseDamage = 75.0f;
+        float baseDamage = this.isThermobaricFinisher ? 110.0f : 75.0f;
         float totalDamage = baseDamage * potency;
-        double effectRadius = 6.5 + (potency * 3.5);
+        double effectRadius = this.isThermobaricFinisher
+                ? Math.max(this.domainRadius, 25.0f)
+                : (6.5 + (potency * 3.5));
 
         Box hitArea = new Box(hitPos.x - effectRadius, hitPos.y - effectRadius, hitPos.z - effectRadius,
                 hitPos.x + effectRadius, hitPos.y + effectRadius, hitPos.z + effectRadius);
@@ -449,14 +508,14 @@ public class FlameArrowEntity extends ProjectileEntity {
                     continue; // Shield completely blocks the blast damage!
                 }
 
-                float falloff = (float) Math.max(0.40, 1.0 - (dist / effectRadius));
+                float falloff = (float) Math.max(this.isThermobaricFinisher ? 0.55 : 0.40, 1.0 - (dist / effectRadius));
                 float finalDamage = totalDamage * falloff;
 
                 DamageSource source = ModDamageTypes.of(serverWorld, ModDamageTypes.FIRE_MAGIC, this.getOwner());
                 target.damage(serverWorld, source, finalDamage);
 
                 // Set victim on fire (15 - 30 seconds based on potency)
-                target.setOnFireFor((int) (15 + potency * 10));
+                target.setOnFireFor((int) ((this.isThermobaricFinisher ? 25 : 15) + potency * 10));
 
                 // Cataclysmic explosive knockback
                 Vec3d kbDir = target.getBoundingBox().getCenter().subtract(hitPos);
@@ -465,19 +524,20 @@ public class FlameArrowEntity extends ProjectileEntity {
                 } else {
                     kbDir = kbDir.normalize();
                 }
-                Vec3d kb = kbDir.multiply(2.0).add(0, 0.8, 0);
+                double kbMult = this.isThermobaricFinisher ? 2.8 : 2.0;
+                Vec3d kb = kbDir.multiply(kbMult).add(0, 0.8, 0);
                 target.setVelocity(kb);
                 target.velocityModified = true;
             }
         }
 
         // 7. Scorched Ground & Fire Ignition (only outside shielded zones)
-        int fireRadius = (int) (3 + potency * 2);
+        int fireRadius = (int) ((this.isThermobaricFinisher ? 7 : 3) + potency * (this.isThermobaricFinisher ? 4 : 2));
         BlockPos centerBlock = BlockPos.ofFloored(hitPos);
         for (int dx = -fireRadius; dx <= fireRadius; dx++) {
             for (int dz = -fireRadius; dz <= fireRadius; dz++) {
                 if ((dx * dx) + (dz * dz) <= fireRadius * fireRadius) {
-                    if (serverWorld.random.nextFloat() < 0.65f) {
+                    if (serverWorld.random.nextFloat() < (this.isThermobaricFinisher ? 0.45f : 0.65f)) {
                         BlockPos targetGround = serverWorld.getTopPosition(Heightmap.Type.MOTION_BLOCKING, centerBlock.add(dx, 0, dz));
                         if (serverWorld.getBlockState(targetGround).isAir() &&
                                 serverWorld.getBlockState(targetGround.down()).isSolidBlock(serverWorld, targetGround.down())) {
@@ -488,6 +548,7 @@ public class FlameArrowEntity extends ProjectileEntity {
             }
         }
 
+        // Note: Domain barrier and shrine entity continue their natural duration without premature expiration!
         this.discard();
     }
 
@@ -574,6 +635,8 @@ public class FlameArrowEntity extends ProjectileEntity {
     public void writeCustomData(WriteView nbt) {
         super.writeCustomData(nbt);
         nbt.putFloat("Potency", this.getPotency());
+        nbt.putBoolean("ThermobaricFinisher", this.isThermobaricFinisher);
+        nbt.putFloat("DomainRadius", this.domainRadius);
         if (this.startPos != null) {
             nbt.putDouble("StartX", this.startPos.x);
             nbt.putDouble("StartY", this.startPos.y);
@@ -585,6 +648,8 @@ public class FlameArrowEntity extends ProjectileEntity {
     public void readCustomData(ReadView nbt) {
         super.readCustomData(nbt);
         this.setPotency(nbt.getFloat("Potency", 1.0f));
+        this.isThermobaricFinisher = nbt.getBoolean("ThermobaricFinisher", false);
+        this.domainRadius = nbt.getFloat("DomainRadius", 0.0f);
         double sx = nbt.getDouble("StartX", Double.NaN);
         if (!Double.isNaN(sx)) {
             this.startPos = new Vec3d(sx, nbt.getDouble("StartY", 0.0), nbt.getDouble("StartZ", 0.0));

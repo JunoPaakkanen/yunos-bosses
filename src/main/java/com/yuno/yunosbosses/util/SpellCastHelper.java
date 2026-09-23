@@ -12,11 +12,11 @@ public class SpellCastHelper {
 
     // Check if the player has enough mana to start casting the spell
     public static boolean canStartCasting(Spell spell, LivingEntity caster) {
-        if (spell instanceof DomainExpansion && BarrierManager.hasActiveDomain(caster.getUuid())) {
+        var spellComponent = ModEntityComponents.SPELL_DATA.get(caster);
+        if (spell instanceof DomainExpansion && BarrierManager.hasActiveDomain(caster.getUuid()) && !spellComponent.hasAltCastWindow(spell)) {
             return false;
         }
 
-        var spellComponent = ModEntityComponents.SPELL_DATA.get(caster);
         if (spell == ModSpells.SHRINE && spellComponent.getShrineCooldown() > 0) {
             return false;
         }

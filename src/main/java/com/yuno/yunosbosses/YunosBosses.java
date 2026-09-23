@@ -12,6 +12,7 @@ import com.yuno.yunosbosses.network.*;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
+import com.yuno.yunosbosses.unlock.UnlockManager;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import com.yuno.yunosbosses.world.ModEntitySpawns;
@@ -50,6 +51,7 @@ public class YunosBosses implements ModInitializer {
 		ModEvents.registerEvents();
 		ModBlocks.registerModBlocks();
 		ModEntitySpawns.registerEntitySpawns();
+		UnlockManager.register();
 
 		// Register payload types
 		ModMessages.registerC2SPackets();
@@ -58,6 +60,7 @@ public class YunosBosses implements ModInitializer {
 		PlayerAnimationPayload.register();
 		DomainCutscenePayload.register();
 		SpawnImagePayload.register();
+		BlackFlashPayload.register();
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			DelayedServerEffects.tick();
@@ -87,7 +90,6 @@ public class YunosBosses implements ModInitializer {
 			if (player.isSprinting() && spellData.getSpeedStacks() >= 10) {
 				return ActionResult.FAIL; // Cancels melee attack when sprinting at high speed stacks
 			}
-
 			return ActionResult.PASS;
 		});
 	}

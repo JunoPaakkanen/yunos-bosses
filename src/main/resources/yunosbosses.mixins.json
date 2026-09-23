@@ -6,7 +6,6 @@
     "CreeperEntityMixin",
     "DeathInterceptionMixin",
     "EntityMixin",
-    "ExampleMixin",
     "ItemEntityMixin",
     "LivingEntityMixin",
     "MilkBucketMixin",

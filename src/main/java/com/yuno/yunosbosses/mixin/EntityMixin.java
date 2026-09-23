@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.mixin;
 
 import com.yuno.yunosbosses.util.WallSlamData;
+import com.yuno.yunosbosses.util.HitstopData;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
@@ -17,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Entity.class)
-public abstract class EntityMixin implements WallSlamData {
+public abstract class EntityMixin implements WallSlamData, HitstopData {
 
     @Shadow
     public boolean horizontalCollision;
@@ -72,6 +73,31 @@ public abstract class EntityMixin implements WallSlamData {
                     this.yunos$wallSlamTimer = 0;
                 }
             }
+        }
+    }
+
+    @Unique
+    private int yunos$hitstopTicks = 0;
+
+    @Override
+    public int yunos$getHitstopTicks() { return this.yunos$hitstopTicks; }
+
+    @Override
+    public void yunos$setHitstopTicks(int ticks) { this.yunos$hitstopTicks = ticks; }
+
+    @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
+    private void yunos$handleHitstopTick(CallbackInfo ci) {
+        if (this.yunos$hitstopTicks > 0) {
+            this.yunos$hitstopTicks--;
+
+            // Lock movement and suspend gravity
+            Entity entity = (Entity) (Object) this;
+            entity.setVelocity(Vec3d.ZERO);
+            entity.velocityDirty = true;
+            entity.fallDistance = 0.0F;
+
+            // Completely freeze entity logic (AI, physics, animations) during hitstop
+            ci.cancel();
         }
     }
 }

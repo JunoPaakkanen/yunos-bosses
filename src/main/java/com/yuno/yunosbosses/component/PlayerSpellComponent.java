@@ -34,6 +34,9 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     private int maxSpellSlots = 3; // 3 slots by default, can be increased later
     private Spell[] equippedSpells = new Spell[10]; // Hard cap of 10
 
+    // Unlocks
+    private boolean openDomainUnlocked = false;
+
     // Timer tracking for alt cast windows
     private final Map<Identifier, Integer> activeAltCasts = new HashMap<>();
 
@@ -84,11 +87,21 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                 return;
             }
 
+            Spell oldSpell = this.equippedSpells[slot];
             this.equippedSpells[slot] = spell;
 
             // Set as the active spell if the player has none selected
             if (this.activeSpell == null && spell != null) {
                 this.activeSpell = spell;
+            } else if (spell == null && this.activeSpell == oldSpell) {
+                // If the unequipped spell was active, cycle to the next equipped spell (or null)
+                this.activeSpell = null;
+                for (int i = 0; i < this.maxSpellSlots; i++) {
+                    if (this.equippedSpells[i] != null) {
+                        this.activeSpell = this.equippedSpells[i];
+                        break;
+                    }
+                }
             }
             ModEntityComponents.SPELL_DATA.sync(this.player);
         }
@@ -246,6 +259,9 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
 
         // Read Shrine cooldown
         this.shrineCooldown = readView.getInt("ShrineCooldown", 0);
+
+        // Read Open Domain unlock
+        this.openDomainUnlocked = readView.getBoolean("OpenDomainUnlocked", false);
     }
 
     @Override
@@ -293,6 +309,9 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
 
         // Persist Shrine cooldown
         writeView.putInt("ShrineCooldown", this.shrineCooldown);
+
+        // Persist Open Domain unlock
+        writeView.putBoolean("OpenDomainUnlocked", this.openDomainUnlocked);
     }
 
     @Override
@@ -303,6 +322,17 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     @Override
     public boolean canChangeSpell() {
         return this.canChangeSpell;
+    }
+
+    @Override
+    public boolean unlockedOpenDomain() {
+        return this.openDomainUnlocked;
+    }
+
+    @Override
+    public void unlockOpenDomain() {
+        this.openDomainUnlocked = true;
+        ModEntityComponents.SPELL_DATA.sync(this.player);
     }
 
     @Override
