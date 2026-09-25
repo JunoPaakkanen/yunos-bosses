@@ -20,7 +20,7 @@ public abstract class InGameHudMixin {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void renderManaBarUnderneath(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        if (this.client.player != null && !this.client.options.hudHidden) {
+        if (this.client.player != null && !this.client.options.hudHidden && !this.client.player.isSpectator()) {
             int width = this.client.getWindow().getScaledWidth();
             int height = this.client.getWindow().getScaledHeight();
 
