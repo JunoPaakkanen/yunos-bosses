@@ -38,8 +38,7 @@ public class StrangeFruitItem extends Item {
             // Notify the player with formatted rarity text
             player.sendMessage(
                     Text.literal("You unlocked: ")
-                            .append(Text.literal(rolledSpell.getId().getPath().replace('_', ' ').toUpperCase())
-                                    .formatted(rolledSpell.getRarity().getFormatting())),
+                            .append(rolledSpell.getName().copy().formatted(rolledSpell.getRarity().getFormatting())),
                     false
             );
         }

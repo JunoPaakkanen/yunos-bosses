@@ -1,12 +1,14 @@
 package com.yuno.yunosbosses.item;
 
 import com.yuno.yunosbosses.YunosBosses;
+import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.item.custom.StrangeFruitItem;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.component.type.FoodComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -25,6 +27,12 @@ public class ModItems {
     // Staff Items
     public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", settings -> new StaffItem(settings, 1), new Item.Settings().maxCount(1));
     public static final Item UBEL_STAFF = registerItem("ubel_staff", settings -> new StaffItem(settings, 1.5F), new Item.Settings().maxCount(1));
+    public static final Item METHODE_STAFF = registerItem("methode_staff", settings -> new StaffItem(settings, 2.0F), new Item.Settings().maxCount(1));
+
+    // Spawn Eggs
+    public static final Item UBEL_SPAWN_EGG = registerItem("ubel_spawn_egg", settings -> new SpawnEggItem(ModEntities.UBEL, settings), new Item.Settings());
+    public static final Item METHODE_SPAWN_EGG = registerItem("methode_spawn_egg", settings -> new SpawnEggItem(ModEntities.METHODE, settings), new Item.Settings());
+    public static final Item USELESS_CHICKEN_SPAWN_EGG = registerItem("useless_chicken_spawn_egg", settings -> new SpawnEggItem(ModEntities.USELESS_CHICKEN, settings), new Item.Settings());
 
     // Helper method to register item
     private static <T extends Item> T registerItem(String name, Function<Item.Settings, T> factory, Item.Settings settings) {
@@ -39,10 +47,17 @@ public class ModItems {
         // COMBAT ITEMS
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             entries.add(BASIC_MAGICAL_STAFF);
-        });
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             entries.add(UBEL_STAFF);
+            entries.add(METHODE_STAFF);
         });
+
+        // SPAWN EGGS
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
+            entries.add(UBEL_SPAWN_EGG);
+            entries.add(METHODE_SPAWN_EGG);
+            entries.add(USELESS_CHICKEN_SPAWN_EGG);
+        });
+
         // FOOD ITEMS
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.FOOD_AND_DRINK).register(entries -> {
             entries.add(STRANGE_FRUIT);

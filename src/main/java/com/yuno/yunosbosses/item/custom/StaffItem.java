@@ -4,14 +4,20 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.SpellCastHelper;
+import net.minecraft.component.type.TooltipDisplayComponent;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.consume.UseAction;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
+
+import java.util.function.Consumer;
 
 public class StaffItem extends Item {
     // Properties
@@ -20,6 +26,12 @@ public class StaffItem extends Item {
     public StaffItem(Settings settings, float powerMultiplier) {
         super(settings);
         this.powerMultiplier = powerMultiplier;
+    }
+
+    @Override
+    public void appendTooltip(ItemStack stack, TooltipContext context, TooltipDisplayComponent displayComponent, Consumer<Text> textConsumer, TooltipType type) {
+        super.appendTooltip(stack, context, displayComponent, textConsumer, type);
+        textConsumer.accept(Text.literal("Spell Power: " + String.format("%.1fx", this.powerMultiplier)).formatted(Formatting.GOLD));
     }
 
     @Override

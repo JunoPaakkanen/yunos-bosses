@@ -11,7 +11,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 
-public class ModItemGroups{
+public class ModItemGroups {
 
     public static final ItemGroup YUNOS_BOSSES = Registry.register(Registries.ITEM_GROUP, Identifier.of(YunosBosses.MOD_ID, "yunos_bosses_items"),
             FabricItemGroup.builder().icon(() -> new ItemStack(ModItems.UBEL_STAFF))
@@ -20,7 +20,12 @@ public class ModItemGroups{
                         // Add all items to the group
                         entries.add(ModItems.BASIC_MAGICAL_STAFF);
                         entries.add(ModItems.UBEL_STAFF);
+                        entries.add(ModItems.METHODE_STAFF);
                         entries.add(ModItems.STRANGE_FRUIT);
+                        // Add spawn eggs
+                        entries.add(ModItems.UBEL_SPAWN_EGG);
+                        entries.add(ModItems.METHODE_SPAWN_EGG);
+                        entries.add(ModItems.USELESS_CHICKEN_SPAWN_EGG);
                         // Add all blocks to the group
                         entries.add(ModBlocks.DOMAIN_FLOOR.asItem());
                     }).build());
