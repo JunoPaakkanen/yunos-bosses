@@ -1,11 +1,24 @@
 {
   "item.yunosbosses.basic_magical_staff": "Basic Magical Staff",
   "item.yunosbosses.ubel_staff": "Ubel's Staff",
+  "item.yunosbosses.methode_staff": "Methode's Staff",
   "item.yunosbosses.strange_fruit": "Strange Fruit",
+  "item.yunosbosses.ubel_spawn_egg": "Ubel Spawn Egg",
+  "item.yunosbosses.methode_spawn_egg": "Methode Spawn Egg",
+  "item.yunosbosses.useless_chicken_spawn_egg": "Useless Chicken Spawn Egg",
+
+  "block.yunosbosses.domain_floor": "Domain Floor",
 
   "entity.yunosbosses.ubel": "Ubel",
   "entity.yunosbosses.methode": "Methode",
   "entity.yunosbosses.useless_chicken": "Useless Chicken",
+  "entity.yunosbosses.severed_torso": "Severed Torso",
+  "entity.yunosbosses.domain_shrine": "Domain Shrine",
+
+  "category.yunosbosses": "Yuno's Bosses",
+  "key.yunosbosses.spellcycle": "Cycle Spell",
+  "key.yunosbosses.castspell": "Cast Spell",
+  "key.yunosbosses.open_spell_inventory": "Open Spell Inventory",
 
   "effect.yunosbosses.gojobindingvow": "Binding Vow: Gojo",
   "effect.yunosbosses.gojo": "Binding Vow: Gojo",
@@ -36,5 +49,19 @@
   "advancements.yunosbosses.root.title": "Yuno's Bosses",
   "advancements.yunosbosses.root.description": "Thanks For Playing!",
   "advancements.yunosbosses.ubel.title": "Killing Feels Good",
-  "advancements.yunosbosses.ubel.description": "Defeat Ubel"
+  "advancements.yunosbosses.ubel.description": "Defeat Ubel",
+
+  "subtitles.yunosbosses.black_flash": "Black Flash",
+  "subtitles.yunosbosses.black_flash_finisher": "Black Flash Finisher",
+  "subtitles.yunosbosses.reelseiden_hit": "Reelseiden slices",
+  "subtitles.yunosbosses.still_alive": "Voice echoes: Still Alive",
+  "subtitles.yunosbosses.angry_chicken_ambient": "Angry Chicken clucks",
+  "subtitles.yunosbosses.honored_one": "The Honored One speaks",
+  "subtitles.yunosbosses.domain_expansion_shrine_1": "Malevolent Shrine manifests",
+  "subtitles.yunosbosses.domain_expansion_shrine_2": "Malevolent Shrine's full power is unleashed",
+  "subtitles.yunosbosses.frame_freeze": "Motion freezes",
+  "subtitles.yunosbosses.frame_shatter": "Frame shatters",
+  "subtitles.yunosbosses.frame_shatter_from_damage": "Frame shatters under impact",
+  "subtitles.yunosbosses.frame_shatter_finisher": "Frame shattered decisively",
+  "subtitles.yunosbosses.fuga": "Furnace opens"
 }
