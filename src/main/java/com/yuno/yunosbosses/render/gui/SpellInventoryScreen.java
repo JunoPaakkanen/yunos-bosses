@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.render.gui;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.EquipSpellPayload;
 import com.yuno.yunosbosses.spell.Spell;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -61,21 +62,22 @@ public class SpellInventoryScreen extends Screen {
     }
 
     private void drawKnownSpellsGrid(DrawContext context, List<Spell> knownSpells, int mouseX, int mouseY) {
-        int gridX = guiLeft + 45;
-        int gridY = guiTop + 30;
+        int startX = guiLeft + 45;
+        int startY = guiTop + 30;
         int slotSize = 20;
 
         for (int i = 0; i < knownSpells.size(); i++) {
             Spell spell = knownSpells.get(i);
             int col = i % 6;
             int row = i / 6;
-            int x = gridX + (col * (slotSize + 2));
-            int y = gridY + (row * (slotSize + 2));
+            int x = startX + (col * (slotSize + 2));
+            int y = startY + (row * (slotSize + 2));
 
             // Slot Background
-            context.fill(x, y, x + slotSize, y + slotSize, 0xFF313244);
+            context.fill(x, y, x + slotSize, y + slotSize, 0xFF181825);
+            context.drawBorder(x, y, slotSize, slotSize, 0xFF313244);
 
-            // Draw full 32x32 PNG scaled down to fit 16x16 on screen
+            // Draw Spell Icon (Sample full 32x32 texture and scale down to 16x16 inside 20x20 slot)
             context.drawTexture(
                     RenderPipelines.GUI_TEXTURED,
                     spell.getIconTexture(),
@@ -97,8 +99,7 @@ public class SpellInventoryScreen extends Screen {
 
                 // Colored name + optional Innate Technique tag + rarity subtext
                 List<Text> tooltip = new ArrayList<>();
-                tooltip.add(Text.literal(spell.getId().getPath().replace('_', ' ').toUpperCase())
-                        .formatted(spell.getRarity().getFormatting()));
+                tooltip.add(spell.getName().copy().formatted(spell.getRarity().getFormatting()));
 
                 if (spell.isInnateTechnique()) {
                     tooltip.add(Text.literal("✦ Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC));
@@ -122,28 +123,17 @@ public class SpellInventoryScreen extends Screen {
             Spell equipped = component.getEquippedSpell(i);
             boolean isInnateSlot = (i == 0);
 
-            // Slot Box
-            context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, isInnateSlot ? 0xFF221E30 : 0xFF181825);
+            // Base Slot Box
+            context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0xFF181825);
 
-            // Draw dynamic Border (Innate technique slot has a special gold/peach border when empty)
-            int borderColor;
-            if (equipped != null) {
-                borderColor = equipped.getRarity().getColorHex();
-            } else if (isInnateSlot) {
-                borderColor = 0xFFFAB387; // Warm gold / Peach for Innate Slot
-            } else {
-                borderColor = 0xFF585B70; // Standard dark gray
-            }
-            context.drawBorder(sidebarX, y, slotSize, slotSize, borderColor);
-
-            // Draw Slot Number Label
+            // Border styling: Special Gold for Innate Slot, Standard for others
             if (isInnateSlot) {
-                context.drawText(this.textRenderer, "1", sidebarX - 8, y + 8, 0xFFFAB387, false);
+                context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFFF9E2AF); // Innate slot gold accent
             } else {
-                context.drawText(this.textRenderer, String.valueOf(i + 1), sidebarX - 8, y + 8, 0xFF7F849C, false);
+                context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFF313244);
             }
 
-            // Draw full 32x32 PNG scaled down to fit 16x16 inside 24x24 slot
+            // Draw Equipped Icon
             if (equipped != null) {
                 context.drawTexture(
                         RenderPipelines.GUI_TEXTURED,
@@ -172,23 +162,23 @@ public class SpellInventoryScreen extends Screen {
                 List<Text> tooltip = new ArrayList<>();
                 if (isInnateSlot) {
                     if (equipped != null) {
-                        tooltip.add(Text.literal("Innate Slot: " + equipped.getId().getPath().replace('_', ' ').toUpperCase())
-                                .formatted(equipped.getRarity().getFormatting()));
+                        tooltip.add(Text.literal("Innate Slot: ").append(equipped.getName().copy().formatted(equipped.getRarity().getFormatting())));
                         if (equipped.isInnateTechnique()) {
                             tooltip.add(Text.literal("✦ Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC));
                         }
                         tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell")
                                 .formatted(Formatting.GRAY));
+                        tooltip.add(Text.literal("Right-click to unequip").formatted(Formatting.DARK_GRAY));
                     } else {
                         tooltip.add(Text.literal("Innate Technique Slot: Empty").formatted(Formatting.GOLD));
                         tooltip.add(Text.literal("Can hold any spell (Required for Innate Techniques)").formatted(Formatting.DARK_GRAY));
                     }
                 } else {
                     if (equipped != null) {
-                        tooltip.add(Text.literal("Slot " + (i + 1) + ": " + equipped.getId().getPath().replace('_', ' ').toUpperCase())
-                                .formatted(equipped.getRarity().getFormatting()));
+                        tooltip.add(Text.literal("Slot " + (i + 1) + ": ").append(equipped.getName().copy().formatted(equipped.getRarity().getFormatting())));
                         tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell")
                                 .formatted(Formatting.GRAY));
+                        tooltip.add(Text.literal("Right-click to unequip").formatted(Formatting.DARK_GRAY));
                     } else {
                         tooltip.add(Text.literal("Slot " + (i + 1) + ": Empty").formatted(Formatting.DARK_GRAY));
                     }
@@ -204,53 +194,81 @@ public class SpellInventoryScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && this.client != null && this.client.player != null) { // Left Click
+        if (this.client != null && this.client.player != null) {
             var component = ModEntityComponents.SPELL_DATA.get(this.client.player);
-            List<Spell> knownSpells = component.getKnownSpells();
-
-            // Check if the user clicked a Known Spell
-            int gridX = guiLeft + 45;
-            int gridY = guiTop + 30;
-            int slotSize = 20;
-
-            for (int i = 0; i < knownSpells.size(); i++) {
-                int col = i % 6;
-                int row = i / 6;
-                int x = gridX + (col * (slotSize + 2));
-                int y = gridY + (row * (slotSize + 2));
-
-                if (isHovering(x, y, slotSize, slotSize, (int) mouseX, (int) mouseY)) {
-                    this.selectedSpell = knownSpells.get(i);
-                    return true;
-                }
-            }
-
-            // Check if the user clicked an Equipped Slot
             int sidebarX = guiLeft + 10;
             int sidebarY = guiTop + 30;
             int equipSlotSize = 24;
 
-            for (int i = 0; i < component.getMaxSpellSlots(); i++) {
-                int y = sidebarY + (i * (equipSlotSize + 4));
+            // Left Click (button == 0)
+            if (button == 0) {
+                List<Spell> knownSpells = component.getKnownSpells();
 
-                if (isHovering(sidebarX, y, equipSlotSize, equipSlotSize, (int) mouseX, (int) mouseY)) {
-                    if (this.selectedSpell != null) {
-                        // Validate Innate Technique placement (can only be placed in slot 0)
-                        if (this.selectedSpell.isInnateTechnique() && i != 0) {
-                            return true; // Reject equipping Innate Technique to non-innate slot
-                        }
+                // Check if the user clicked a Known Spell
+                int gridX = guiLeft + 45;
+                int gridY = guiTop + 30;
+                int slotSize = 20;
 
-                        // Send a packet to Server to equip the selected spell in this slot
-                        ClientPlayNetworking.send(new EquipSpellPayload(i, this.selectedSpell.getId().toString()));
+                for (int i = 0; i < knownSpells.size(); i++) {
+                    int col = i % 6;
+                    int row = i / 6;
+                    int x = gridX + (col * (slotSize + 2));
+                    int y = gridY + (row * (slotSize + 2));
 
-                        // Clear selection after equipping
-                        this.selectedSpell = null;
+                    if (isHovering(x, y, slotSize, slotSize, (int) mouseX, (int) mouseY)) {
+                        this.selectedSpell = knownSpells.get(i);
                         return true;
+                    }
+                }
+
+                // Check if the user clicked an Equipped Slot with a spell selected
+                for (int i = 0; i < component.getMaxSpellSlots(); i++) {
+                    int y = sidebarY + (i * (equipSlotSize + 4));
+
+                    if (isHovering(sidebarX, y, equipSlotSize, equipSlotSize, (int) mouseX, (int) mouseY)) {
+                        if (this.selectedSpell != null) {
+                            // Validate Innate Technique placement (can only be placed in slot 0)
+                            if (this.selectedSpell.isInnateTechnique() && i != 0) {
+                                return true; // Reject equipping Innate Technique to non-innate slot
+                            }
+
+                            // Send a packet to Server to equip the selected spell in this slot
+                            ClientPlayNetworking.send(new EquipSpellPayload(i, this.selectedSpell.getId().toString()));
+
+                            // Clear selection after equipping
+                            this.selectedSpell = null;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // Right Click (button == 1) on Equipped Slot -> Unequip
+            if (button == 1) {
+                for (int i = 0; i < component.getMaxSpellSlots(); i++) {
+                    int y = sidebarY + (i * (equipSlotSize + 4));
+
+                    if (isHovering(sidebarX, y, equipSlotSize, equipSlotSize, (int) mouseX, (int) mouseY)) {
+                        if (component.getEquippedSpell(i) != null) {
+                            ClientPlayNetworking.send(new EquipSpellPayload(i, "empty"));
+                            return true;
+                        }
                     }
                 }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Close on 'G' (spell inventory key) or 'E' (inventory key)
+        if (ModKeybindings.openSpellInventoryKey.matchesKey(keyCode, scanCode)
+                || (this.client != null && this.client.options.inventoryKey.matchesKey(keyCode, scanCode))) {
+            this.close();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

@@ -33,6 +33,12 @@ public class ModMessages {
                 ServerPlayerEntity player = context.player();
                 var component = ModEntityComponents.SPELL_DATA.get(player);
 
+                // Unequip if empty or "empty"
+                if (payload.spellId() == null || payload.spellId().isEmpty() || payload.spellId().equals("empty")) {
+                    component.setEquippedSpell(payload.slot(), null);
+                    return;
+                }
+
                 Identifier spellId = Identifier.tryParse(payload.spellId());
                 if (spellId == null) return;
 

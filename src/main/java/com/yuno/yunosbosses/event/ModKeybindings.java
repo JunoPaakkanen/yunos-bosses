@@ -10,7 +10,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.sound.SoundEvents;
 import org.lwjgl.glfw.GLFW;
 
 public class ModKeybindings {
@@ -36,7 +38,7 @@ public class ModKeybindings {
                 "key.yunosbosses.open_spell_inventory",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_G,
-                "category.yunosbosses.spells"
+                "category.yunosbosses"
         ));
 
         // Listen for the keypress every client tick
@@ -44,6 +46,8 @@ public class ModKeybindings {
             while (spellCycleKey.wasPressed()) {
                 // Send the payload
                 ClientPlayNetworking.send(new SpellCyclePayload());
+                // Play subtle UI click sound for feedback
+                client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.2F));
             }
             while (castSpellKey.wasPressed()) {
                 if (client.player == null || client.world == null) return;
