@@ -25,6 +25,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.BlockStateParticleEffect;
 import net.minecraft.particle.DustParticleEffect;
@@ -93,17 +94,24 @@ public class DomainExpansionShrine extends DomainExpansion {
     public void cast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
         if (world.isClient) return;
 
-        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
-        if (component.hasAltCastWindow(this)) {
-            altCast(world, caster, staff, chargeLevel);
-        } else {
-            defaultCast(world, caster, staff, chargeLevel);
+        if (caster instanceof PlayerEntity player) {
+            SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
+            if (component.hasAltCastWindow(this)) {
+                altCast(world, player, staff, chargeLevel);
+                return;
+            }
         }
+        defaultCast(world, caster, staff, chargeLevel);
     }
 
     public void defaultCast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
-        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
-        final boolean isOpenBarrier = caster.isSneaking() && component.unlockedOpenDomain();
+        final boolean isOpenBarrier;
+        if (caster instanceof PlayerEntity player) {
+            SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
+            isOpenBarrier = player.isSneaking() && component.unlockedOpenDomain();
+        } else {
+            isOpenBarrier = isOpenBarrier();
+        }
 
         if (chargeLevel == 3) {
             caster.getWorld().playSound(null, caster.getX(), caster.getY(), caster.getZ(),
@@ -156,8 +164,10 @@ public class DomainExpansionShrine extends DomainExpansion {
         }
 
         // End alt cast window
-        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
-        component.clearAltCastWindow(this);
+        if (caster instanceof PlayerEntity player) {
+            SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
+            component.clearAltCastWindow(this);
+        }
     }
 
     public static void triggerKaminoFinisher(World world, LivingEntity caster, ItemStack staff, int chargeLevel, ActiveBarrier barrier) {
@@ -475,8 +485,10 @@ public class DomainExpansionShrine extends DomainExpansion {
         }
 
         // Activate alt cast window for teleporting on top of the shrine
-        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
-        component.startAltCastWindow(this, 100);
+        if (caster instanceof PlayerEntity player) {
+            SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
+            component.startAltCastWindow(this, 100);
+        }
     }
 
     @Override
