@@ -81,6 +81,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
         this.attackTimer = 0;
         this.activeAbility = null;
         this.defensiveCooldown = 0;
+        this.boss.setAttacking(false);
         this.boss.getNavigation().stop();
     }
 
@@ -97,6 +98,12 @@ public abstract class AbstractBossAttackGoal extends Goal {
         this.boss.setBodyYaw(targetYaw);
         this.boss.setYaw(targetYaw);
         this.boss.setPitch(targetPitch);
+    }
+
+    protected void onAbilityStarted(BossAbility ability) {
+    }
+
+    protected void onAbilityExecuted(BossAbility ability) {
     }
 
     @Override
@@ -134,6 +141,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
                 snapLookAtTarget();
                 activeAbility.execute(this.boss, this.target);
                 this.globalCooldown = activeAbility.getRecoveryTicks();
+                onAbilityExecuted(activeAbility);
                 this.activeAbility = null;
             }
             return;
@@ -148,11 +156,13 @@ public abstract class AbstractBossAttackGoal extends Goal {
 
                     snapLookAtTarget();
                     this.boss.getNavigation().stop();
+                    onAbilityStarted(ability);
 
                     // Instant ability execution if windup <= 0
                     if (this.attackTimer <= 0) {
                         this.activeAbility.execute(this.boss, this.target);
                         this.globalCooldown = this.activeAbility.getRecoveryTicks();
+                        onAbilityExecuted(this.activeAbility);
                         this.activeAbility = null;
                     }
                     break;

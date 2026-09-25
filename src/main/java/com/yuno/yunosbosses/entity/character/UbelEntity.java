@@ -38,7 +38,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         return PathAwareEntity.createMobAttributes()
                 .add(EntityAttributes.MAX_HEALTH, 250.0D)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.25f)
-                .add(EntityAttributes.FOLLOW_RANGE, 500.0D)
+                .add(EntityAttributes.FOLLOW_RANGE, 48.0D)
                 .add(EntityAttributes.ATTACK_DAMAGE, 10.0D);
     }
 
@@ -144,5 +144,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
         this.triggerAnim("controller", "domain");
     }
 
-    public void triggerDismantleAnim() { this.triggerAnim("controller", "dismantle"); }
+    public void triggerDismantleAnim() {
+        this.triggerAnim("controller", "dismantle");
+    }
 }

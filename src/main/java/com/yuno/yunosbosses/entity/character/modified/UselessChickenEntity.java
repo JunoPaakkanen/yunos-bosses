@@ -7,7 +7,6 @@ import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.sound.SoundEvent;
@@ -15,10 +14,12 @@ import net.minecraft.world.World;
 
 public class UselessChickenEntity extends ChickenEntity {
 
-    public UselessChickenEntity(EntityType<? extends ChickenEntity> entityType, World world) { super(entityType, world); }
+    public UselessChickenEntity(EntityType<? extends ChickenEntity> entityType, World world) {
+        super(entityType, world);
+    }
 
     public static DefaultAttributeContainer.Builder setAttributes() {
-        return PathAwareEntity.createMobAttributes()
+        return ChickenEntity.createChickenAttributes()
                 .add(EntityAttributes.MAX_HEALTH, 50.0D)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.15f)
                 .add(EntityAttributes.FOLLOW_RANGE, 50.0D)

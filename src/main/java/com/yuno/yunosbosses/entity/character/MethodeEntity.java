@@ -38,45 +38,43 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
 
     public MethodeEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
-        // Equip Methode with her staff
-        this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(ModItems.UBEL_STAFF));
-        this.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.0f);
+
+        // Equip Methode's Staff in the main hand
+        this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(ModItems.METHODE_STAFF));
     }
+
+    private final ServerBossBar bossBar = new ServerBossBar(
+            this.getDisplayName(),
+            BossBar.Color.BLUE, // The color of the boss bar
+            BossBar.Style.PROGRESS // The style (e.g., PROGRESS, NOTCHED_6, NOTCHED_10, etc.)
+    );
 
     public static DefaultAttributeContainer.Builder setAttributes() {
         return PathAwareEntity.createMobAttributes()
-                .add(EntityAttributes.MAX_HEALTH, 350.0D)
-                .add(EntityAttributes.MOVEMENT_SPEED, 0.25f)
-                .add(EntityAttributes.FOLLOW_RANGE, 500.0D)
-                .add(EntityAttributes.ATTACK_DAMAGE, 10.0D);
+                .add(EntityAttributes.MAX_HEALTH, 150.0D) // 150 health
+                .add(EntityAttributes.MOVEMENT_SPEED, 0.25D) // Movement speed
+                .add(EntityAttributes.ATTACK_DAMAGE, 9.0D) // Attack damage
+                .add(EntityAttributes.FOLLOW_RANGE, 48.0D); // Aggro follow range
     }
 
-    // BOSS HEALTH BAR
-    private final ServerBossBar bossBar = new ServerBossBar(
-            this.getDisplayName(),
-            BossBar.Color.RED,
-            BossBar.Style.NOTCHED_6
-    );
-
-    // initGoals defines the entity's goals and priorities.
     @Override
     protected void initGoals() {
-        // If she's in water, she MUST swim to stay alive.
+        // Prevent her from drowning when in water.
         this.goalSelector.add(0, new SwimGoal(this));
 
-        // Wander around the world so she doesn't just stand still.
+        // Randomly walk around when not fighting.
         this.goalSelector.add(3, new WanderAroundFarGoal(this, 1.0D));
 
-        // Look at the player when they are nearby.
+        // Look at the player when nearby.
         this.goalSelector.add(4, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 
-        // Just look around randomly while standing still.
+        // Look around randomly when idle.
         this.goalSelector.add(5, new LookAroundGoal(this));
 
         // Get revenge on the player if she gets hit.
         this.targetSelector.add(1, new RevengeGoal(this));
 
-        // Actively target players (checkVisibility = false to prevent dropping combat lock behind partial cover)
+        // Actively target players (checkVisibility = false so boss does not lose target behind blocks/grass)
         this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
 
         // Move towards her targets to attack them.
@@ -95,7 +93,12 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
                 return state.setAndContinue(RawAnimation.begin().thenLoop("animation.methode.walk"));
             }
             return state.setAndContinue(RawAnimation.begin().thenLoop("animation.methode.idle"));
-        }));
+        })
+        .triggerableAnim("attack", RawAnimation.begin().thenPlay("animation.methode.attack")));
+    }
+
+    public void triggerAttackAnim() {
+        this.triggerAnim("controller", "attack");
     }
 
     @Override
