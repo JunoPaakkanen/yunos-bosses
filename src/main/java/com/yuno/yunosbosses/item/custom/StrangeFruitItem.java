@@ -18,6 +18,11 @@ public class StrangeFruitItem extends Item {
     }
 
     @Override
+    public boolean hasGlint(ItemStack stack) {
+        return true;
+    }
+
+    @Override
     public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
         // Only run on the server side
         if (!world.isClient && user instanceof ServerPlayerEntity player) {
