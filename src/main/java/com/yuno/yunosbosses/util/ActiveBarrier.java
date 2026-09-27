@@ -22,6 +22,7 @@ public class ActiveBarrier {
     private final boolean openBarrier;
     private boolean furnaceCueSent = false;
     private int domainBlockCursor = 0;
+    private boolean clashing = false;
 
     public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration, float radius, Identifier texture, BiConsumer<Entity, ActiveBarrier> domainEffect, DomainExpansion domainExpansion, boolean openBarrier) {
         this.ownerUuid = ownerUuid;
@@ -75,4 +76,7 @@ public class ActiveBarrier {
 
     public int getDomainBlockCursor() { return this.domainBlockCursor; }
     public void setDomainBlockCursor(int cursor) { this.domainBlockCursor = cursor; }
+
+    public boolean isClashing() { return this.clashing; }
+    public void setClashing(boolean clashing) { this.clashing = clashing; }
 }

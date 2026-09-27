@@ -18,13 +18,15 @@
     "AbstractClientPlayerEntityMixin",
     "ClientInputMixin",
     "GameRendererAccessor",
+    "GuiRendererMixin",
     "InGameHudMixin",
     "LivingEntityRendererMixin",
     "LivingEntityRenderStateMixin",
     "MinecraftClientMixin",
     "PlayerAttackAnimationMixin",
     "PlayerFirstPersonRendererMixin",
-    "PlayerLegsModelMixin"
+    "PlayerLegsModelMixin",
+    "SpecialGuiElementRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

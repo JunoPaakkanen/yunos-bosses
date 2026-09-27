@@ -1,19 +1,35 @@
 package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansion;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.world.World;
 
 public class SpellCastHelper {
 
     // Check if the player has enough mana to start casting the spell
     public static boolean canStartCasting(Spell spell, LivingEntity caster) {
-        var spellComponent = ModEntityComponents.SPELL_DATA.get(caster);
-        if (spell instanceof DomainExpansion && BarrierManager.hasActiveDomain(caster.getUuid()) && !spellComponent.hasAltCastWindow(spell)) {
+        if (!(caster instanceof PlayerEntity player)) {
+            if (spell instanceof DomainExpansion && DomainClashManager.hasBurnout(caster.getUuid())) {
+                return false;
+            }
+            return true;
+        }
+
+        if (spell instanceof DomainExpansion && DomainClashManager.hasBurnout(player.getUuid())) {
+            int sec = DomainClashManager.getBurnoutSeconds(player.getUuid());
+            player.sendMessage(Text.literal("§cCannot expand domain! Technique Burnout (" + sec + "s remaining)§r"), true);
+            return false;
+        }
+
+        var spellComponent = ModEntityComponents.SPELL_DATA.get(player);
+        if (spell instanceof DomainExpansion && BarrierManager.hasActiveDomain(player.getUuid()) && !spellComponent.hasAltCastWindow(spell)) {
             return false;
         }
 
@@ -21,8 +37,8 @@ public class SpellCastHelper {
             return false;
         }
 
-        var manaComponent = ModEntityComponents.MANA.get(caster);
-        float baseManaCost = spell.getManaCost(caster);
+        var manaComponent = ModEntityComponents.MANA.get(player);
+        float baseManaCost = spell.getManaCost(player);
 
         return manaComponent.useMana(baseManaCost);
     }

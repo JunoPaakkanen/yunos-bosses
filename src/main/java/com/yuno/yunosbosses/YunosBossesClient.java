@@ -8,6 +8,8 @@ import com.yuno.yunosbosses.particle.*;
 import com.yuno.yunosbosses.render.*;
 import com.yuno.yunosbosses.render.gui.AbilityHudOverlay;
 import com.yuno.yunosbosses.event.ModKeybindings;
+import com.yuno.yunosbosses.render.gui.DomainClashClient;
+import com.yuno.yunosbosses.render.gui.DomainClashOverlay;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneManager;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneOverlay;
 import com.yuno.yunosbosses.render.gui.SpellChargeHudOverlay;
@@ -40,6 +42,7 @@ public class YunosBossesClient implements ClientModInitializer {
         DefensiveMagicRenderer.register();
         ProjectionSorceryRenderer.register();
         BlackFlashRenderer.register();
+        DomainClashRenderer.register();
 
         // Register Entity Renderers
         EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
@@ -67,6 +70,7 @@ public class YunosBossesClient implements ClientModInitializer {
         // Register custom HUD
         HudRenderCallback.EVENT.register(new AbilityHudOverlay());
         HudRenderCallback.EVENT.register(new DomainCutsceneOverlay());
+        HudRenderCallback.EVENT.register(new DomainClashOverlay());
         HudRenderCallback.EVENT.register(new SpellChargeHudOverlay());
 
         // Register shader manager
@@ -81,6 +85,7 @@ public class YunosBossesClient implements ClientModInitializer {
                     BeamManager.tick();
                     BarrierManager.tick(client.world);
                     DomainCutsceneManager.tick();
+                    DomainClashClient.tick();
                     DomainAtmosphereRenderer.tick(client);
                     BlackFlashRenderer.tick();
                     BlackFlashClientHelper.tick();
@@ -137,6 +142,27 @@ public class YunosBossesClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(DomainCutscenePayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 DomainCutsceneManager.startCutscene(payload.casterUuid(), payload.domainName(), payload.durationTicks(), payload.isOpenBarrier());
+            });
+        });
+
+        // Receiver for Domain Clash Start
+        ClientPlayNetworking.registerGlobalReceiver(DomainClashStartPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                DomainClashClient.startClash(payload);
+            });
+        });
+
+        // Receiver for Domain Clash Progress
+        ClientPlayNetworking.registerGlobalReceiver(DomainClashProgressPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                DomainClashClient.updateProgress(payload);
+            });
+        });
+
+        // Receiver for Domain Clash End
+        ClientPlayNetworking.registerGlobalReceiver(DomainClashEndPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                DomainClashClient.endClash(payload);
             });
         });
 

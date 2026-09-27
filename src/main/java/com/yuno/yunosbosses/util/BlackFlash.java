@@ -207,7 +207,6 @@ public class BlackFlash {
         }
 
         // Center contact blast
-        serverWorld.spawnParticles(ModParticles.FLAME_SHOCKWAVE_PARTICLE, center.x, center.y, center.z, 1, 0.0, 0.0, 0.0, 0.0);
         serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK, center.x, center.y, center.z, 2, 0.15, 0.15, 0.15, 0.0);
         serverWorld.spawnParticles(ParticleTypes.CRIT, center.x, center.y, center.z, isFinisher ? 30 : 15, 0.3, 0.3, 0.3, 0.25);
         serverWorld.spawnParticles(ModParticles.FLAME_EMBER_PARTICLE, center.x, center.y, center.z, isFinisher ? 25 : 12, 0.4, 0.4, 0.4, 0.15);

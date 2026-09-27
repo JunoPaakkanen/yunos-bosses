@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.entity.goal;
 
+import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.offensive.Shrine;
@@ -120,13 +121,24 @@ public class UbelAttackGoal extends Goal {
             }
         }
 
-        // --- DOMAIN EXPANSION ---
-        if (this.ubel.getHealth() <= 150.0 && !this.usedDomainExpansion) {
+        // --- COUNTER DOMAIN EXPANSION (INSTANT CLASH RESPONSE) ---
+        if (!this.usedDomainExpansion && !DomainClashManager.hasBurnout(this.ubel.getUuid())) {
+            if (DomainClashManager.isEntityCastingDomainNear(this.ubel, 35.0)) {
+                this.teleportToTarget();
+                this.domainExpansion();
+                this.ubel.triggerDomainAnim();
+                this.usedDomainExpansion = true;
+                this.attackDurationTimer = 80;
+            }
+        }
+
+        // --- DOMAIN EXPANSION (HEALTH THRESHOLD) ---
+        if (this.ubel.getHealth() <= 150.0 && !this.usedDomainExpansion && !DomainClashManager.hasBurnout(this.ubel.getUuid())) {
             this.teleportToTarget();
             this.domainExpansion();
             this.ubel.triggerDomainAnim();
             this.usedDomainExpansion = true;
-            attackDurationTimer = 80;
+            this.attackDurationTimer = 80;
         }
 
         // --- COOLDOWN LOGIC ---

@@ -1,6 +1,8 @@
 package com.yuno.yunosbosses.network;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.domain.clash.DomainClashManager;
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.SpellCastHelper;
@@ -17,6 +19,7 @@ public class ModMessages {
         PayloadTypeRegistry.playC2S().register(KickAttackPayload.ID, KickAttackPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(CastSpellPayload.ID, CastSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(EquipSpellPayload.ID, EquipSpellPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(DomainClashInputPayload.ID, DomainClashInputPayload.CODEC);
 
         // Register Receivers
         // Spell cycling
@@ -61,7 +64,7 @@ public class ModMessages {
                 component.kick();
             });
         });
-        // Spell casting (Staffless)
+        // Spell casting (Quick cast / Keybind cast)
         ServerPlayNetworking.registerGlobalReceiver(CastSpellPayload.ID, (payload, context) -> {
             context.server().execute(() -> {
                 var player = context.player();
@@ -70,10 +73,22 @@ public class ModMessages {
                 if (spell != null && spell.canCastWithoutStaff()) {
                     var component = ModEntityComponents.SPELL_DATA.get(player);
                     if (component.getActiveSpell() == spell) {
-                        // Cast with empty ItemStack
-                        SpellCastHelper.tryCastSpell(spell, player.getWorld(), player, ItemStack.EMPTY);
+                        // Check if the player is holding a staff in main hand or off-hand and apply its attributes
+                        ItemStack staff = ItemStack.EMPTY;
+                        if (player.getMainHandStack().getItem() instanceof StaffItem) {
+                            staff = player.getMainHandStack();
+                        } else if (player.getOffHandStack().getItem() instanceof StaffItem) {
+                            staff = player.getOffHandStack();
+                        }
+                        SpellCastHelper.tryCastSpell(spell, player.getWorld(), player, staff);
                     }
                 }
+            });
+        });
+        // Domain Clash input mash
+        ServerPlayNetworking.registerGlobalReceiver(DomainClashInputPayload.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                DomainClashManager.handlePlayerInput(context.player(), payload.clashId());
             });
         });
     }

@@ -2,6 +2,7 @@ package com.yuno.yunosbosses;
 
 import com.yuno.yunosbosses.block.ModBlocks;
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.event.ModCommands;
@@ -61,9 +62,13 @@ public class YunosBosses implements ModInitializer {
 		DomainCutscenePayload.register();
 		SpawnImagePayload.register();
 		BlackFlashPayload.register();
+		DomainClashStartPayload.register();
+		DomainClashProgressPayload.register();
+		DomainClashEndPayload.register();
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			DelayedServerEffects.tick();
+			DomainClashManager.serverTick(server);
 
 			for (ServerWorld world : server.getWorlds()) {
 				BarrierManager.tick(world);

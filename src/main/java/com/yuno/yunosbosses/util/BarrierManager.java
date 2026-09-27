@@ -66,15 +66,17 @@ public class BarrierManager {
                         SpherePhysics.apply(world, barrier, radius);
                     }
 
-                    // Apply domain effect on entities inside
-                    Box domainBox = new Box(barrier.getPosition().subtract(radius, radius, radius), barrier.getPosition().add(radius, radius, radius));
-                    serverWorld.getOtherEntities(null, domainBox).forEach(entity -> {
-                        if (!entity.isSpectator() && !entity.getUuid().equals(barrier.getOwnerUuid())) {
-                            if (entity.getPos().distanceTo(barrier.getPosition()) < radius) {
-                                barrier.getDomainEffect().accept(entity, barrier);
+                    // Apply domain effect on entities inside (neutralized during domain clashes!)
+                    if (!barrier.isClashing()) {
+                        Box domainBox = new Box(barrier.getPosition().subtract(radius, radius, radius), barrier.getPosition().add(radius, radius, radius));
+                        serverWorld.getOtherEntities(null, domainBox).forEach(entity -> {
+                            if (!entity.isSpectator() && !entity.getUuid().equals(barrier.getOwnerUuid())) {
+                                if (entity.getPos().distanceTo(barrier.getPosition()) < radius) {
+                                    barrier.getDomainEffect().accept(entity, barrier);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
 
                     // Apply the domain expansion logic each tick (if applicable)
                     if (barrier.getDomainExpansion() != null) {

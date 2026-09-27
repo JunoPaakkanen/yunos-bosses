@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.spell.implementation.misc;
 import com.yuno.yunosbosses.animation.ModAnimations;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
+import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
@@ -105,6 +106,16 @@ public class DomainExpansionShrine extends DomainExpansion {
     }
 
     public void defaultCast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
+        if (!world.isClient && DomainClashManager.hasBurnout(caster.getUuid())) {
+            int remainingSec = DomainClashManager.getBurnoutSeconds(caster.getUuid());
+            if (caster instanceof PlayerEntity player) {
+                player.sendMessage(Text.literal("§cCannot expand domain! Technique Burnout (" + remainingSec + "s remaining)§r"), true);
+                world.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                        SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.PLAYERS, 1.0f, 0.8f);
+            }
+            return;
+        }
+
         final boolean isOpenBarrier;
         if (caster instanceof PlayerEntity player) {
             SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
@@ -129,7 +140,18 @@ public class DomainExpansionShrine extends DomainExpansion {
 
         float dynamicRadius = getRadius(chargeLevel, isOpenBarrier);
 
-        DelayedServerEffects.delay(80, () -> finishDomainExpansionCast(world, caster, staff, dynamicRadius, isOpenBarrier));
+        DomainClashManager.registerDomainCast(
+                (ServerWorld) world,
+                caster,
+                this,
+                staff,
+                dynamicRadius,
+                isOpenBarrier,
+                "Malevolent Shrine",
+                chargeLevel,
+                80,
+                () -> finishDomainExpansionCast(world, caster, staff, dynamicRadius, isOpenBarrier)
+        );
     }
 
     public void altCast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {

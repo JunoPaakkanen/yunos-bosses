@@ -17,6 +17,12 @@ public class DomainCutsceneManager {
         isOpenBarrier = openBarrier;
     }
 
+    public static void cancelCutscene() {
+        ticksRemaining = 0;
+        maxTicks = 0;
+        casterUuid = null;
+    }
+
     public static boolean isInvertedFlashActive() {
         if (ticksRemaining > 0 && domainName != null && domainName.toLowerCase().contains("malevolent")) {
             // Flash on the climax of the hand sign / voice chant (last 10 ticks of cutscene)
