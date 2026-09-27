@@ -6,19 +6,31 @@ import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
+import com.yuno.yunosbosses.util.BarrierManager;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntity.class)
 public abstract class DeathInterceptionMixin {
+
+    @Inject(method = "onDeath", at = @At("HEAD"))
+    private void yunosbosses$onOwnerDeath(DamageSource damageSource, CallbackInfo ci) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (!entity.getWorld().isClient() && entity.getWorld() instanceof ServerWorld serverWorld) {
+            BarrierManager.onOwnerDeath(entity, serverWorld);
+        }
+    }
+
     @Inject(method = "tryUseDeathProtector", at = @At("HEAD"), cancellable = true)
     private void triggerTransformation(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity entity = (LivingEntity) (Object) this;

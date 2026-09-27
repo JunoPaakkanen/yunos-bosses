@@ -13,6 +13,7 @@ import com.yuno.yunosbosses.render.gui.DomainClashOverlay;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneManager;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneOverlay;
 import com.yuno.yunosbosses.render.gui.SpellChargeHudOverlay;
+import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BeamManager;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
@@ -116,6 +117,19 @@ public class YunosBossesClient implements ClientModInitializer {
             context.client().execute(() -> {
                 // Add to a client-side list of barriers for the renderer to draw
                 BarrierManager.addBarrier(payload.ownerUuid(), payload.position(), payload.direction(), payload.maxTicks(), payload.texture(), payload.radius(), true);
+            });
+        });
+
+        // Receiver for Barrier Removal
+        ClientPlayNetworking.registerGlobalReceiver(RemoveBarrierPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                BarrierManager.removeBarrierClient(payload.ownerUuid());
+
+                if (DomainCutsceneManager.casterUuid != null && DomainCutsceneManager.casterUuid.equals(payload.ownerUuid())) {
+                    DomainCutsceneManager.cancelCutscene();
+                }
+
+                ShaderManager.clearDomainShaders(context.client());
             });
         });
 

@@ -58,6 +58,7 @@ public class YunosBosses implements ModInitializer {
 		ModMessages.registerC2SPackets();
 		BeamPayload.register();
 		BarrierPayload.register();
+		RemoveBarrierPayload.register();
 		PlayerAnimationPayload.register();
 		DomainCutscenePayload.register();
 		SpawnImagePayload.register();
@@ -93,7 +94,7 @@ public class YunosBosses implements ModInitializer {
 
 			var spellData = ModEntityComponents.SPELL_DATA.get(player);
 			if (player.isSprinting() && spellData.getSpeedStacks() >= 10) {
-				return ActionResult.FAIL; // Cancels melee attack when sprinting at high speed stacks
+				return ActionResult.FAIL;
 			}
 			return ActionResult.PASS;
 		});

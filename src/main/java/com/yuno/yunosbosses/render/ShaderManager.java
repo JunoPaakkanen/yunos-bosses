@@ -5,18 +5,39 @@ import com.yuno.yunosbosses.render.gui.DomainCutsceneManager;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Identifier;
 
 public class ShaderManager {
 
     // Post-processing effect id for Malevolent Shrine (assets/yunosbosses/post_effect/malevolent_shrine.json)
-    private static final Identifier SHRINE_SHADER = Identifier.of("yunosbosses", "malevolent_shrine");
-    private static final Identifier INVERT_SHADER = Identifier.of("yunosbosses", "malevolent_invert");
+    public static final Identifier SHRINE_SHADER = Identifier.of("yunosbosses", "malevolent_shrine");
+    public static final Identifier INVERT_SHADER = Identifier.of("yunosbosses", "malevolent_invert");
 
     public static int flashTicks = 0;
 
     public static void triggerFlash(int ticks) {
         flashTicks = Math.max(flashTicks, ticks);
+    }
+
+    public static void clearDomainShaders(MinecraftClient client) {
+        if (client == null || client.gameRenderer == null) return;
+        boolean insideShrine = false;
+        if (client.player != null) {
+            for (ActiveBarrier barrier : BarrierManager.ACTIVE_BARRIERS_CLIENT) {
+                double distanceSq = client.player.getPos().squaredDistanceTo(barrier.getPosition());
+                boolean isShrine = barrier.getTexture() != null && barrier.getTexture().getPath().contains("shrine");
+                if (isShrine && distanceSq <= (barrier.getRadius() * barrier.getRadius())) {
+                    insideShrine = true;
+                    break;
+                }
+            }
+        }
+        if (!insideShrine) {
+            if (SHRINE_SHADER.equals(client.gameRenderer.getPostProcessorId()) || INVERT_SHADER.equals(client.gameRenderer.getPostProcessorId())) {
+                client.gameRenderer.clearPostProcessor();
+            }
+        }
     }
 
     public static void register() {

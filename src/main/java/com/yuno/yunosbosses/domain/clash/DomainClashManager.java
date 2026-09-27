@@ -400,9 +400,9 @@ public class DomainClashManager {
             loser.entity.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 80, 1));
             loser.entity.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 2));
 
-            // Loser ActiveBarrier expired if any
+            // Loser ActiveBarrier destroyed instantly if any
             if (loser.existingBarrier != null) {
-                loser.existingBarrier.expire();
+                BarrierManager.destroyDomain(loser.existingBarrier, world);
             }
 
             // Loser player feedback
@@ -658,6 +658,40 @@ public class DomainClashManager {
             if (clash.clashId.equals(clashId) && !clash.resolved) {
                 clash.handleInput(player.getUuid());
                 break;
+            }
+        }
+    }
+
+    /**
+     * Handles immediate death of an entity involved in Domain Clash system.
+     * Cancels any pending casts and immediately resolves ongoing clashes.
+     */
+    public static void handleEntityDeath(LivingEntity entity, ServerWorld world) {
+        if (entity == null) return;
+        UUID uuid = entity.getUuid();
+
+        // 1. Remove pending domain casts by this entity
+        PENDING_CASTS.removeIf(pending -> pending.casterUuid.equals(uuid));
+
+        // 2. Resolve active clashes involving this entity
+        for (int i = ACTIVE_CLASHES.size() - 1; i >= 0; i--) {
+            ActiveDomainClash clash = ACTIVE_CLASHES.get(i);
+            if (clash.resolved) continue;
+
+            if (clash.p1.uuid.equals(uuid)) {
+                if (clash.p2.entity.isAlive()) {
+                    clash.resolve(clash.p2, clash.p1);
+                } else {
+                    clash.resolved = true;
+                }
+                ACTIVE_CLASHES.remove(i);
+            } else if (clash.p2.uuid.equals(uuid)) {
+                if (clash.p1.entity.isAlive()) {
+                    clash.resolve(clash.p1, clash.p2);
+                } else {
+                    clash.resolved = true;
+                }
+                ACTIVE_CLASHES.remove(i);
             }
         }
     }

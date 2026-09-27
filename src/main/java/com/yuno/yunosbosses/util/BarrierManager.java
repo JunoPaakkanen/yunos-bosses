@@ -1,16 +1,22 @@
 package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.entity.projectile.FlameArrowEntity;
+import com.yuno.yunosbosses.network.RemoveBarrierPayload;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -23,11 +29,12 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class BarrierManager {
     // Lists for active barriers, separate for server and client
-    public static final List<ActiveBarrier> ACTIVE_BARRIERS = new ArrayList<>(); // SERVER
-    public static final List<ActiveBarrier> ACTIVE_BARRIERS_CLIENT = new ArrayList<>(); // CLIENT
+    public static final List<ActiveBarrier> ACTIVE_BARRIERS = new CopyOnWriteArrayList<>(); // SERVER
+    public static final List<ActiveBarrier> ACTIVE_BARRIERS_CLIENT = new CopyOnWriteArrayList<>(); // CLIENT
 
     // Add barrier to ACTIVE_BARRIERS
     public static void addBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int maxTicks, Identifier texture, float radius, boolean isClient) {
@@ -44,11 +51,76 @@ public class BarrierManager {
         addBarrier(ownerUuid, position, direction, maxTicks, hexTexture, radius, isClient);
     }
 
+    /**
+     * Removes all active barriers owned by the specified UUID on the client side.
+     */
+    public static void removeBarrierClient(UUID ownerUuid) {
+        if (ownerUuid == null) return;
+        ACTIVE_BARRIERS_CLIENT.removeIf(barrier -> barrier.getOwnerUuid().equals(ownerUuid));
+    }
+
+    /**
+     * Instantly destroys an active domain expansion barrier:
+     * removes the domain floor, discards domain entities (e.g. shrine),
+     * plays glass shatter sound and visual effect, sends client removal packet,
+     * and removes it from the active barriers list.
+     */
+    public static void destroyDomain(ActiveBarrier barrier, ServerWorld world) {
+        if (barrier == null || world == null) return;
+
+        boolean wasActive = ACTIVE_BARRIERS.remove(barrier);
+        if (!wasActive && barrier.isExpired()) {
+            return;
+        }
+        barrier.expire();
+
+        BlockPos blockPos = BlockPos.ofFloored(barrier.getPosition());
+        // Glass shatter effect, visual and sound
+        world.syncWorldEvent(2001, blockPos, Block.getRawIdFromState(Blocks.GLASS.getDefaultState()));
+        world.playSound(null, barrier.getPosition().x, barrier.getPosition().y, barrier.getPosition().z,
+                SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 2.0F, 0.9F);
+
+        // If the barrier is of type Domain Expansion, clean up floor and custom domain entities
+        if (barrier.getDomainExpansion() != null) {
+            barrier.getDomainExpansion().removeDomainFloor(world, barrier);
+            barrier.getDomainExpansion().onDomainRemoved(world, barrier);
+        }
+
+        // Notify all clients in the world to remove the barrier instantly
+        RemoveBarrierPayload payload = new RemoveBarrierPayload(barrier.getOwnerUuid());
+        for (ServerPlayerEntity player : PlayerLookup.world(world)) {
+            ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    /**
+     * Called when an entity dies. If this entity was the owner of an active domain expansion,
+     * the domain expansion disappears instantly.
+     */
+    public static void onOwnerDeath(LivingEntity owner, ServerWorld world) {
+        if (owner == null || world == null) return;
+        UUID ownerUuid = owner.getUuid();
+
+        List<ActiveBarrier> toDestroy = new ArrayList<>();
+        for (ActiveBarrier barrier : ACTIVE_BARRIERS) {
+            if (barrier.getOwnerUuid().equals(ownerUuid) && barrier.getDomainExpansion() != null && !barrier.isExpired()) {
+                toDestroy.add(barrier);
+            }
+        }
+
+        for (ActiveBarrier barrier : toDestroy) {
+            destroyDomain(barrier, world);
+        }
+
+        DomainClashManager.handleEntityDeath(owner, world);
+    }
+
     public static void tick(World world) {
 
         List<ActiveBarrier> listToTick = world.isClient ? ACTIVE_BARRIERS_CLIENT : ACTIVE_BARRIERS;
 
         for (int i = listToTick.size() - 1; i >= 0; i--) {
+            if (i >= listToTick.size()) continue;
             ActiveBarrier barrier = listToTick.get(i);
             if (world.isClient || (world instanceof ServerWorld sw && sw.getRegistryKey() == World.OVERWORLD)) {
                 barrier.tick();
@@ -113,9 +185,14 @@ public class BarrierManager {
                     if (barrier.getDomainExpansion() != null && world instanceof ServerWorld serverWorld) {
                         barrier.getDomainExpansion().removeDomainFloor(world, barrier);
                         barrier.getDomainExpansion().onDomainRemoved(serverWorld, barrier);
+
+                        RemoveBarrierPayload payload = new RemoveBarrierPayload(barrier.getOwnerUuid());
+                        for (ServerPlayerEntity player : PlayerLookup.world(serverWorld)) {
+                            ServerPlayNetworking.send(player, payload);
+                        }
                     }
                 }
-                listToTick.remove(i);
+                listToTick.remove(barrier);
             }
         }
     }
