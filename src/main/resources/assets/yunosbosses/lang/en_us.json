@@ -5,12 +5,14 @@
   "item.yunosbosses.strange_fruit": "Strange Fruit",
   "item.yunosbosses.ubel_spawn_egg": "Ubel Spawn Egg",
   "item.yunosbosses.methode_spawn_egg": "Methode Spawn Egg",
+  "item.yunosbosses.naoya_spawn_egg": "Naoya Spawn Egg",
   "item.yunosbosses.useless_chicken_spawn_egg": "Useless Chicken Spawn Egg",
 
   "block.yunosbosses.domain_floor": "Domain Floor",
 
   "entity.yunosbosses.ubel": "Ubel",
   "entity.yunosbosses.methode": "Methode",
+  "entity.yunosbosses.naoya": "Naoya",
   "entity.yunosbosses.useless_chicken": "Useless Chicken",
   "entity.yunosbosses.severed_torso": "Severed Torso",
   "entity.yunosbosses.domain_shrine": "Domain Shrine",

@@ -48,6 +48,7 @@ public class YunosBossesClient implements ClientModInitializer {
         // Register Entity Renderers
         EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
         EntityRendererRegistry.register(ModEntities.METHODE, MethodeRenderer::new);
+        EntityRendererRegistry.register(ModEntities.NAOYA, NaoyaRenderer::new);
         EntityRendererRegistry.register(ModEntities.SLASH_PROJECTILE, SlashProjectileRenderer::new);
         EntityRendererRegistry.register(ModEntities.FLAME_ARROW, FlameArrowRenderer::new);
         EntityRendererRegistry.register(ModEntities.SEVERED_TORSO, SeveredTorsoRenderer::new);

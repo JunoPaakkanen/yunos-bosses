@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.entity;
 
 import com.yuno.yunosbosses.entity.character.MethodeEntity;
+import com.yuno.yunosbosses.entity.character.NaoyaEntity;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.entity.character.modified.UselessChickenEntity;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
@@ -28,6 +29,12 @@ public class ModEntities {
             "methode",
             EntityType.Builder.create(MethodeEntity::new, SpawnGroup.CREATURE)
                     .dimensions(0.8f, 2.4f)
+    );
+
+    public static final EntityType<NaoyaEntity> NAOYA = register(
+            "naoya",
+            EntityType.Builder.create(NaoyaEntity::new, SpawnGroup.CREATURE)
+                    .dimensions(0.6f, 1.95f)
     );
 
     public static final EntityType<SlashProjectileEntity> SLASH_PROJECTILE = register(
@@ -68,6 +75,7 @@ public class ModEntities {
     public static void registerModEntities() {
         FabricDefaultAttributeRegistry.register(UBEL, UbelEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(METHODE, MethodeEntity.setAttributes());
+        FabricDefaultAttributeRegistry.register(NAOYA, NaoyaEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(SEVERED_TORSO, SeveredTorsoEntity.setAttributes());
         FabricDefaultAttributeRegistry.register(USELESS_CHICKEN, UselessChickenEntity.setAttributes());
     }
