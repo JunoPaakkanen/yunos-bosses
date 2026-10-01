@@ -32,6 +32,7 @@ public class ModItems {
     // Spawn Eggs
     public static final Item UBEL_SPAWN_EGG = registerItem("ubel_spawn_egg", settings -> new SpawnEggItem(ModEntities.UBEL, settings), new Item.Settings());
     public static final Item METHODE_SPAWN_EGG = registerItem("methode_spawn_egg", settings -> new SpawnEggItem(ModEntities.METHODE, settings), new Item.Settings());
+    public static final Item NAOYA_SPAWN_EGG = registerItem("naoya_spawn_egg", settings -> new SpawnEggItem(ModEntities.NAOYA, settings), new Item.Settings());
     public static final Item USELESS_CHICKEN_SPAWN_EGG = registerItem("useless_chicken_spawn_egg", settings -> new SpawnEggItem(ModEntities.USELESS_CHICKEN, settings), new Item.Settings());
 
     // Helper method to register item
@@ -55,6 +56,7 @@ public class ModItems {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.SPAWN_EGGS).register(entries -> {
             entries.add(UBEL_SPAWN_EGG);
             entries.add(METHODE_SPAWN_EGG);
+            entries.add(NAOYA_SPAWN_EGG);
             entries.add(USELESS_CHICKEN_SPAWN_EGG);
         });
 

@@ -6,19 +6,21 @@ import net.minecraft.particle.SimpleParticleType;
 
 public class ReversalRedParticle extends SpriteBillboardParticle {
     private final SpriteProvider spriteProvider;
+    private final float baseScale;
 
     protected ReversalRedParticle(ClientWorld world, double x, double y, double z, double velocityX, double velocityY, double velocityZ, SpriteProvider spriteProvider) {
         super(world, x, y, z, velocityX, velocityY, velocityZ);
         this.spriteProvider = spriteProvider;
 
         this.maxAge = 14;
-        this.scale = 0.2F;
+        this.baseScale = 1.2F + (float) (world.random.nextFloat() * 0.4F);
+        this.scale = this.baseScale;
         this.gravityStrength = 0.0F;
 
-        this.velocityX *= 0.5;
-        this.velocityY *= 0.5;
-        this.velocityZ *= 0.5;
-        this.velocityMultiplier = 0.8f;
+        this.velocityX = velocityX * 0.5;
+        this.velocityY = velocityY * 0.5;
+        this.velocityZ = velocityZ * 0.5;
+        this.velocityMultiplier = 0.90f;
 
         this.setSpriteForAge(spriteProvider);
     }
@@ -27,6 +29,14 @@ public class ReversalRedParticle extends SpriteBillboardParticle {
     public void tick() {
         super.tick();
         this.setSpriteForAge(this.spriteProvider);
+
+        // Explosive outward growth and smooth alpha fade
+        float progress = (float) this.age / (float) this.maxAge;
+        this.scale = this.baseScale * (1.0F + progress * 0.5F);
+
+        if (progress > 0.6F) {
+            this.alpha = Math.max(0.0F, 1.0F - (progress - 0.6F) / 0.4F);
+        }
     }
 
     @Override
