@@ -1,6 +1,8 @@
 package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.animation.ModAnimations;
+import com.yuno.yunosbosses.binding_vow.BindingVowManager;
+import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.domain.clash.DomainClashManager;
@@ -12,6 +14,7 @@ import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.network.PlayerAnimationPayload;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
@@ -157,7 +160,6 @@ public class DomainExpansionShrine extends DomainExpansion {
     public void altCast(World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
         if (world.isClient) return;
 
-        // Locate the actual DomainShrineEntity within the domain
         DomainShrineEntity targetShrine = null;
         for (ActiveBarrier barrier : BarrierManager.ACTIVE_BARRIERS) {
             if (barrier.getOwnerUuid().equals(caster.getUuid()) && barrier.getDomainExpansion() == this) {
@@ -174,9 +176,7 @@ public class DomainExpansionShrine extends DomainExpansion {
             }
         }
 
-        // Teleport caster on top of the shrine
         if (targetShrine != null) {
-            // Shrine entity height is 6.5 blocks; teleport centered right onto the roof
             caster.requestTeleport(targetShrine.getX(), targetShrine.getY() + 6.6, targetShrine.getZ());
             caster.fallDistance = 0.0F;
             caster.setVelocity(Vec3d.ZERO);
@@ -185,7 +185,6 @@ public class DomainExpansionShrine extends DomainExpansion {
                     SoundEvents.ENTITY_PLAYER_TELEPORT, SoundCategory.PLAYERS, 1.0F, 1.2F);
         }
 
-        // End alt cast window
         if (caster instanceof PlayerEntity player) {
             SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
             component.clearAltCastWindow(this);
@@ -422,6 +421,12 @@ public class DomainExpansionShrine extends DomainExpansion {
 
                 affectedEntity.damage((ServerWorld) affectedEntity.getWorld(), source, damage);
 
+                // Domain slashes charge the caster's Flame Arrow meter
+                if (caster instanceof PlayerEntity player) {
+                    SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
+                    component.addMeter(ModSpells.SHRINE, 2);
+                }
+
                 affectedEntity.setVelocity(originalVelocity);
                 affectedEntity.velocityModified = true;
 
@@ -506,7 +511,6 @@ public class DomainExpansionShrine extends DomainExpansion {
             world.spawnParticles(ParticleTypes.ASH, px, spawnY + 0.5, pz, 2, 0.3, 0.3, 0.3, 0.04);
         }
 
-        // Activate alt cast window for teleporting on top of the shrine
         if (caster instanceof PlayerEntity player) {
             SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
             component.startAltCastWindow(this, 100);

@@ -21,7 +21,7 @@ public class PlayerManaComponent implements ManaComponent, AutoSyncedComponent, 
 
     @Override
     public void serverTick() {
-        if (mana < maxMana) {
+        if (this.manaRegen > 0.0f && mana < maxMana) {
             mana = Math.min(mana + this.manaRegen, maxMana);
             if (mana >= maxMana) {
                 syncToClient();
@@ -86,6 +86,8 @@ public class PlayerManaComponent implements ManaComponent, AutoSyncedComponent, 
     @Override
     public void setManaRegen(float regen) {
         this.manaRegen = regen;
+        syncToClient();
+        syncCooldown = 0;
     }
 
     @Override
@@ -97,11 +99,13 @@ public class PlayerManaComponent implements ManaComponent, AutoSyncedComponent, 
     public void readData(ReadView readView) {
         this.mana = readView.getFloat("mana", this.mana);
         this.maxMana = readView.getFloat("maxMana", this.maxMana);
+        this.manaRegen = readView.getFloat("manaRegen", this.manaRegen);
     }
 
     @Override
     public void writeData(WriteView writeView) {
         writeView.putFloat("mana", this.mana);
         writeView.putFloat("maxMana", this.maxMana);
+        writeView.putFloat("manaRegen", this.manaRegen);
     }
 }

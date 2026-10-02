@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.component;
 
 import com.yuno.yunosbosses.YunosBosses;
+import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import net.minecraft.util.Identifier;
 import org.ladysnake.cca.api.v3.component.ComponentKey;
 import org.ladysnake.cca.api.v3.component.ComponentRegistry;
@@ -19,6 +20,9 @@ public class ModEntityComponents implements EntityComponentInitializer {
     public static final ComponentKey<ManaComponent> MANA =
             ComponentRegistry.getOrCreate(Identifier.of(YunosBosses.MOD_ID, "mana"), ManaComponent.class);
 
+    public static final ComponentKey<BindingVowComponent> BINDING_VOWS =
+            ComponentRegistry.getOrCreate(Identifier.of(YunosBosses.MOD_ID, "binding_vows"), BindingVowComponent.class);
+
     @Override
     public void registerEntityComponentFactories(EntityComponentFactoryRegistry registry) {
         // Register spells
@@ -34,7 +38,19 @@ public class ModEntityComponents implements EntityComponentInitializer {
                 RespawnCopyStrategy.LOSSLESS_ONLY);
 
         // Register mana
-        registry.registerForPlayers(MANA, PlayerManaComponent::new,
-                RespawnCopyStrategy.ALWAYS_COPY);
+        registry.registerForPlayers(MANA, PlayerManaComponent::new, (from, to, registryLookup, lossless, keepInventory, sameCharacter) -> {
+            RespawnCopyStrategy.ALWAYS_COPY.copyForRespawn(from, to, registryLookup, lossless, keepInventory, sameCharacter);
+            if (!lossless) {
+                to.setManaRegen(0.5f);
+            }
+        });
+
+        // Register binding vows
+        registry.registerForPlayers(BINDING_VOWS, PlayerBindingVowComponent::new, (from, to, registryLookup, lossless, keepInventory, sameCharacter) -> {
+            RespawnCopyStrategy.ALWAYS_COPY.copyForRespawn(from, to, registryLookup, lossless, keepInventory, sameCharacter);
+            if (!lossless) {
+                to.removeVow(ModBindingVows.GOJO.getId());
+            }
+        });
     }
 }

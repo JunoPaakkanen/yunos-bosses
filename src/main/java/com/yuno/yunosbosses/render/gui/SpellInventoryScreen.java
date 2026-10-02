@@ -1,13 +1,18 @@
 package com.yuno.yunosbosses.render.gui;
 
+import com.yuno.yunosbosses.binding_vow.BindingVow;
+import com.yuno.yunosbosses.binding_vow.ModBindingVows;
+import com.yuno.yunosbosses.component.BindingVowComponent;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.event.ModKeybindings;
 import com.yuno.yunosbosses.network.EquipSpellPayload;
+import com.yuno.yunosbosses.network.ToggleBindingVowPayload;
 import com.yuno.yunosbosses.spell.Spell;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -21,11 +26,19 @@ public class SpellInventoryScreen extends Screen {
     private int guiLeft;
     private int guiTop;
 
+    // Tabs: 0 = Spells, 1 = Binding Vows
+    private int activeTab = 0;
+
     // Selection state
     private Spell selectedSpell = null;
 
     public SpellInventoryScreen() {
+        this(0);
+    }
+
+    public SpellInventoryScreen(int initialTab) {
         super(Text.literal("Spell Inventory"));
+        this.activeTab = Math.max(0, Math.min(1, initialTab));
     }
 
     @Override
@@ -37,28 +50,184 @@ public class SpellInventoryScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Call super first so vanilla background rendering finishes before drawing custom UI
         super.render(context, mouseX, mouseY, delta);
 
         if (this.client == null || this.client.player == null) return;
-        var component = ModEntityComponents.SPELL_DATA.get(this.client.player);
+
+        // Draw Tabs at top
+        drawTabs(context, mouseX, mouseY);
 
         // Draw GUI Background panel
         context.fill(guiLeft, guiTop, guiLeft + guiWidth, guiTop + guiHeight, 0xFF1E1E2E); // Dark blue/gray background
         context.drawBorder(guiLeft, guiTop, guiWidth, guiHeight, 0xFF45475A); // Border
 
-        // Title Text
-        context.drawText(this.textRenderer, "SPELL INVENTORY", guiLeft + 12, guiTop + 10, 0xFFCDD6F4, false);
+        if (activeTab == 0) {
+            // Title Text
+            context.drawText(this.textRenderer, "SPELL INVENTORY", guiLeft + 12, guiTop + 10, 0xFFCDD6F4, false);
 
-        // Draw Known Spells Grid & Equipped Sidebar
-        drawKnownSpellsGrid(context, component.getKnownSpells(), mouseX, mouseY);
-        drawEquippedSidebar(context, component, mouseX, mouseY);
+            var component = ModEntityComponents.SPELL_DATA.get(this.client.player);
+            // Draw Known Spells Grid & Equipped Sidebar
+            drawKnownSpellsGrid(context, component.getKnownSpells(), mouseX, mouseY);
+            drawEquippedSidebar(context, component, mouseX, mouseY);
+        } else {
+            // Binding Vows Tab
+            drawBindingVowsTab(context, mouseX, mouseY);
+        }
     }
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Draw a standard dark overlay
         context.fillGradient(0, 0, this.width, this.height, 0xC0101010, 0xD0101010);
+    }
+
+    private void drawTabs(DrawContext context, int mouseX, int mouseY) {
+        int tabY = guiTop - 16;
+        int tabH = 16;
+
+        // Spells Tab
+        int tab0X = guiLeft + 8;
+        int tab0W = 56;
+        boolean tab0Active = (activeTab == 0);
+        int tab0Bg = tab0Active ? 0xFF1E1E2E : (isHovering(tab0X, tabY, tab0W, tabH, mouseX, mouseY) ? 0xFF2A2B3D : 0xFF181825);
+        int tab0TextCol = tab0Active ? 0xFFCDD6F4 : 0xFF7F849C;
+
+        context.fill(tab0X, tabY, tab0X + tab0W, tabY + tabH, tab0Bg);
+        context.drawBorder(tab0X, tabY, tab0W, tabH, 0xFF45475A);
+        context.drawText(this.textRenderer, "Spells", tab0X + 11, tabY + 4, tab0TextCol, false);
+
+        // Binding Vows Tab
+        int tab1X = guiLeft + 66;
+        int tab1W = 86;
+        boolean tab1Active = (activeTab == 1);
+        int tab1Bg = tab1Active ? 0xFF1E1E2E : (isHovering(tab1X, tabY, tab1W, tabH, mouseX, mouseY) ? 0xFF2A2B3D : 0xFF181825);
+        int tab1TextCol = tab1Active ? 0xFFF9E2AF : 0xFF7F849C;
+
+        context.fill(tab1X, tabY, tab1X + tab1W, tabY + tabH, tab1Bg);
+        context.drawBorder(tab1X, tabY, tab1W, tabH, 0xFF45475A);
+        context.drawText(this.textRenderer, "Binding Vows", tab1X + 9, tabY + 4, tab1TextCol, false);
+
+        // Fill overlap lines so active tab seamlessly connects to main box
+        if (tab0Active) {
+            context.fill(tab0X + 1, guiTop, tab0X + tab0W - 1, guiTop + 1, 0xFF1E1E2E);
+        } else if (tab1Active) {
+            context.fill(tab1X + 1, guiTop, tab1X + tab1W - 1, guiTop + 1, 0xFF1E1E2E);
+        }
+    }
+
+    private void drawBindingVowsTab(DrawContext context, int mouseX, int mouseY) {
+        if (this.client == null || this.client.player == null) return;
+        var player = this.client.player;
+        BindingVowComponent vowComponent = ModEntityComponents.BINDING_VOWS.get(player);
+
+        // Title and Subtitle
+        context.drawText(this.textRenderer, "BINDING VOWS", guiLeft + 12, guiTop + 10, 0xFFF9E2AF, false);
+        context.drawText(this.textRenderer, "Sacred Pacts & Restrictions", guiLeft + 12, guiTop + 21, 0xFF6C7086, false);
+
+        List<BindingVow> vows = new ArrayList<>(ModBindingVows.getAll());
+        int cardX = guiLeft + 10;
+        int cardY = guiTop + 33;
+        int cardW = guiWidth - 20; // 156
+        int cardH = 58;
+
+        // Pending tooltip rendering (render after cards so it's always on top)
+        Runnable pendingTooltip = null;
+
+        for (int i = 0; i < vows.size(); i++) {
+            BindingVow vow = vows.get(i);
+            int y = cardY + (i * (cardH + 6));
+            boolean isActive = vowComponent != null && vowComponent.hasVow(vow.getId());
+            boolean canAccept = vow.canAccept(player);
+
+            // Card background & border
+            int cardBg = isActive ? 0xFF181D2A : 0xFF181825;
+            int cardBorder = isActive ? 0xFF89B4FA : 0xFF313244;
+            context.fill(cardX, y, cardX + cardW, y + cardH, cardBg);
+            context.drawBorder(cardX, y, cardW, cardH, cardBorder);
+
+            // Name
+            context.drawText(this.textRenderer, vow.getName().getString(), cardX + 6, y + 5, 0xFFCDD6F4, false);
+
+            // Status Badge
+            if (isActive) {
+                context.drawText(this.textRenderer, "[ACTIVE]", cardX + cardW - 48, y + 5, 0xFFA6E3A1, false);
+            } else {
+                context.drawText(this.textRenderer, "[SEALED]", cardX + cardW - 50, y + 5, 0xFF6C7086, false);
+            }
+
+            // Sacrifice line
+            String sacStr = "Sacrifice: " + vow.getSacrifice().getString();
+            if (sacStr.length() > 27) sacStr = sacStr.substring(0, 25) + "..";
+            context.drawText(this.textRenderer, sacStr, cardX + 6, y + 17, 0xFFF38BA8, false);
+
+            // Gain line
+            String gainStr = "Gain: " + vow.getGain().getString();
+            if (gainStr.length() > 27) gainStr = gainStr.substring(0, 25) + "..";
+            context.drawText(this.textRenderer, gainStr, cardX + 6, y + 28, 0xFFA6E3A1, false);
+
+            // Action Button
+            int btnW = 68;
+            int btnH = 14;
+            int btnX = cardX + cardW - btnW - 4;
+            int btnY = y + cardH - btnH - 4;
+
+            boolean hoveringBtn = isHovering(btnX, btnY, btnW, btnH, mouseX, mouseY);
+
+            if (isActive) {
+                int btnBg = hoveringBtn ? 0xFFE78284 : 0xFF582329;
+                context.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnBg);
+                context.drawBorder(btnX, btnY, btnW, btnH, 0xFFE78284);
+                context.drawText(this.textRenderer, "Sever Pact", btnX + 7, btnY + 3, 0xFFFFFFFF, false);
+            } else {
+                if (canAccept) {
+                    int btnBg = hoveringBtn ? 0xFF85C1DC : 0xFF1E3A4B;
+                    context.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnBg);
+                    context.drawBorder(btnX, btnY, btnW, btnH, 0xFF89DCEB);
+                    context.drawText(this.textRenderer, "Pledge Vow", btnX + 5, btnY + 3, 0xFFFFFFFF, false);
+                } else {
+                    context.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF222436);
+                    context.drawBorder(btnX, btnY, btnW, btnH, 0xFF45475A);
+                    context.drawText(this.textRenderer, "Unavailable", btnX + 4, btnY + 3, 0xFF7F849C, false);
+                }
+            }
+
+            // Mana cost label if not active and has cost
+            float manaCost = vow.getActivationManaCost(player);
+            if (!isActive && manaCost > 0) {
+                context.drawText(this.textRenderer, (int) manaCost + " Mana", cardX + 6, y + 42, 0xFF89B4FA, false);
+            }
+
+            // Compact Tooltip handling
+            if (hoveringBtn) {
+                pendingTooltip = () -> {
+                    List<Text> btnTooltip = new ArrayList<>();
+                    if (isActive) {
+                        btnTooltip.add(Text.literal("Sever Pact").formatted(Formatting.RED, Formatting.BOLD));
+                        btnTooltip.add(Text.literal("Warning: Inflicts 15s Burnout").formatted(Formatting.GRAY));
+                    } else if (canAccept) {
+                        btnTooltip.add(Text.literal("Pledge Vow").formatted(Formatting.AQUA, Formatting.BOLD));
+                        if (manaCost > 0) {
+                            btnTooltip.add(Text.literal("Cost: " + (int) manaCost + " Mana").formatted(Formatting.GRAY));
+                        }
+                    } else {
+                        btnTooltip.add(Text.literal("Unavailable").formatted(Formatting.RED, Formatting.BOLD));
+                        btnTooltip.add(vow.getCannotAcceptReason(player).copy().formatted(Formatting.GRAY));
+                    }
+                    context.drawTooltip(this.textRenderer, btnTooltip, mouseX, mouseY);
+                };
+            } else if (isHovering(cardX, y, cardW, cardH, mouseX, mouseY)) {
+                pendingTooltip = () -> {
+                    List<OrderedText> tooltipLines = new ArrayList<>();
+                    tooltipLines.add(vow.getName().copy().formatted(Formatting.GOLD, Formatting.BOLD).asOrderedText());
+                    // Neatly wrapped to a compact width of 165px
+                    tooltipLines.addAll(this.textRenderer.wrapLines(vow.getDescription(), 165));
+                    context.drawOrderedTooltip(this.textRenderer, tooltipLines, mouseX, mouseY);
+                };
+            }
+        }
+
+        if (pendingTooltip != null) {
+            pendingTooltip.run();
+        }
     }
 
     private void drawKnownSpellsGrid(DrawContext context, List<Spell> knownSpells, int mouseX, int mouseY) {
@@ -73,31 +242,26 @@ public class SpellInventoryScreen extends Screen {
             int x = startX + (col * (slotSize + 2));
             int y = startY + (row * (slotSize + 2));
 
-            // Slot Background
             context.fill(x, y, x + slotSize, y + slotSize, 0xFF181825);
             context.drawBorder(x, y, slotSize, slotSize, 0xFF313244);
 
-            // Draw Spell Icon (Sample full 32x32 texture and scale down to 16x16 inside 20x20 slot)
             context.drawTexture(
                     RenderPipelines.GUI_TEXTURED,
                     spell.getIconTexture(),
-                    x + 2, y + 2,     // Target screen X, Y
-                    0.0F, 0.0F,       // Source U, V start
-                    16, 16,           // Target width, height on screen
-                    32, 32,           // Source region width, height to sample (Full 32x32 image)
-                    32, 32            // Total file texture width, height
+                    x + 2, y + 2,
+                    0.0F, 0.0F,
+                    16, 16,
+                    32, 32,
+                    32, 32
             );
 
-            // Highlight Selected Spell
             if (this.selectedSpell == spell) {
                 context.drawBorder(x - 1, y - 1, slotSize + 2, slotSize + 2, spell.getRarity().getColorHex());
             }
 
-            // Mouse Hover Effect & Tooltip
             if (isHovering(x, y, slotSize, slotSize, mouseX, mouseY)) {
                 context.fill(x, y, x + slotSize, y + slotSize, 0x40FFFFFF);
 
-                // Colored name + optional Innate Technique tag + rarity subtext
                 List<Text> tooltip = new ArrayList<>();
                 tooltip.add(spell.getName().copy().formatted(spell.getRarity().getFormatting()));
 
@@ -123,42 +287,37 @@ public class SpellInventoryScreen extends Screen {
             Spell equipped = component.getEquippedSpell(i);
             boolean isInnateSlot = (i == 0);
 
-            // Base Slot Box
             context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0xFF181825);
 
-            // Border styling: Special Gold for Innate Slot, Standard for others
             if (isInnateSlot) {
-                context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFFF9E2AF); // Innate slot gold accent
+                context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFFF9E2AF);
             } else {
                 context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFF313244);
             }
 
-            // Draw Equipped Icon
             if (equipped != null) {
                 context.drawTexture(
                         RenderPipelines.GUI_TEXTURED,
                         equipped.getIconTexture(),
-                        sidebarX + 4, y + 4, // Target screen X, Y
-                        0.0F, 0.0F,         // Source U, V start
-                        16, 16,             // Target width, height on screen
-                        32, 32,             // Source region width, height to sample
-                        32, 32              // Total file texture width, height
+                        sidebarX + 4, y + 4,
+                        0.0F, 0.0F,
+                        16, 16,
+                        32, 32,
+                        32, 32
                 );
             }
 
-            // Hover / Target Highlight
             if (isHovering(sidebarX, y, slotSize, slotSize, mouseX, mouseY)) {
                 if (this.selectedSpell != null) {
                     if (this.selectedSpell.isInnateTechnique() && !isInnateSlot) {
-                        context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x60F38BA8); // Red preview: Invalid slot for Innate Technique
+                        context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x60F38BA8);
                     } else {
-                        context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x60A6E3A1); // Green preview: Valid slot
+                        context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x60A6E3A1);
                     }
                 } else {
                     context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x40FFFFFF);
                 }
 
-                // Tooltip construction
                 List<Text> tooltip = new ArrayList<>();
                 if (isInnateSlot) {
                     if (equipped != null) {
@@ -166,8 +325,7 @@ public class SpellInventoryScreen extends Screen {
                         if (equipped.isInnateTechnique()) {
                             tooltip.add(Text.literal("✦ Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC));
                         }
-                        tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell")
-                                .formatted(Formatting.GRAY));
+                        tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell").formatted(Formatting.GRAY));
                         tooltip.add(Text.literal("Right-click to unequip").formatted(Formatting.DARK_GRAY));
                     } else {
                         tooltip.add(Text.literal("Innate Technique Slot: Empty").formatted(Formatting.GOLD));
@@ -176,8 +334,7 @@ public class SpellInventoryScreen extends Screen {
                 } else {
                     if (equipped != null) {
                         tooltip.add(Text.literal("Slot " + (i + 1) + ": ").append(equipped.getName().copy().formatted(equipped.getRarity().getFormatting())));
-                        tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell")
-                                .formatted(Formatting.GRAY));
+                        tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell").formatted(Formatting.GRAY));
                         tooltip.add(Text.literal("Right-click to unequip").formatted(Formatting.DARK_GRAY));
                     } else {
                         tooltip.add(Text.literal("Slot " + (i + 1) + ": Empty").formatted(Formatting.DARK_GRAY));
@@ -195,62 +352,98 @@ public class SpellInventoryScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.client != null && this.client.player != null) {
-            var component = ModEntityComponents.SPELL_DATA.get(this.client.player);
-            int sidebarX = guiLeft + 10;
-            int sidebarY = guiTop + 30;
-            int equipSlotSize = 24;
+            int tabY = guiTop - 16;
+            int tabH = 16;
 
-            // Left Click (button == 0)
+            // Check Tab clicks
             if (button == 0) {
-                List<Spell> knownSpells = component.getKnownSpells();
-
-                // Check if the user clicked a Known Spell
-                int gridX = guiLeft + 45;
-                int gridY = guiTop + 30;
-                int slotSize = 20;
-
-                for (int i = 0; i < knownSpells.size(); i++) {
-                    int col = i % 6;
-                    int row = i / 6;
-                    int x = gridX + (col * (slotSize + 2));
-                    int y = gridY + (row * (slotSize + 2));
-
-                    if (isHovering(x, y, slotSize, slotSize, (int) mouseX, (int) mouseY)) {
-                        this.selectedSpell = knownSpells.get(i);
-                        return true;
-                    }
+                // Spells tab
+                if (isHovering(guiLeft + 8, tabY, 56, tabH, (int) mouseX, (int) mouseY)) {
+                    this.activeTab = 0;
+                    return true;
                 }
-
-                // Check if the user clicked an Equipped Slot with a spell selected
-                for (int i = 0; i < component.getMaxSpellSlots(); i++) {
-                    int y = sidebarY + (i * (equipSlotSize + 4));
-
-                    if (isHovering(sidebarX, y, equipSlotSize, equipSlotSize, (int) mouseX, (int) mouseY)) {
-                        if (this.selectedSpell != null) {
-                            // Validate Innate Technique placement (can only be placed in slot 0)
-                            if (this.selectedSpell.isInnateTechnique() && i != 0) {
-                                return true; // Reject equipping Innate Technique to non-innate slot
-                            }
-
-                            // Send a packet to Server to equip the selected spell in this slot
-                            ClientPlayNetworking.send(new EquipSpellPayload(i, this.selectedSpell.getId().toString()));
-
-                            // Clear selection after equipping
-                            this.selectedSpell = null;
-                            return true;
-                        }
-                    }
+                // Binding Vows tab
+                if (isHovering(guiLeft + 66, tabY, 86, tabH, (int) mouseX, (int) mouseY)) {
+                    this.activeTab = 1;
+                    return true;
                 }
             }
 
-            // Right Click (button == 1) on Equipped Slot -> Unequip
-            if (button == 1) {
-                for (int i = 0; i < component.getMaxSpellSlots(); i++) {
-                    int y = sidebarY + (i * (equipSlotSize + 4));
+            if (activeTab == 0) {
+                var component = ModEntityComponents.SPELL_DATA.get(this.client.player);
+                int sidebarX = guiLeft + 10;
+                int sidebarY = guiTop + 30;
+                int equipSlotSize = 24;
 
-                    if (isHovering(sidebarX, y, equipSlotSize, equipSlotSize, (int) mouseX, (int) mouseY)) {
-                        if (component.getEquippedSpell(i) != null) {
-                            ClientPlayNetworking.send(new EquipSpellPayload(i, "empty"));
+                // Left Click on Spells
+                if (button == 0) {
+                    List<Spell> knownSpells = component.getKnownSpells();
+
+                    int gridX = guiLeft + 45;
+                    int gridY = guiTop + 30;
+                    int slotSize = 20;
+
+                    for (int i = 0; i < knownSpells.size(); i++) {
+                        int col = i % 6;
+                        int row = i / 6;
+                        int x = gridX + (col * (slotSize + 2));
+                        int y = gridY + (row * (slotSize + 2));
+
+                        if (isHovering(x, y, slotSize, slotSize, (int) mouseX, (int) mouseY)) {
+                            this.selectedSpell = knownSpells.get(i);
+                            return true;
+                        }
+                    }
+
+                    for (int i = 0; i < component.getMaxSpellSlots(); i++) {
+                        int y = sidebarY + (i * (equipSlotSize + 4));
+
+                        if (isHovering(sidebarX, y, equipSlotSize, equipSlotSize, (int) mouseX, (int) mouseY)) {
+                            if (this.selectedSpell != null) {
+                                if (this.selectedSpell.isInnateTechnique() && i != 0) {
+                                    return true;
+                                }
+                                ClientPlayNetworking.send(new EquipSpellPayload(i, this.selectedSpell.getId().toString()));
+                                this.selectedSpell = null;
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                // Right Click on Equipped Slot -> Unequip
+                if (button == 1) {
+                    for (int i = 0; i < component.getMaxSpellSlots(); i++) {
+                        int y = sidebarY + (i * (equipSlotSize + 4));
+
+                        if (isHovering(sidebarX, y, equipSlotSize, equipSlotSize, (int) mouseX, (int) mouseY)) {
+                            if (component.getEquippedSpell(i) != null) {
+                                ClientPlayNetworking.send(new EquipSpellPayload(i, "empty"));
+                                return true;
+                            }
+                        }
+                    }
+                }
+            } else if (activeTab == 1) {
+                // Binding Vows Tab clicks
+                if (button == 0) {
+                    List<BindingVow> vows = new ArrayList<>(ModBindingVows.getAll());
+                    int cardX = guiLeft + 10;
+                    int cardY = guiTop + 33;
+                    int cardW = guiWidth - 20;
+                    int cardH = 58;
+
+                    for (int i = 0; i < vows.size(); i++) {
+                        BindingVow vow = vows.get(i);
+                        int y = cardY + (i * (cardH + 6));
+
+                        int btnW = 68;
+                        int btnH = 14;
+                        int btnX = cardX + cardW - btnW - 4;
+                        int btnY = y + cardH - btnH - 4;
+
+                        if (isHovering(btnX, btnY, btnW, btnH, (int) mouseX, (int) mouseY)) {
+                            ClientPlayNetworking.send(new ToggleBindingVowPayload(vow.getId().toString()));
                             return true;
                         }
                     }
@@ -262,7 +455,6 @@ public class SpellInventoryScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Close on 'G' (spell inventory key) or 'E' (inventory key)
         if (ModKeybindings.openSpellInventoryKey.matchesKey(keyCode, scanCode)
                 || (this.client != null && this.client.options.inventoryKey.matchesKey(keyCode, scanCode))) {
             this.close();
@@ -273,7 +465,7 @@ public class SpellInventoryScreen extends Screen {
 
     @Override
     public boolean shouldPause() {
-        return false; // Don't pause singleplayer game when menu is open
+        return false;
     }
 
     private boolean isHovering(int x, int y, int width, int height, int mouseX, int mouseY) {

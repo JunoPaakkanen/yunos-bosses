@@ -1,5 +1,8 @@
 package com.yuno.yunosbosses.network;
 
+import com.yuno.yunosbosses.binding_vow.BindingVow;
+import com.yuno.yunosbosses.binding_vow.BindingVowManager;
+import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.item.custom.StaffItem;
@@ -14,12 +17,16 @@ import net.minecraft.util.Identifier;
 
 public class ModMessages {
     public static void registerC2SPackets() {
-        // Register the ID and Codec
+        // Register C2S IDs and Codecs
         PayloadTypeRegistry.playC2S().register(SpellCyclePayload.ID, SpellCyclePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(KickAttackPayload.ID, KickAttackPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(CastSpellPayload.ID, CastSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(EquipSpellPayload.ID, EquipSpellPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(DomainClashInputPayload.ID, DomainClashInputPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(ToggleBindingVowPayload.ID, ToggleBindingVowPayload.CODEC);
+
+        // Register S2C IDs and Codecs
+        PayloadTypeRegistry.playS2C().register(OpenBindingVowScreenPayload.ID, OpenBindingVowScreenPayload.CODEC);
 
         // Register Receivers
         // Spell cycling
@@ -89,6 +96,23 @@ public class ModMessages {
         ServerPlayNetworking.registerGlobalReceiver(DomainClashInputPayload.ID, (payload, context) -> {
             context.server().execute(() -> {
                 DomainClashManager.handlePlayerInput(context.player(), payload.clashId());
+            });
+        });
+        // Binding Vow toggle (Pledge or Sever)
+        ServerPlayNetworking.registerGlobalReceiver(ToggleBindingVowPayload.ID, (payload, context) -> {
+            context.server().execute(() -> {
+                ServerPlayerEntity player = context.player();
+                BindingVow vow = ModBindingVows.get(payload.vowId());
+                if (vow != null) {
+                    var vowComponent = ModEntityComponents.BINDING_VOWS.get(player);
+                    if (vowComponent.hasVow(vow.getId())) {
+                        // Voluntarily severing the vow - penalize with Technique Burnout
+                        BindingVowManager.revokeVow(player, vow.getId(), true);
+                    } else {
+                        // Pledging the vow
+                        BindingVowManager.activateVow(player, vow.getId());
+                    }
+                }
             });
         });
     }

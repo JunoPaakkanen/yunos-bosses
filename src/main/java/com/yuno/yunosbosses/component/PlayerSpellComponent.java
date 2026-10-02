@@ -533,6 +533,7 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
         this.projectionIndex = 0;
         this.activeAltCasts.clear();
         this.shrineCooldown = 0;
+        this.canChangeSpell = true;
         updateSpeedAttribute();
         ModEntityComponents.SPELL_DATA.sync(this.player);
     }

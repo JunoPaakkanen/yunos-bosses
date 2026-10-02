@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.entity.client;
 
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
+import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
@@ -14,9 +15,40 @@ import net.minecraft.util.math.RotationAxis;
 
 public class SeveredTorsoRenderer extends LivingEntityRenderer<SeveredTorsoEntity, PlayerEntityRenderState, PlayerEntityModel> {
 
+    public static class SeveredTorsoModel extends PlayerEntityModel {
+        public SeveredTorsoModel(ModelPart root, boolean thinArms) {
+            super(root, thinArms);
+        }
+
+        @Override
+        public void setAngles(PlayerEntityRenderState state) {
+            super.setAngles(state);
+
+            // Hide the lower body (legs and pants)
+            this.leftLeg.visible = false;
+            this.rightLeg.visible = false;
+            this.leftPants.visible = false;
+            this.rightPants.visible = false;
+            this.leftLeg.hidden = true;
+            this.rightLeg.hidden = true;
+            this.leftPants.hidden = true;
+            this.rightPants.hidden = true;
+
+            // Ensure the upper body remains visible
+            this.head.visible = true;
+            this.body.visible = true;
+            this.leftArm.visible = true;
+            this.rightArm.visible = true;
+            this.hat.visible = state.hatVisible;
+            this.jacket.visible = state.jacketVisible;
+            this.leftSleeve.visible = state.leftSleeveVisible;
+            this.rightSleeve.visible = state.rightSleeveVisible;
+        }
+    }
+
     public SeveredTorsoRenderer(EntityRendererFactory.Context ctx) {
-        // Use the standard player model
-        super(ctx, new PlayerEntityModel(ctx.getPart(EntityModelLayers.PLAYER), false), 0.0f);
+        // Use the custom torso model that hides the lower half
+        super(ctx, new SeveredTorsoModel(ctx.getPart(EntityModelLayers.PLAYER), false), 0.0f);
         this.shadowRadius = 0.0f;
     }
 
@@ -33,6 +65,8 @@ public class SeveredTorsoRenderer extends LivingEntityRenderer<SeveredTorsoEntit
         } else {
             state.skinTextures = DefaultSkinHelper.getSteve();
         }
+        state.leftPantsLegVisible = false;
+        state.rightPantsLegVisible = false;
     }
 
     @Override
@@ -48,13 +82,16 @@ public class SeveredTorsoRenderer extends LivingEntityRenderer<SeveredTorsoEntit
 
     @Override
     public void render(PlayerEntityRenderState state, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light) {
-        // Hide the legs before rendering
+        // Also ensure model parts are explicitly flagged before render pass
         this.model.leftLeg.visible = false;
         this.model.rightLeg.visible = false;
         this.model.leftPants.visible = false;
         this.model.rightPants.visible = false;
+        this.model.leftLeg.hidden = true;
+        this.model.rightLeg.hidden = true;
+        this.model.leftPants.hidden = true;
+        this.model.rightPants.hidden = true;
 
-        // Show the rest
         this.model.head.visible = true;
         this.model.body.visible = true;
         this.model.leftArm.visible = true;

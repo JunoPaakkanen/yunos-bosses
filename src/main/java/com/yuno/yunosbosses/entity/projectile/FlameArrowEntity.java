@@ -33,7 +33,6 @@ import net.minecraft.world.World;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public class FlameArrowEntity extends ProjectileEntity {
     private static final TrackedData<Float> POTENCY = DataTracker.registerData(FlameArrowEntity.class, TrackedDataHandlerRegistry.FLOAT);
@@ -45,6 +44,11 @@ public class FlameArrowEntity extends ProjectileEntity {
     // --- Thermobaric Domain Finisher (Kamino / Furnace) Fields ---
     private boolean isThermobaricFinisher = false;
     private float domainRadius = 0.0f;
+
+    // --- Binding Vow Restriction Field ---
+    // Under the Furnace Binding Vow outside the domain finisher window,
+    // Flame Arrow loses all AOE and only affects a single target directly hit.
+    private boolean singleTargetOnly = false;
 
     public FlameArrowEntity(EntityType<? extends ProjectileEntity> entityType, World world) {
         super(entityType, world);
@@ -74,6 +78,14 @@ public class FlameArrowEntity extends ProjectileEntity {
     public void setThermobaricFinisher(float domainRadius) {
         this.isThermobaricFinisher = true;
         this.domainRadius = domainRadius;
+    }
+
+    public boolean isSingleTargetOnly() {
+        return this.singleTargetOnly;
+    }
+
+    public void setSingleTargetOnly(boolean singleTargetOnly) {
+        this.singleTargetOnly = singleTargetOnly;
     }
 
     @Override
@@ -106,7 +118,11 @@ public class FlameArrowEntity extends ProjectileEntity {
         double traveled = this.getPos().distanceTo(this.startPos);
         if (traveled >= MAX_RANGE || this.age > 55) {
             if (!this.getWorld().isClient()) {
-                detonate(this.getPos());
+                if (this.singleTargetOnly) {
+                    directHitMiss(this.getPos());
+                } else {
+                    detonate(this.getPos());
+                }
             } else {
                 this.discard();
             }
@@ -124,7 +140,11 @@ public class FlameArrowEntity extends ProjectileEntity {
             Vec3d clampPos = prevPos.add(dir.multiply(remaining));
             this.setPosition(clampPos.x, clampPos.y, clampPos.z);
             if (!this.getWorld().isClient()) {
-                detonate(clampPos);
+                if (this.singleTargetOnly) {
+                    directHitMiss(clampPos);
+                } else {
+                    detonate(clampPos);
+                }
             } else {
                 this.discard();
             }
@@ -134,12 +154,15 @@ public class FlameArrowEntity extends ProjectileEntity {
         // Only server executes collision & detonation logic
         if (!this.getWorld().isClient()) {
             // 2. Barrier Interception Check (Defensive Magic: Hex Shields and Spheres)
-            // Defensive magic intercepts the flame arrow and causes it to explode on impact instead of deflecting
             Vec3d barrierHitPos = checkBarrierCollision(prevPos, newPos);
             if (barrierHitPos != null) {
                 this.getWorld().playSound(null, barrierHitPos.x, barrierHitPos.y, barrierHitPos.z,
                         SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.5F, 1.2F);
-                detonate(barrierHitPos);
+                if (this.singleTargetOnly) {
+                    directHitMiss(barrierHitPos);
+                } else {
+                    detonate(barrierHitPos);
+                }
                 return;
             }
 
@@ -153,7 +176,7 @@ public class FlameArrowEntity extends ProjectileEntity {
 
             Vec3d maxTraveled = (blockHit.getType() != HitResult.Type.MISS) ? blockHit.getPos() : newPos;
 
-            // 4. Swept Entity Collision Check along path (generous swept hitbox so it never clips past entities)
+            // 4. Swept Entity Collision Check along path
             EntityHitResult entityHit = findEntityCollision(prevPos, maxTraveled, velocity);
 
             if (entityHit != null) {
@@ -167,14 +190,14 @@ public class FlameArrowEntity extends ProjectileEntity {
             }
         }
 
-        // 5. Update Position & Orientation (using setPosition so bounding box & chunk tracking update properly)
+        // 5. Update Position & Orientation
         this.setPosition(newPos.x, newPos.y, newPos.z);
 
         double hDist = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
         this.setYaw((float) Math.toDegrees(Math.atan2(velocity.x, velocity.z)));
         this.setPitch((float) Math.toDegrees(Math.atan2(velocity.y, hDist)));
 
-        // Spawn forced particle effects in flight (visible up to 512 blocks away)
+        // Spawn forced particle effects in flight
         spawnFlightParticles(prevPos, newPos, velocity);
 
         // Play periodic rushing flame sound
@@ -184,22 +207,16 @@ public class FlameArrowEntity extends ProjectileEntity {
         }
     }
 
-    /**
-     * Checks if the trajectory from prevPos to newPos collides with any active barrier.
-     * Returns the exact hit position if intercepted, or null if clear.
-     */
     private Vec3d checkBarrierCollision(Vec3d from, Vec3d to) {
         Entity owner = this.getOwner();
 
         for (ActiveBarrier barrier : BarrierManager.ACTIVE_BARRIERS) {
             boolean isSphere = barrier.getDirection().equals(Vec3d.ZERO);
 
-            // Allow the caster to safely shoot through their own directional Hex Shields
             if (!isSphere && owner != null && barrier.getOwnerUuid().equals(owner.getUuid())) {
                 continue;
             }
 
-            // In an active domain finisher, the arrow freely detonates inside the caster's domain
             if (this.isThermobaricFinisher && owner != null && barrier.getOwnerUuid().equals(owner.getUuid())) {
                 continue;
             }
@@ -210,14 +227,12 @@ public class FlameArrowEntity extends ProjectileEntity {
                 double d1 = from.distanceTo(center);
                 double d2 = to.distanceTo(center);
 
-                // Check if the segment crosses the sphere surface
                 if ((d1 > radius && d2 <= radius) || (d1 < radius && d2 >= radius) ||
                         (d2 >= radius - 0.5 && d2 <= radius + 0.5)) {
                     Vec3d dir = to.subtract(center).normalize();
                     return center.add(dir.multiply(radius));
                 }
             } else {
-                // Hex Shield: Directional barrier
                 Box hexBox = Box.from(barrier.getPosition()).expand(0.9);
                 if (hexBox.contains(from)) {
                     return from;
@@ -231,9 +246,6 @@ public class FlameArrowEntity extends ProjectileEntity {
         return null;
     }
 
-    /**
-     * Performs a generous swept entity collision check between from and to positions.
-     */
     private EntityHitResult findEntityCollision(Vec3d from, Vec3d to, Vec3d velocity) {
         Box sweepBox = new Box(
                 Math.min(from.x, to.x), Math.min(from.y, to.y), Math.min(from.z, to.z),
@@ -252,12 +264,10 @@ public class FlameArrowEntity extends ProjectileEntity {
         for (Entity candidate : candidates) {
             Box candidateBox = candidate.getBoundingBox().expand(0.40);
 
-            // 1. Point-blank check: If projectile already starts inside candidate's hitbox
             if (candidateBox.contains(from)) {
                 return new EntityHitResult(candidate, from);
             }
 
-            // 2. Standard box raycast along flight segment
             Optional<Vec3d> hit = candidateBox.raycast(from, to);
             if (hit.isPresent()) {
                 double distSq = from.squaredDistanceTo(hit.get());
@@ -267,8 +277,6 @@ public class FlameArrowEntity extends ProjectileEntity {
                     closestPoint = hit.get();
                 }
             } else if (segLenSq > 1e-6) {
-                // 3. High-speed continuous swept segment-to-point proximity check
-                // Immune to discrete box edge misses or tunneling
                 Vec3d center = candidate.getBoundingBox().getCenter();
                 double t = Math.max(0.0, Math.min(1.0, center.subtract(from).dotProduct(segment) / segLenSq));
                 Vec3d proj = from.add(segment.multiply(t));
@@ -295,7 +303,6 @@ public class FlameArrowEntity extends ProjectileEntity {
         World world = this.getWorld();
         Vec3d dir = velocity.normalize();
 
-        // Local perpendicular vectors for spiral trail
         Vec3d globalUp = new Vec3d(0, 1, 0);
         Vec3d rightDir = Math.abs(dir.y) > 0.99 ? new Vec3d(1, 0, 0) : dir.crossProduct(globalUp).normalize();
         Vec3d upDir = rightDir.crossProduct(dir).normalize();
@@ -306,18 +313,15 @@ public class FlameArrowEntity extends ProjectileEntity {
             Vec3d pt = prevPos.lerp(newPos, fraction);
 
             if (world instanceof ServerWorld serverWorld) {
-                // Use forced particles so distant observers can see the arrow in flight
                 spawnForcedParticles(serverWorld, ParticleTypes.FLAME, pt.x, pt.y, pt.z, 2, 0.04, 0.04, 0.04, 0.01);
                 spawnForcedParticles(serverWorld, ParticleTypes.SOUL_FIRE_FLAME, pt.x, pt.y, pt.z, 1, 0.02, 0.02, 0.02, 0.005);
                 spawnForcedParticles(serverWorld, ModParticles.FLAME_EMBER_PARTICLE, pt.x, pt.y, pt.z, 1,
                         -dir.x * 0.15, -dir.y * 0.15, -dir.z * 0.15, 0.08);
 
-                // Lava spark burst
                 if (this.random.nextFloat() < (this.isThermobaricFinisher ? 0.45f : 0.25f)) {
                     spawnForcedParticles(serverWorld, ParticleTypes.LAVA, pt.x, pt.y, pt.z, 1, 0.02, 0.02, 0.02, 0.0);
                 }
 
-                // Fiery corkscrew spiral ribbon around the arrow trajectory
                 double spiralAngle = (this.age * 1.1) + (fraction * Math.PI * 2.0);
                 double spiralRadius = 0.35 + (getPotency() * 0.06);
                 Vec3d spiralOffset = rightDir.multiply(Math.cos(spiralAngle) * spiralRadius)
@@ -333,7 +337,6 @@ public class FlameArrowEntity extends ProjectileEntity {
             }
         }
 
-        // Periodic shockwave ring in flight
         if (this.age % 2 == 0 && world instanceof ServerWorld serverWorld) {
             spawnForcedParticles(serverWorld, ModParticles.FLAME_SHOCKWAVE_PARTICLE, newPos.x, newPos.y, newPos.z, 1, 0, 0, 0, 0);
         }
@@ -343,7 +346,11 @@ public class FlameArrowEntity extends ProjectileEntity {
     protected void onEntityHit(EntityHitResult entityHitResult) {
         super.onEntityHit(entityHitResult);
         if (!this.getWorld().isClient()) {
-            detonate(entityHitResult.getPos());
+            if (this.singleTargetOnly) {
+                directHitEntity(entityHitResult);
+            } else {
+                detonate(entityHitResult.getPos());
+            }
         }
     }
 
@@ -351,7 +358,11 @@ public class FlameArrowEntity extends ProjectileEntity {
     protected void onBlockHit(BlockHitResult blockHitResult) {
         super.onBlockHit(blockHitResult);
         if (!this.getWorld().isClient()) {
-            detonate(blockHitResult.getPos());
+            if (this.singleTargetOnly) {
+                directHitMiss(blockHitResult.getPos());
+            } else {
+                detonate(blockHitResult.getPos());
+            }
         }
     }
 
@@ -359,8 +370,104 @@ public class FlameArrowEntity extends ProjectileEntity {
     protected void onCollision(HitResult hitResult) {
         super.onCollision(hitResult);
         if (!this.getWorld().isClient() && !this.hasDetonated) {
-            detonate(hitResult.getPos());
+            if (this.singleTargetOnly) {
+                if (hitResult.getType() == HitResult.Type.ENTITY) {
+                    directHitEntity((EntityHitResult) hitResult);
+                } else {
+                    directHitMiss(hitResult.getPos());
+                }
+            } else {
+                detonate(hitResult.getPos());
+            }
         }
+    }
+
+    /**
+     * Executes a single-target direct incinerating impact under the Furnace Binding Vow.
+     * Absolutely zero AOE: only damages and affects the entity hit directly, with no surrounding damage or ground fire.
+     */
+    public void directHitEntity(EntityHitResult entityHitResult) {
+        if (this.hasDetonated) return;
+        this.hasDetonated = true;
+
+        if (this.getWorld().isClient()) {
+            this.discard();
+            return;
+        }
+
+        ServerWorld serverWorld = (ServerWorld) this.getWorld();
+        Entity hitEntity = entityHitResult.getEntity();
+
+        if (hitEntity instanceof LivingEntity target && canHit(target)) {
+            Vec3d hitPos = entityHitResult.getPos();
+
+            // Barrier shielding check
+            if (!isShieldedByBarrier(hitPos, target)) {
+                float potency = getPotency();
+                float damage = 75.0f * potency;
+                DamageSource source = ModDamageTypes.of(serverWorld, ModDamageTypes.FIRE_MAGIC, this.getOwner());
+                target.damage(serverWorld, source, damage);
+                target.setOnFireFor((int) (15 + potency * 10));
+
+                Vec3d kbDir = this.getVelocity().normalize();
+                if (kbDir.lengthSquared() < 0.001) {
+                    kbDir = new Vec3d(0, 0.5, 0);
+                }
+                Vec3d kb = kbDir.multiply(2.0).add(0, 0.4, 0);
+                target.setVelocity(kb);
+                target.velocityModified = true;
+            } else {
+                serverWorld.spawnParticles(ParticleTypes.CRIT, target.getX(), target.getEyeY(), target.getZ(), 8, 0.3, 0.3, 0.3, 0.15);
+                serverWorld.playSound(null, target.getX(), target.getY(), target.getZ(),
+                        SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.3f, 1.1f);
+            }
+
+            // Concentrated direct incinerating impact audio
+            serverWorld.playSound(null, target.getX(), target.getY(), target.getZ(),
+                    SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.PLAYERS, 5.0f, 1.2f);
+            serverWorld.playSound(null, target.getX(), target.getY(), target.getZ(),
+                    SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 6.0f, 0.85f);
+            serverWorld.playSound(null, target.getX(), target.getY(), target.getZ(),
+                    SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, SoundCategory.PLAYERS, 4.0f, 0.8f);
+
+            // Localized direct-hit particles directly on victim's center (no ground destruction, no area shockwave)
+            double targetY = target.getY() + target.getHeight() * 0.5;
+            spawnForcedParticles(serverWorld, ParticleTypes.EXPLOSION, target.getX(), targetY, target.getZ(), 4, 0.3, 0.3, 0.3, 0.0);
+            spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, target.getX(), targetY, target.getZ(), 10, 0.4, 0.4, 0.4, 0.08);
+            spawnForcedParticles(serverWorld, ModParticles.FLAME_EMBER_PARTICLE, target.getX(), targetY, target.getZ(), 25, 0.5, 0.5, 0.5, 0.15);
+            spawnForcedParticles(serverWorld, ParticleTypes.LAVA, target.getX(), targetY, target.getZ(), 10, 0.3, 0.3, 0.3, 0.05);
+        } else {
+            directHitMiss(entityHitResult.getPos());
+            return;
+        }
+
+        this.discard();
+    }
+
+    /**
+     * Handles misses, wall impacts, and barrier collisions under single-target mode.
+     * Absolutely zero AOE: extinguishes with a small localized flame puff and no area damage.
+     */
+    public void directHitMiss(Vec3d pos) {
+        if (this.hasDetonated) return;
+        this.hasDetonated = true;
+
+        if (this.getWorld().isClient()) {
+            this.discard();
+            return;
+        }
+
+        ServerWorld serverWorld = (ServerWorld) this.getWorld();
+        serverWorld.playSound(null, pos.x, pos.y, pos.z,
+                SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 2.5f, 1.2f);
+        serverWorld.playSound(null, pos.x, pos.y, pos.z,
+                SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.PLAYERS, 2.0f, 1.4f);
+
+        spawnForcedParticles(serverWorld, ParticleTypes.FLAME, pos.x, pos.y, pos.z, 12, 0.25, 0.25, 0.25, 0.06);
+        spawnForcedParticles(serverWorld, ParticleTypes.SMOKE, pos.x, pos.y, pos.z, 8, 0.2, 0.2, 0.2, 0.03);
+        spawnForcedParticles(serverWorld, ModParticles.FLAME_EMBER_PARTICLE, pos.x, pos.y, pos.z, 10, 0.2, 0.2, 0.2, 0.08);
+
+        this.discard();
     }
 
     public void detonate(Vec3d hitPos) {
@@ -399,7 +506,6 @@ public class FlameArrowEntity extends ProjectileEntity {
         double pillarHeight = this.isThermobaricFinisher ? (36.0 + (potency * 8.0)) : (22.0 + (potency * 6.0));
         for (double yOffset = 0; yOffset <= pillarHeight; yOffset += 0.6) {
             double baseRadius = (this.isThermobaricFinisher ? 2.2 : 1.4) + (potency * 0.5);
-            // Top mushroom expansion
             double expansion = Math.max(0, (yOffset - 12.0) / (pillarHeight - 12.0)) * (this.isThermobaricFinisher ? 5.5 : 3.8);
             double radius = baseRadius + expansion;
 
@@ -416,18 +522,15 @@ public class FlameArrowEntity extends ProjectileEntity {
                 }
             }
 
-            // Custom animated explosion clouds climbing along the pillar
             if (yOffset % 1.8 < 0.6) {
                 spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, hitPos.x, hitPos.y + yOffset, hitPos.z,
                         this.isThermobaricFinisher ? 4 : 2, radius * 0.4, 0.3, radius * 0.4, 0.08);
             }
 
-            // Smoke core inside the pillar
             spawnForcedParticles(serverWorld, ParticleTypes.CAMPFIRE_COSY_SMOKE, hitPos.x, hitPos.y + yOffset, hitPos.z,
                     this.isThermobaricFinisher ? 4 : 2, 0.6, 0.2, 0.6, 0.06);
         }
 
-        // Mushroom head plume burst at the summit
         spawnForcedParticles(serverWorld, ModParticles.FLAME_EXPLOSION_PARTICLE, hitPos.x, hitPos.y + pillarHeight, hitPos.z,
                 this.isThermobaricFinisher ? 32 : 16, 4.0, 1.5, 4.0, 0.15);
         spawnForcedParticles(serverWorld, ModParticles.FLAME_SHOCKWAVE_PARTICLE, hitPos.x, hitPos.y + pillarHeight, hitPos.z,
@@ -451,7 +554,6 @@ public class FlameArrowEntity extends ProjectileEntity {
                 double px = hitPos.x + rx * r;
                 double pz = hitPos.z + rz * r;
 
-                // Outward expanding flame particles
                 spawnForcedParticles(serverWorld, ParticleTypes.FLAME, px, hitPos.y + 0.3, pz, 0, rx * 0.5, 0.08, rz * 0.5, 0.55);
                 if (r > 3.0 && i % 4 == 0) {
                     spawnForcedParticles(serverWorld, ParticleTypes.LAVA, px, hitPos.y + 0.5, pz, 1, 0.1, 0.1, 0.1, 0.05);
@@ -475,7 +577,6 @@ public class FlameArrowEntity extends ProjectileEntity {
                     hitPos.x + rx, hitPos.y + ry, hitPos.z + rz,
                     1, vx, vy, vz, 0.2);
 
-            // Falling white ash in thermobaric aftermath
             if (this.isThermobaricFinisher && i % 2 == 0) {
                 spawnForcedParticles(serverWorld, ParticleTypes.WHITE_ASH,
                         hitPos.x + rx, hitPos.y + ry, hitPos.z + rz,
@@ -499,13 +600,11 @@ public class FlameArrowEntity extends ProjectileEntity {
         for (LivingEntity target : targets) {
             double dist = target.getBoundingBox().getCenter().distanceTo(hitPos);
             if (dist <= effectRadius) {
-                // Check if target is shielded behind a defensive barrier
                 if (isShieldedByBarrier(hitPos, target)) {
-                    // Shield visual & audio feedback indicating damage was absorbed
                     serverWorld.spawnParticles(ParticleTypes.CRIT, target.getX(), target.getEyeY(), target.getZ(), 8, 0.3, 0.3, 0.3, 0.15);
                     serverWorld.playSound(null, target.getX(), target.getY(), target.getZ(),
                             SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.3f, 1.1f);
-                    continue; // Shield completely blocks the blast damage!
+                    continue;
                 }
 
                 float falloff = (float) Math.max(this.isThermobaricFinisher ? 0.55 : 0.40, 1.0 - (dist / effectRadius));
@@ -514,10 +613,8 @@ public class FlameArrowEntity extends ProjectileEntity {
                 DamageSource source = ModDamageTypes.of(serverWorld, ModDamageTypes.FIRE_MAGIC, this.getOwner());
                 target.damage(serverWorld, source, finalDamage);
 
-                // Set victim on fire (15 - 30 seconds based on potency)
                 target.setOnFireFor((int) ((this.isThermobaricFinisher ? 25 : 15) + potency * 10));
 
-                // Cataclysmic explosive knockback
                 Vec3d kbDir = target.getBoundingBox().getCenter().subtract(hitPos);
                 if (kbDir.lengthSquared() < 0.001) {
                     kbDir = new Vec3d(0, 1, 0);
@@ -531,7 +628,7 @@ public class FlameArrowEntity extends ProjectileEntity {
             }
         }
 
-        // 7. Scorched Ground & Fire Ignition (only outside shielded zones)
+        // 7. Scorched Ground & Fire Ignition
         int fireRadius = (int) ((this.isThermobaricFinisher ? 7 : 3) + potency * (this.isThermobaricFinisher ? 4 : 2));
         BlockPos centerBlock = BlockPos.ofFloored(hitPos);
         for (int dx = -fireRadius; dx <= fireRadius; dx++) {
@@ -548,14 +645,9 @@ public class FlameArrowEntity extends ProjectileEntity {
             }
         }
 
-        // Note: Domain barrier and shrine entity continue their natural duration without premature expiration!
         this.discard();
     }
 
-    /**
-     * Checks whether an entity is shielded from the explosion at explosionPos by an active barrier
-     * (e.g., Hex Shield Defensive Magic or Spherical Domain Barrier).
-     */
     public static boolean isShieldedByBarrier(Vec3d explosionPos, LivingEntity target) {
         Vec3d targetCenter = target.getBoundingBox().getCenter();
         Vec3d toTarget = targetCenter.subtract(explosionPos);
@@ -571,30 +663,24 @@ public class FlameArrowEntity extends ProjectileEntity {
                 double explosionDist = explosionPos.distanceTo(barrier.getPosition());
                 double targetDist = targetCenter.distanceTo(barrier.getPosition());
 
-                // Sphere barrier shields if target is inside and blast is outside (or on surface)
                 if (targetDist < barrierRadius && explosionDist >= barrierRadius - 0.5) {
                     return true;
                 }
-                // Or if target is outside and blast is inside
                 if (targetDist > barrierRadius && explosionDist <= barrierRadius + 0.5) {
                     return true;
                 }
             } else {
-                // Directional Hex Shield:
-                // 1. Raycast line segment from blast to target through hex box
                 Box hexBox = Box.from(barrier.getPosition()).expand(0.9);
                 Optional<Vec3d> hit = hexBox.raycast(explosionPos, targetCenter);
                 if (hit.isPresent() && hit.get().distanceTo(explosionPos) < distToTarget) {
                     return true;
                 }
 
-                // 2. Shield plane interception: check if target is on the opposite side of shield plane
                 Vec3d shieldPos = barrier.getPosition();
                 Vec3d shieldNormal = barrier.getDirection().normalize();
                 double explosionSide = explosionPos.subtract(shieldPos).dotProduct(shieldNormal);
                 double targetSide = targetCenter.subtract(shieldPos).dotProduct(shieldNormal);
 
-                // If explosion is on front/outer side and target is on back/inner side
                 if (explosionSide >= -0.25 && targetSide < 0.25) {
                     double denom = dir.dotProduct(shieldNormal);
                     if (Math.abs(denom) > 1e-5) {
@@ -612,10 +698,6 @@ public class FlameArrowEntity extends ProjectileEntity {
         return false;
     }
 
-    /**
-     * Sends particle packets with force=true and important=true to bypass the default 32-block culling,
-     * allowing long-distance rendering up to 512 blocks away.
-     */
     private <T extends ParticleEffect> void spawnForcedParticles(ServerWorld serverWorld, T particle,
                                                                  double x, double y, double z, int count,
                                                                  double deltaX, double deltaY, double deltaZ, double speed) {
@@ -636,6 +718,7 @@ public class FlameArrowEntity extends ProjectileEntity {
         super.writeCustomData(nbt);
         nbt.putFloat("Potency", this.getPotency());
         nbt.putBoolean("ThermobaricFinisher", this.isThermobaricFinisher);
+        nbt.putBoolean("SingleTargetOnly", this.singleTargetOnly);
         nbt.putFloat("DomainRadius", this.domainRadius);
         if (this.startPos != null) {
             nbt.putDouble("StartX", this.startPos.x);
@@ -649,6 +732,7 @@ public class FlameArrowEntity extends ProjectileEntity {
         super.readCustomData(nbt);
         this.setPotency(nbt.getFloat("Potency", 1.0f));
         this.isThermobaricFinisher = nbt.getBoolean("ThermobaricFinisher", false);
+        this.singleTargetOnly = nbt.getBoolean("SingleTargetOnly", false);
         this.domainRadius = nbt.getFloat("DomainRadius", 0.0f);
         double sx = nbt.getDouble("StartX", Double.NaN);
         if (!Double.isNaN(sx)) {

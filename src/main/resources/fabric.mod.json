@@ -41,7 +41,8 @@
 		"cardinal-components": [
 			"yunosbosses:spells",
 			"yunosbosses:transformation",
-			"yunosbosses:mana"
+			"yunosbosses:mana",
+			"yunosbosses:binding_vows"
 		]
 	}
 }

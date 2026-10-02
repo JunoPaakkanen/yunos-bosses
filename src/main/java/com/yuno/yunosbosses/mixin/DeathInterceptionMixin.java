@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses.mixin;
 
+import com.yuno.yunosbosses.binding_vow.BindingVowManager;
+import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.ModEntities;
@@ -12,6 +14,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,6 +32,18 @@ public abstract class DeathInterceptionMixin {
         if (!entity.getWorld().isClient() && entity.getWorld() instanceof ServerWorld serverWorld) {
             BarrierManager.onOwnerDeath(entity, serverWorld);
         }
+        if (entity instanceof PlayerEntity player) {
+            var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
+            if (transformData.isTransformed()) {
+                transformData.setTransformed(false);
+            }
+            var spellComp = ModEntityComponents.SPELL_DATA.get(player);
+            spellComp.setCanChangeSpell(true);
+            ModEntityComponents.MANA.get(player).setManaRegen(0.5f);
+            if (player instanceof ServerPlayerEntity serverPlayer) {
+                BindingVowManager.revokeVow(serverPlayer, ModBindingVows.GOJO.getId(), false);
+            }
+        }
     }
 
     @Inject(method = "tryUseDeathProtector", at = @At("HEAD"), cancellable = true)
@@ -44,9 +59,10 @@ public abstract class DeathInterceptionMixin {
                 ModEntityComponents.MANA.get(player).setManaRegen(0.5f);
             }
 
-            // Transform if the player has the effect and hasn't yet been transformed
+            // Transform if the player has the effect / vow and hasn't yet been transformed
             // --- BINDING VOW: GOJO ---
-            if (player.hasStatusEffect(ModEffects.GOJO_BINDING_VOW) && !transformData.isTransformed()) {
+            boolean hasGojoVow = player.hasStatusEffect(ModEffects.GOJO_BINDING_VOW) || BindingVowManager.hasVow(player, ModBindingVows.GOJO);
+            if (hasGojoVow && !transformData.isTransformed()) {
 
                 // Play voice line
                 player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -61,6 +77,11 @@ public abstract class DeathInterceptionMixin {
                     torso.setVelocity(player.getVelocity().x, 0.1, player.getVelocity().z);
                     torso.setOwnerUuid(player.getUuid());
                     player.getWorld().spawnEntity(torso);
+                }
+
+                // Fulfill binding vow naturally without burnout penalty
+                if (player instanceof ServerPlayerEntity serverPlayer) {
+                    BindingVowManager.revokeVow(serverPlayer, ModBindingVows.GOJO.getId(), false);
                 }
 
                 // Apply healing effects

@@ -3,29 +3,28 @@ package com.yuno.yunosbosses.event;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.yuno.yunosbosses.binding_vow.BindingVow;
+import com.yuno.yunosbosses.binding_vow.BindingVowManager;
+import com.yuno.yunosbosses.binding_vow.ModBindingVows;
+import com.yuno.yunosbosses.component.BindingVowComponent;
 import com.yuno.yunosbosses.component.ModEntityComponents;
-import com.yuno.yunosbosses.effect.ModEffects;
+import com.yuno.yunosbosses.network.OpenBindingVowScreenPayload;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.command.CommandSource;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
-import java.util.Map;
+import java.util.Collection;
 
 public class ModCommands {
-    private static final Map<String, RegistryEntry<StatusEffect>> EFFECTS = Map.of(
-            "gojo", ModEffects.GOJO_BINDING_VOW
-    );
 
-    private static final SuggestionProvider<ServerCommandSource> SUGGEST_WORDS = (context, builder) ->
-            CommandSource.suggestMatching(EFFECTS.keySet(), builder);
+    private static final SuggestionProvider<ServerCommandSource> SUGGEST_VOWS = (context, builder) ->
+            CommandSource.suggestMatching(ModBindingVows.getNames(), builder);
 
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -52,6 +51,7 @@ public class ModCommands {
                                 }
                                 return 0; // Fail
                             })));
+
             dispatcher.register(CommandManager.literal("listspells")
                     .executes(context -> {
                         ServerPlayerEntity player = context.getSource().getPlayer();
@@ -69,6 +69,7 @@ public class ModCommands {
                         }
                         return 1;
                     }));
+
             // Commands for adding mana / setting max mana
             dispatcher.register(CommandManager.literal("mana")
                     .requires(source -> source.hasPermissionLevel(2)) // Require OP/cheats enabled
@@ -100,32 +101,110 @@ public class ModCommands {
                                         player.sendMessage(Text.literal("§aAdded " + amount + " mana! Current: " + manaComponent.getMana()), false);
                                         return 1;
                                     }))));
+
+            // Unified Binding Vow Commands
             dispatcher.register(CommandManager.literal("bindingvow")
-                    .then(CommandManager.argument("vow", StringArgumentType.word())
-                            .suggests(SUGGEST_WORDS)
+                    // /bindingvow menu
+                    .then(CommandManager.literal("menu")
+                            .executes(context -> {
+                                ServerPlayerEntity player = context.getSource().getPlayer();
+                                if (player == null) return 0;
+                                ServerPlayNetworking.send(player, new OpenBindingVowScreenPayload(1));
+                                return 1;
+                            }))
+                    // /bindingvow list
+                    .then(CommandManager.literal("list")
                             .executes(context -> {
                                 ServerPlayerEntity player = context.getSource().getPlayer();
                                 if (player == null) return 0;
 
-                                String typedVow = StringArgumentType.getString(context, "vow").toLowerCase();
-                                RegistryEntry<StatusEffect> effect = EFFECTS.get(typedVow);
+                                BindingVowComponent component = ModEntityComponents.BINDING_VOWS.get(player);
+                                Collection<BindingVow> allVows = ModBindingVows.getAll();
 
-                                if (effect != null) {
-                                    var manaComponent = ModEntityComponents.MANA.get(player);
-                                    float bindingVowCost = manaComponent.getMaxMana() / 2;
-                                    // Attempt to use the mana
-                                    if (manaComponent.useMana(bindingVowCost)) {
-                                        // SUCCESS
-                                        player.addStatusEffect(new StatusEffectInstance(ModEffects.GOJO_BINDING_VOW, StatusEffectInstance.INFINITE));
-                                        player.sendMessage(Text.literal("§bActivated binding vow: " + typedVow + "!"), false);
+                                player.sendMessage(Text.literal("§6=== Binding Vows ==="), false);
+                                for (BindingVow vow : allVows) {
+                                    boolean active = component != null && component.hasVow(vow.getId());
+                                    String status = active ? "§a[ACTIVE]" : "§7[SEALED]";
+                                    player.sendMessage(Text.literal(status + " §f" + vow.getName().getString() + " §7(" + vow.getId().getPath() + ")"), false);
+                                    player.sendMessage(Text.literal("   §cSacrifice: §7").append(vow.getSacrifice()), false);
+                                    player.sendMessage(Text.literal("   §aGain: §7").append(vow.getGain()), false);
+                                }
+                                return 1;
+                            }))
+                    // /bindingvow info <vow>
+                    .then(CommandManager.literal("info")
+                            .then(CommandManager.argument("vow", StringArgumentType.word())
+                                    .suggests(SUGGEST_VOWS)
+                                    .executes(context -> {
+                                        ServerPlayerEntity player = context.getSource().getPlayer();
+                                        if (player == null) return 0;
+
+                                        String vowName = StringArgumentType.getString(context, "vow");
+                                        BindingVow vow = ModBindingVows.get(vowName);
+                                        if (vow == null) {
+                                            player.sendMessage(Text.literal("§cUnknown binding vow: " + vowName), false);
+                                            return 0;
+                                        }
+
+                                        player.sendMessage(Text.literal("§6=== " + vow.getName().getString() + " ==="), false);
+                                        player.sendMessage(Text.literal("§7").append(vow.getDescription()), false);
+                                        player.sendMessage(Text.literal("§cSacrifice: §f").append(vow.getSacrifice()), false);
+                                        player.sendMessage(Text.literal("§aGain: §f").append(vow.getGain()), false);
+                                        float cost = vow.getActivationManaCost(player);
+                                        if (cost > 0) {
+                                            player.sendMessage(Text.literal("§bActivation Cost: §f" + (int) cost + " Mana"), false);
+                                        }
                                         return 1;
-                                    } else {
-                                        // FAILURE (Not enough mana)
-                                        player.sendMessage(Text.literal("§cNot enough mana! You need 50% of your max mana to activate the binding vow."), false);
-                                        return 0;
-                                    }
-                                } else {
+                                    })))
+                    // /bindingvow pact <vow>
+                    .then(CommandManager.literal("pact")
+                            .then(CommandManager.argument("vow", StringArgumentType.word())
+                                    .suggests(SUGGEST_VOWS)
+                                    .executes(context -> {
+                                        ServerPlayerEntity player = context.getSource().getPlayer();
+                                        if (player == null) return 0;
+                                        String vowName = StringArgumentType.getString(context, "vow");
+                                        BindingVow vow = ModBindingVows.get(vowName);
+                                        if (vow == null) {
+                                            player.sendMessage(Text.literal("§cUnknown binding vow: " + vowName), false);
+                                            return 0;
+                                        }
+                                        return BindingVowManager.activateVow(player, vow.getId()) ? 1 : 0;
+                                    })))
+                    // /bindingvow break <vow>
+                    .then(CommandManager.literal("break")
+                            .then(CommandManager.argument("vow", StringArgumentType.word())
+                                    .suggests(SUGGEST_VOWS)
+                                    .executes(context -> {
+                                        ServerPlayerEntity player = context.getSource().getPlayer();
+                                        if (player == null) return 0;
+                                        String vowName = StringArgumentType.getString(context, "vow");
+                                        BindingVow vow = ModBindingVows.get(vowName);
+                                        if (vow == null) {
+                                            player.sendMessage(Text.literal("§cUnknown binding vow: " + vowName), false);
+                                            return 0;
+                                        }
+                                        return BindingVowManager.revokeVow(player, vow.getId(), true) ? 1 : 0;
+                                    })))
+                    // Fallback toggle: /bindingvow <vow>
+                    .then(CommandManager.argument("vow", StringArgumentType.word())
+                            .suggests(SUGGEST_VOWS)
+                            .executes(context -> {
+                                ServerPlayerEntity player = context.getSource().getPlayer();
+                                if (player == null) return 0;
+
+                                String vowName = StringArgumentType.getString(context, "vow");
+                                BindingVow vow = ModBindingVows.get(vowName);
+                                if (vow == null) {
+                                    player.sendMessage(Text.literal("§cUnknown binding vow: " + vowName + ". Use /bindingvow list to view all vows."), false);
                                     return 0;
+                                }
+
+                                BindingVowComponent comp = ModEntityComponents.BINDING_VOWS.get(player);
+                                if (comp != null && comp.hasVow(vow.getId())) {
+                                    return BindingVowManager.revokeVow(player, vow.getId(), true) ? 1 : 0;
+                                } else {
+                                    return BindingVowManager.activateVow(player, vow.getId()) ? 1 : 0;
                                 }
                             })));
         });
