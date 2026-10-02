@@ -23,6 +23,18 @@ public class PlayerLegsModelMixin {
         // We explicitly reset it here before angles and transformations are evaluated.
         PlayerEntityModel model = (PlayerEntityModel) (Object) this;
         model.head.visible = !state.spectator;
+        model.head.hidden = false;
+        model.hat.hidden = false;
+        model.body.hidden = false;
+        model.jacket.hidden = false;
+        model.leftArm.hidden = false;
+        model.rightArm.hidden = false;
+        model.leftSleeve.hidden = false;
+        model.rightSleeve.hidden = false;
+        model.leftLeg.hidden = false;
+        model.rightLeg.hidden = false;
+        model.leftPants.hidden = false;
+        model.rightPants.hidden = false;
     }
 
     @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V", at = @At("TAIL"))
@@ -44,9 +56,20 @@ public class PlayerLegsModelMixin {
                 model.leftSleeve.visible = false;
                 model.rightSleeve.visible = false;
 
+                model.head.hidden = true;
+                model.hat.hidden = true;
+                model.body.hidden = true;
+                model.jacket.hidden = true;
+                model.leftArm.hidden = true;
+                model.rightArm.hidden = true;
+                model.leftSleeve.hidden = true;
+                model.rightSleeve.hidden = true;
+
                 // Keep the legs
                 model.leftLeg.visible = true;
                 model.rightLeg.visible = true;
+                model.leftLeg.hidden = false;
+                model.rightLeg.hidden = false;
             }
         }
 

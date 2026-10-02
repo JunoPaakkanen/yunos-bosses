@@ -1,11 +1,15 @@
 package com.yuno.yunosbosses.mixin;
 
+import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.zigythebird.playeranim.accessors.IPlayerAnimationState;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonMode;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,6 +34,22 @@ public class PlayerFirstPersonRendererMixin {
             matrices.translate(0.0f, eyeHeight, 0.0f);
             matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-state.pitch));
             matrices.translate(0.0f, -eyeHeight, 0.0f);
+        }
+    }
+
+    @Inject(method = "renderRightArm", at = @At("HEAD"), cancellable = true)
+    private void cancelRightArmIfTransformed(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, Identifier playerTexture, boolean sleeve, CallbackInfo ci) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player != null && ModEntityComponents.TRANSFORMATION_DATA.get(client.player).isTransformed()) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "renderLeftArm", at = @At("HEAD"), cancellable = true)
+    private void cancelLeftArmIfTransformed(MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, Identifier playerTexture, boolean sleeve, CallbackInfo ci) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player != null && ModEntityComponents.TRANSFORMATION_DATA.get(client.player).isTransformed()) {
+            ci.cancel();
         }
     }
 }
