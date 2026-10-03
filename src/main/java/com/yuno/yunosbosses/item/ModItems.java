@@ -25,9 +25,9 @@ public class ModItems {
     public static final Item STRANGE_FRUIT = registerItem("strange_fruit", StrangeFruitItem::new, new Item.Settings().food(STRANGE_FRUIT_COMPONENT));
 
     // Staff Items
-    public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", settings -> new StaffItem(settings, 1), new Item.Settings().maxCount(1));
-    public static final Item UBEL_STAFF = registerItem("ubel_staff", settings -> new StaffItem(settings, 1.5F), new Item.Settings().maxCount(1));
-    public static final Item METHODE_STAFF = registerItem("methode_staff", settings -> new StaffItem(settings, 2.0F), new Item.Settings().maxCount(1));
+    public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", settings -> new StaffItem(settings, 1, 1), new Item.Settings().maxCount(1));
+    public static final Item UBEL_STAFF = registerItem("ubel_staff", settings -> new StaffItem(settings, 1.4F, 1), new Item.Settings().maxCount(1));
+    public static final Item METHODE_STAFF = registerItem("methode_staff", settings -> new StaffItem(settings, 1.2F, 1.2F), new Item.Settings().maxCount(1));
 
     // Spawn Eggs
     public static final Item UBEL_SPAWN_EGG = registerItem("ubel_spawn_egg", settings -> new SpawnEggItem(ModEntities.UBEL, settings), new Item.Settings());

@@ -161,7 +161,7 @@ public class DomainClashManager {
 
             // Staff refinement multiplier
             if (staff.getItem() instanceof StaffItem staffItem) {
-                base += (staffItem.getPowerMultiplier() - 1.0f) * 30.0f;
+                base += (staffItem.getRefinementMultiplier() - 1.0f) * 30.0f;
             }
 
             // Open Barrier Binding Vow refinement advantage (Sukuna's outside-attack advantage)

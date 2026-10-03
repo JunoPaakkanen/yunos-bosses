@@ -63,10 +63,6 @@ public class DomainExpansionShrine extends DomainExpansion {
 
     public static final Identifier castAnimation = ModAnimations.DOMAIN_EXPANSION_SHRINE_ANIM;
 
-    @Override
-    public boolean isOpenBarrier() {
-        return true;
-    }
 
     @Override
     public Identifier getBarrierTexture() {

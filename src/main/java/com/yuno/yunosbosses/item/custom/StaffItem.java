@@ -22,16 +22,19 @@ import java.util.function.Consumer;
 public class StaffItem extends Item {
     // Properties
     private final float powerMultiplier;
+    private final float refinementMultiplier;
 
-    public StaffItem(Settings settings, float powerMultiplier) {
+    public StaffItem(Settings settings, float powerMultiplier, float refinementMultiplier) {
         super(settings);
         this.powerMultiplier = powerMultiplier;
+        this.refinementMultiplier = refinementMultiplier;
     }
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, TooltipDisplayComponent displayComponent, Consumer<Text> textConsumer, TooltipType type) {
         super.appendTooltip(stack, context, displayComponent, textConsumer, type);
         textConsumer.accept(Text.literal("Spell Power: " + String.format("%.1fx", this.powerMultiplier)).formatted(Formatting.GOLD));
+        textConsumer.accept(Text.literal("Refinement: " + String.format("%.1fx", this.refinementMultiplier)).formatted(Formatting.DARK_PURPLE));
     }
 
     @Override
@@ -121,6 +124,10 @@ public class StaffItem extends Item {
     }
 
     public float getPowerMultiplier() {
+        return powerMultiplier;
+    }
+
+    public float getRefinementMultiplier() {
         return powerMultiplier;
     }
 }
