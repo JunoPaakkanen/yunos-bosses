@@ -56,6 +56,7 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity {
                 .add(EntityAttributes.MAX_HEALTH, 250.0D)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.32D)
                 .add(EntityAttributes.ATTACK_DAMAGE, 8.0D)
+                .add(EntityAttributes.ARMOR, 5.0D)
                 .add(EntityAttributes.FOLLOW_RANGE, 48.0D);
     }
 

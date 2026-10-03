@@ -39,6 +39,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
                 .add(EntityAttributes.MAX_HEALTH, 250.0D)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.25f)
                 .add(EntityAttributes.FOLLOW_RANGE, 48.0D)
+                .add(EntityAttributes.ARMOR, 10.0D)
                 .add(EntityAttributes.ATTACK_DAMAGE, 10.0D);
     }
 

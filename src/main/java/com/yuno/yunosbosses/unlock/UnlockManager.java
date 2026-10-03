@@ -45,7 +45,7 @@ public class UnlockManager {
     public static void onServerTick(MinecraftServer server) {
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             trackDomainNearDeath(player);
-            // Future unlock tick monitors can be added here (e.g. survival timers, meditation, etc.)
+            // Future unlock tick monitors can be added here
         }
     }
 
@@ -63,7 +63,6 @@ public class UnlockManager {
 
         // Future Black Flash-related unlocks can be hooked here:
         // checkBlackFlashChainUnlock(attacker);
-        // checkReverseCursedTechniqueUnlock(attacker);
     }
 
     // =========================================================================
@@ -78,8 +77,8 @@ public class UnlockManager {
         ActiveBarrier activeDomain = BarrierManager.getActiveDomainBarrier(player.getUuid());
 
         if (activeDomain != null && !activeDomain.isOpenBarrier()) {
-            // Check if player health dropped below 15% (3.0 HP on default 20 HP)
-            if (!player.isDead() && (player.getHealth() / player.getMaxHealth()) <= 0.15F) {
+            // Check if player health dropped below 30%
+            if (!player.isDead() && (player.getHealth() / player.getMaxHealth()) <= 0.30F) {
                 NEAR_DEATH_DOMAIN_CASTERS.add(player.getUuid());
             }
         } else {
@@ -93,7 +92,6 @@ public class UnlockManager {
      * 1. Caster must be a player who has NOT yet unlocked Open Domain.
      * 2. Caster must currently own an active CLOSED Domain Expansion barrier.
      * 3. Target struck by Black Flash must be INSIDE that domain's radius.
-     * 4. Caster must have experienced near-death (<= 15% HP) during this domain (or currently be <= 15% HP).
      */
     private static void checkOpenDomainUnlock(LivingEntity attacker, LivingEntity target) {
         if (!(attacker instanceof ServerPlayerEntity player)) return;
@@ -118,9 +116,9 @@ public class UnlockManager {
             }
         }
 
-        // Step 5: Near-death requirement (either recorded during this domain or currently <= 15% health)
+        // Step 5: Near-death requirement (either recorded during this domain or currently <= 30% health)
         boolean hasExperiencedNearDeath = NEAR_DEATH_DOMAIN_CASTERS.contains(player.getUuid())
-                || (player.getHealth() / player.getMaxHealth()) <= 0.15F;
+                || (player.getHealth() / player.getMaxHealth()) <= 0.30F;
 
         if (!hasExperiencedNearDeath) return;
 

@@ -54,6 +54,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
                 .add(EntityAttributes.MAX_HEALTH, 150.0D) // 150 health
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.25D) // Movement speed
                 .add(EntityAttributes.ATTACK_DAMAGE, 9.0D) // Attack damage
+                .add(EntityAttributes.ARMOR, 10.0D)
                 .add(EntityAttributes.FOLLOW_RANGE, 48.0D); // Aggro follow range
     }
 
