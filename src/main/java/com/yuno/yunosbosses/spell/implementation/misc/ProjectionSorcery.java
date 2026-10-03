@@ -58,14 +58,15 @@ public class ProjectionSorcery extends Spell {
     public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (world.isClient) return;
 
-        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
-        if (component.hasAltCastWindow(this)) {
-            // Alternative cast is active
-            altCast(world, caster, staff);
-        }
-        else {
-            // Default cast
-            defaultCast(world, caster, staff);
+        if (caster instanceof PlayerEntity) {
+            SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
+            if (component.hasAltCastWindow(this)) {
+                // Alternative cast is active
+                altCast(world, caster, staff);
+            } else {
+                // Default cast
+                defaultCast(world, caster, staff);
+            }
         }
     }
 
@@ -118,15 +119,21 @@ public class ProjectionSorcery extends Spell {
                 imagePositions.add(nextFramePos);
 
                 // Dispatch packet to nearby clients for rendering
-                SpawnImagePayload payload = new SpawnImagePayload(caster.getId(), nextFramePos, MAX_TICKS);
-                for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, nextFramePos, 64.0)) {
-                    ServerPlayNetworking.send(player, payload);
-                }
+                broadcastFrameImage(world, caster, nextFramePos, MAX_TICKS);
             });
         }
     }
 
-    private Vec3d calculateFramePosition(World world, LivingEntity caster, Vec3d startPos, Vec3d travelDir, double distance, Vec3d[] outDir) {
+    public static void broadcastFrameImage(World world, LivingEntity caster, Vec3d pos, int lifetimeTicks) {
+        if (!world.isClient && world instanceof ServerWorld serverWorld) {
+            SpawnImagePayload payload = new SpawnImagePayload(caster.getId(), pos, lifetimeTicks);
+            for (ServerPlayerEntity player : PlayerLookup.around(serverWorld, pos, 64.0)) {
+                ServerPlayNetworking.send(player, payload);
+            }
+        }
+    }
+
+    public static Vec3d calculateFramePosition(World world, LivingEntity caster, Vec3d startPos, Vec3d travelDir, double distance, Vec3d[] outDir) {
         Vec3d stepPos = startPos;
         Vec3d dir = travelDir;
         double remainingDist = distance;
@@ -180,6 +187,61 @@ public class ProjectionSorcery extends Spell {
         return stepPos;
     }
 
+    public static List<Vec3d> createFlankingTrajectory(World world, LivingEntity caster, LivingEntity target, double radius, boolean clockwise, int frameCount) {
+        List<Vec3d> positions = new ArrayList<>();
+        Vec3d targetPos = target.getPos();
+        Vec3d fromTarget = caster.getPos().subtract(targetPos);
+        double currentAngle = Math.atan2(fromTarget.z, fromTarget.x);
+
+        // Reverse of target's look direction (directly behind the target)
+        Vec3d targetLook = target.getRotationVec(1.0F);
+        Vec3d behindTargetDir = new Vec3d(-targetLook.x, 0, -targetLook.z);
+        if (behindTargetDir.lengthSquared() < 1e-4) {
+            behindTargetDir = new Vec3d(0, 0, 1);
+        } else {
+            behindTargetDir = behindTargetDir.normalize();
+        }
+        double endAngle = Math.atan2(behindTargetDir.z, behindTargetDir.x);
+
+        double diff = endAngle - currentAngle;
+        while (diff < -Math.PI) diff += 2 * Math.PI;
+        while (diff > Math.PI) diff -= 2 * Math.PI;
+
+        if (clockwise && diff < 0) diff += 2 * Math.PI;
+        if (!clockwise && diff > 0) diff -= 2 * Math.PI;
+
+        for (int i = 1; i <= frameCount; i++) {
+            double fraction = (double) i / frameCount;
+            double angle = currentAngle + (diff * fraction);
+            double x = targetPos.x + Math.cos(angle) * radius;
+            double z = targetPos.z + Math.sin(angle) * radius;
+            double y = targetPos.y;
+
+            BlockPos ground = BlockPos.ofFloored(x, y + 1.0, z);
+            while (ground.getY() > targetPos.y - 4 && world.getBlockState(ground).isAir()) {
+                ground = ground.down();
+            }
+            Vec3d pos = new Vec3d(x, ground.getY() + 1.0, z);
+            positions.add(pos);
+        }
+        return positions;
+    }
+
+    public static List<Vec3d> createStraightTrajectory(World world, LivingEntity caster, Vec3d startPos, Vec3d direction, int frameCount, double distancePerFrame) {
+        List<Vec3d> positions = new ArrayList<>();
+        Vec3d lastPos = startPos;
+        Vec3d currentDir = direction.lengthSquared() > 1e-4 ? direction.normalize() : new Vec3d(0, 0, 1);
+
+        for (int i = 0; i < frameCount; i++) {
+            Vec3d[] outDir = new Vec3d[]{ currentDir };
+            Vec3d nextPos = calculateFramePosition(world, caster, lastPos, currentDir, distancePerFrame, outDir);
+            positions.add(nextPos);
+            lastPos = nextPos;
+            currentDir = outDir[0];
+        }
+        return positions;
+    }
+
     public void altCast(World world, LivingEntity caster, ItemStack staff) {
         SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
         List<Vec3d> images = component.getProjectionImages();
@@ -213,26 +275,30 @@ public class ProjectionSorcery extends Spell {
     }
 
     public static void handleHighSpeedRam(PlayerEntity player, int speedStacks) {
-        if (!player.isSprinting() || speedStacks < 10 || !player.isAlive() || player.isSpectator()) {
+        handleHighSpeedRam((LivingEntity) player, speedStacks);
+    }
+
+    public static void handleHighSpeedRam(LivingEntity caster, int speedStacks) {
+        if (!caster.isSprinting() || speedStacks < 10 || !caster.isAlive() || caster.isSpectator()) {
             return;
         }
 
-        if (player.getWorld() instanceof ServerWorld serverWorld) {
+        if (caster.getWorld() instanceof ServerWorld serverWorld) {
             double range = 1.5;
-            Box damageBox = player.getBoundingBox().expand(range, 0.5, range);
+            Box damageBox = caster.getBoundingBox().expand(range, 0.5, range);
             List<LivingEntity> nearbyEntities = serverWorld.getEntitiesByClass(
                     LivingEntity.class,
                     damageBox,
-                    entity -> entity != player && entity.isAlive() && !entity.isTeammate(player) && !entity.isSpectator()
+                    entity -> entity != caster && entity.isAlive() && !entity.isTeammate(caster) && !entity.isSpectator()
             );
 
             float damage = 8.0F + (speedStacks - 10) * 2.0F;
 
             for (LivingEntity target : nearbyEntities) {
-                DamageSource damageSource = player.getDamageSources().playerAttack(player);
+                DamageSource damageSource = caster instanceof PlayerEntity player
+                        ? player.getDamageSources().playerAttack(player)
+                        : caster.getDamageSources().mobAttack(caster);
                 if (target.damage(serverWorld, damageSource, damage)) {
-                    // Play impact sound
-
                     // Spawn particles
                     serverWorld.spawnParticles(
                             ParticleTypes.EXPLOSION,
@@ -257,7 +323,7 @@ public class ProjectionSorcery extends Spell {
                     }
 
                     // Apply push in sprint direction
-                    Vec3d velocity = player.getVelocity();
+                    Vec3d velocity = caster.getVelocity();
                     if (velocity.lengthSquared() > 0.01) {
                         Vec3d push = new Vec3d(velocity.x, 0, velocity.z).normalize().multiply(0.6);
                         target.setVelocity(target.getVelocity().add(push.x, 0.25, push.z));
@@ -337,13 +403,13 @@ public class ProjectionSorcery extends Spell {
 
     @Override
     public float getManaCost(LivingEntity caster) {
-        SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
-        if (component.hasAltCastWindow(this)) {
-            return 10.0F; // Cost for alt cast
+        if (caster instanceof PlayerEntity) {
+            SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
+            if (component.hasAltCastWindow(this)) {
+                return 10.0F; // Cost for alt cast
+            }
         }
-        else {
-            return 50.0F; // Cost for default cast
-        }
+        return 50.0F; // Cost for default cast
     }
 
     @Override

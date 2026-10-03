@@ -8,4 +8,11 @@ public interface BossAbility {
     int getWindupTicks(); // Time before the attack actually fires
     int getRecoveryTicks(); // Cooldown/recovery after the attack
     void execute(MobEntity boss, LivingEntity target);
+
+    default void tick(MobEntity boss, LivingEntity target) {}
+    default void onStart(MobEntity boss, LivingEntity target) {}
+    default void tickWindup(MobEntity boss, LivingEntity target, int remainingWindup) {}
+    default boolean isMultiTickExecution() { return false; }
+    default boolean tickExecution(MobEntity boss, LivingEntity target) { return true; }
+    default void stop(MobEntity boss) {}
 }

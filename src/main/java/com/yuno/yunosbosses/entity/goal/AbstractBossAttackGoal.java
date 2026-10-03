@@ -28,8 +28,8 @@ public abstract class AbstractBossAttackGoal extends Goal {
     protected int attackTimer = 0;
     protected BossAbility activeAbility = null;
 
-    private final List<BossAbility> abilities = new ArrayList<>();
-    private final List<DefensiveProjectileShieldAbility> defensiveAbilities = new ArrayList<>();
+    protected final List<BossAbility> abilities = new ArrayList<>();
+    protected final List<DefensiveProjectileShieldAbility> defensiveAbilities = new ArrayList<>();
 
     // Ideal distance: -1 means "just chase the target normally"
     private double idealDistance = -1;
@@ -77,6 +77,9 @@ public abstract class AbstractBossAttackGoal extends Goal {
 
     @Override
     public void stop() {
+        if (this.activeAbility != null) {
+            this.activeAbility.stop(this.boss);
+        }
         this.target = null;
         this.attackTimer = 0;
         this.activeAbility = null;
@@ -85,19 +88,23 @@ public abstract class AbstractBossAttackGoal extends Goal {
         this.boss.getNavigation().stop();
     }
 
-    protected void snapLookAtTarget() {
-        if (this.target == null) return;
-        this.boss.getLookControl().lookAt(this.target, 180.0F, 180.0F);
-        double dx = this.target.getX() - this.boss.getX();
-        double dy = (this.target.getEyeY() - 0.2) - this.boss.getEyeY();
-        double dz = this.target.getZ() - this.boss.getZ();
+    public static void snapLook(MobEntity boss, LivingEntity target) {
+        if (boss == null || target == null) return;
+        boss.getLookControl().lookAt(target, 180.0F, 180.0F);
+        double dx = target.getX() - boss.getX();
+        double dy = (target.getEyeY() - 0.2) - boss.getEyeY();
+        double dz = target.getZ() - boss.getZ();
         double horizDist = Math.sqrt(dx * dx + dz * dz);
         float targetYaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
         float targetPitch = (float) (-(Math.atan2(dy, horizDist) * (180.0 / Math.PI)));
-        this.boss.setHeadYaw(targetYaw);
-        this.boss.setBodyYaw(targetYaw);
-        this.boss.setYaw(targetYaw);
-        this.boss.setPitch(targetPitch);
+        boss.setHeadYaw(targetYaw);
+        boss.setBodyYaw(targetYaw);
+        boss.setYaw(targetYaw);
+        boss.setPitch(targetPitch);
+    }
+
+    protected void snapLookAtTarget() {
+        snapLook(this.boss, this.target);
     }
 
     protected void onAbilityStarted(BossAbility ability) {
@@ -106,65 +113,111 @@ public abstract class AbstractBossAttackGoal extends Goal {
     protected void onAbilityExecuted(BossAbility ability) {
     }
 
+    public BossAbility getActiveAbility() {
+        return this.activeAbility;
+    }
+
+    public void startAbility(BossAbility ability) {
+        startAbility(ability, ability.getWindupTicks());
+    }
+
+    public void startAbility(BossAbility ability, int windupTicks) {
+        this.activeAbility = ability;
+        this.attackTimer = windupTicks;
+
+        snapLookAtTarget();
+        this.boss.getNavigation().stop();
+        onAbilityStarted(ability);
+        ability.onStart(this.boss, this.target);
+
+        // Instant ability execution if windup <= 0
+        if (this.attackTimer <= 0) {
+            this.activeAbility.execute(this.boss, this.target);
+            if (!this.activeAbility.isMultiTickExecution()) {
+                this.globalCooldown = this.activeAbility.getRecoveryTicks();
+                onAbilityExecuted(this.activeAbility);
+                this.activeAbility = null;
+            }
+        }
+    }
+
     @Override
     public void tick() {
         if (this.target == null || !this.target.isAlive()) {
             findTarget();
-            if (this.target == null) return;
+            if (this.target == null) {
+                if (this.activeAbility != null) {
+                    this.activeAbility.stop(this.boss);
+                    this.activeAbility = null;
+                }
+                this.attackTimer = 0;
+                return;
+            }
         }
 
         double distanceSq = this.boss.squaredDistanceTo(this.target);
 
-        // 1. Universal Tracking & Movement
+        // 1. Universal Tracking & Movement (only when not in windup or executing multi-tick ability)
         if (this.attackTimer > 0) {
             snapLookAtTarget();
-        } else {
+        } else if (this.activeAbility == null) {
             this.boss.getLookControl().lookAt(this.target, 30.0F, 30.0F);
             handleMovement(distanceSq);
         }
 
-        // 2. Universal Teleport Logic
-        handleTeleportation();
+        // 2. Universal Teleport Logic (only when idle / chasing)
+        if (this.attackTimer <= 0 && this.activeAbility == null) {
+            handleTeleportation();
+        }
 
         // 3. Timers
         if (this.globalCooldown > 0) globalCooldown--;
         if (this.teleportCooldown > 0) teleportCooldown--;
         if (this.defensiveCooldown > 0) defensiveCooldown--;
 
-        // 4. REACTIVE DEFENSE: Intercept incoming projectiles immediately every tick
-        handleDefensiveReactions();
+        for (BossAbility ability : abilities) {
+            ability.tick(this.boss, this.target);
+        }
+
+        // 4. REACTIVE DEFENSE: Intercept incoming projectiles immediately every tick (only when not in active ability)
+        if (this.activeAbility == null) {
+            handleDefensiveReactions();
+        }
 
         // 5. Delayed Attack Execution Phase (Windup > 0)
         if (this.attackTimer > 0) {
             this.attackTimer--;
+            if (this.activeAbility != null) {
+                this.activeAbility.tickWindup(this.boss, this.target, this.attackTimer);
+            }
             if (this.attackTimer == 0 && activeAbility != null) {
                 snapLookAtTarget();
                 activeAbility.execute(this.boss, this.target);
-                this.globalCooldown = activeAbility.getRecoveryTicks();
-                onAbilityExecuted(activeAbility);
+                if (!this.activeAbility.isMultiTickExecution()) {
+                    this.globalCooldown = activeAbility.getRecoveryTicks();
+                    onAbilityExecuted(activeAbility);
+                    this.activeAbility = null;
+                }
+            }
+            return;
+        }
+
+        // 6. Multi-tick Ability Execution (e.g., Dashes)
+        if (this.activeAbility != null && this.activeAbility.isMultiTickExecution()) {
+            boolean finished = this.activeAbility.tickExecution(this.boss, this.target);
+            if (finished) {
+                this.globalCooldown = this.activeAbility.getRecoveryTicks();
+                onAbilityExecuted(this.activeAbility);
                 this.activeAbility = null;
             }
             return;
         }
 
-        // 6. Select & Trigger New Offensive Ability
+        // 7. Select & Trigger New Offensive Ability
         if (this.globalCooldown <= 0) {
             for (BossAbility ability : abilities) {
                 if (ability.canUse(this.boss, this.target, distanceSq)) {
-                    this.activeAbility = ability;
-                    this.attackTimer = ability.getWindupTicks();
-
-                    snapLookAtTarget();
-                    this.boss.getNavigation().stop();
-                    onAbilityStarted(ability);
-
-                    // Instant ability execution if windup <= 0
-                    if (this.attackTimer <= 0) {
-                        this.activeAbility.execute(this.boss, this.target);
-                        this.globalCooldown = this.activeAbility.getRecoveryTicks();
-                        onAbilityExecuted(this.activeAbility);
-                        this.activeAbility = null;
-                    }
+                    startAbility(ability);
                     break;
                 }
             }
@@ -209,10 +262,14 @@ public abstract class AbstractBossAttackGoal extends Goal {
         }
     }
 
+    protected double getMovementSpeed() {
+        return this.speed;
+    }
+
     private void handleMovement(double distanceSq) {
         if (idealDistance < 0) {
             // No ideal distance set — chase normally
-            this.boss.getNavigation().startMovingTo(this.target, this.speed);
+            this.boss.getNavigation().startMovingTo(this.target, getMovementSpeed());
             return;
         }
 
@@ -228,16 +285,16 @@ public abstract class AbstractBossAttackGoal extends Goal {
 
         if (distance > maxDistance) {
             // Too far — chase the target directly
-            this.boss.getNavigation().startMovingTo(this.target, this.speed);
+            this.boss.getNavigation().startMovingTo(this.target, getMovementSpeed());
         } else {
             // Too close — back away to the ideal point
             Vec3d toTarget = this.target.getPos().subtract(this.boss.getPos()).normalize();
             Vec3d destinationPos = this.target.getPos().subtract(toTarget.multiply(idealDistance));
-            this.boss.getNavigation().startMovingTo(destinationPos.x, destinationPos.y, destinationPos.z, this.speed);
+            this.boss.getNavigation().startMovingTo(destinationPos.x, destinationPos.y, destinationPos.z, getMovementSpeed());
         }
     }
 
-    private void handleTeleportation() {
+    protected void handleTeleportation() {
         if (this.teleportCooldown > 0) return;
         double directDistance = this.boss.distanceTo(this.target);
         if (directDistance <= 6.0) return;
@@ -250,16 +307,23 @@ public abstract class AbstractBossAttackGoal extends Goal {
             if (!shouldTeleport && path != null && path.getLength() > directDistance * 2.0 && directDistance > 10.0) {
                 shouldTeleport = true;
             }
+            if (directDistance > 18.0) {
+                shouldTeleport = true;
+            }
 
             if (shouldTeleport) {
                 Vec3d safePos = findSafePositionNear(this.target.getPos(), 3.0, 5.0);
                 if (safePos != null) {
-                    this.boss.refreshPositionAndAngles(safePos.x, safePos.y, safePos.z, this.boss.getYaw(), this.boss.getPitch());
-                    this.boss.getNavigation().stop();
-                    this.teleportCooldown = 100;
+                    performTeleport(safePos);
                 }
             }
         }
+    }
+
+    protected void performTeleport(Vec3d safePos) {
+        this.boss.refreshPositionAndAngles(safePos.x, safePos.y, safePos.z, this.boss.getYaw(), this.boss.getPitch());
+        this.boss.getNavigation().stop();
+        this.teleportCooldown = 100;
     }
 
     protected Vec3d findSafePositionNear(Vec3d center, double minR, double maxR) {
