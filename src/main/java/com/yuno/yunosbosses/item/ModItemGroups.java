@@ -25,6 +25,7 @@ public class ModItemGroups {
                         // Add spawn eggs
                         entries.add(ModItems.UBEL_SPAWN_EGG);
                         entries.add(ModItems.METHODE_SPAWN_EGG);
+                        entries.add(ModItems.NAOYA_SPAWN_EGG);
                         entries.add(ModItems.USELESS_CHICKEN_SPAWN_EGG);
                         // Add all blocks to the group
                         entries.add(ModBlocks.DOMAIN_FLOOR.asItem());

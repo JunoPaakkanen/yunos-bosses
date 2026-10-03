@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "A": {
-      "item": "minecraft:amethyst_shard"
-    },
-    "G": {
-      "item": "minecraft:gold_ingot"
-    },
-    "#": {
-      "item": "minecraft:stick"
-    }
+    "A": "minecraft:amethyst_shard",
+    "G": "minecraft:gold_ingot",
+    "#": "minecraft:stick"
   },
   "pattern": [
     "A",
