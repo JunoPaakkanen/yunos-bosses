@@ -180,6 +180,8 @@ public class BarrierManager {
                     BlockPos blockPos = BlockPos.ofFloored(barrier.getPosition());
                     // Glass shatter effect, visual and sound
                     world.syncWorldEvent(2001, blockPos, Block.getRawIdFromState(Blocks.GLASS.getDefaultState()));
+                    world.playSound(null, barrier.getPosition().x, barrier.getPosition().y, barrier.getPosition().z,
+                            SoundEvents.BLOCK_AMETHYST_BLOCK_BREAK, SoundCategory.PLAYERS, 1.8F, 1.2F);
 
                     // If the barrier is of type Domain Expansion and clean up the Domain Floor
                     if (barrier.getDomainExpansion() != null && world instanceof ServerWorld serverWorld) {
@@ -304,11 +306,13 @@ public class BarrierManager {
                 projectile.setOwner(barrierOwner);
             }
 
-            // Sound and spark particles
-            serverWorld.playSound(null, barrierPos.x, barrierPos.y, barrierPos.z,
-                    SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.2F, 1.5F);
-            serverWorld.spawnParticles(ParticleTypes.ELECTRIC_SPARK, barrierPos.x, barrierPos.y, barrierPos.z, 6, 0.2, 0.2, 0.2, 0.1);
-            serverWorld.spawnParticles(ParticleTypes.CRIT, barrierPos.x, barrierPos.y, barrierPos.z, 8, 0.2, 0.2, 0.2, 0.15);
+            // Sound and spark particles right at the projectile collision point
+            serverWorld.playSound(null, projPos.x, projPos.y, projPos.z,
+                    SoundEvents.BLOCK_AMETHYST_BLOCK_HIT, SoundCategory.PLAYERS, 1.4F, 1.8F);
+            serverWorld.playSound(null, projPos.x, projPos.y, projPos.z,
+                    SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0F, 1.4F);
+            serverWorld.spawnParticles(ParticleTypes.ELECTRIC_SPARK, projPos.x, projPos.y, projPos.z, 8, 0.15, 0.15, 0.15, 0.12);
+            serverWorld.spawnParticles(ParticleTypes.CRIT, projPos.x, projPos.y, projPos.z, 6, 0.15, 0.15, 0.15, 0.1);
         });
     }
 

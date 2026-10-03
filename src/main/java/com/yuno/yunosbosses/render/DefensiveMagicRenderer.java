@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.yuno.yunosbosses.spell.implementation.defensive.SphereBarrierSpell;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -23,6 +24,7 @@ import java.util.Random;
 public class DefensiveMagicRenderer {
     private static final Identifier HEX_TEXTURE = Identifier.of("yunosbosses", "textures/effect/magical_hexagon.png");
     private static final Identifier BARRIER_TEXTURE = Identifier.of("yunosbosses", "textures/effect/barrier.png");
+    private static final Identifier MAGIC_CIRCLE_TEXTURE = Identifier.of("yunosbosses", "textures/effect/magic_circle.png");
     private static final Identifier DOMAIN_EXTERIOR = Identifier.of("yunosbosses", "textures/domain_expansion/domain_exterior.png");
     private static final Identifier SLASH_TEXTURE = Identifier.of("yunosbosses", "textures/entity/slash.png");
 
@@ -41,8 +43,12 @@ public class DefensiveMagicRenderer {
                         // Both Open and Closed Malevolent Shrine share identical visuals:
                         // red perimeter boundary cylinder, luminous ground fissures, and 3D slashes
                         renderOpenDomainShrine(matrices, consumers, cameraPos, barrier, barrier.getRadius(), context);
+                    } else if (barrier.getDomainExpansion() != null) {
+                        // Closed Domain Expansion (opaque black exterior shell, inner skybox)
+                        renderDomainSphere(matrices, consumers, cameraPos, barrier, barrier.getRadius());
                     } else {
-                        renderSphere(matrices, consumers, cameraPos, barrier, barrier.getRadius());
+                        // Magical Spherical Defensive Barrier
+                        renderMagicalSphereBarrier(matrices, consumers, cameraPos, barrier, barrier.getRadius(), context);
                     }
                 } else {
                     // Otherwise, render the directional hex shield
@@ -308,17 +314,179 @@ public class DefensiveMagicRenderer {
         buffer.vertex(modelMatrix, x1f, yBottom, z1f).color(r, g, b, alpha).texture(0.0f, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
     }
 
-    // Default Spherical Barrier
-    private static void renderSphere(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d camera, ActiveBarrier barrier, float radius) {
-        if (barrier.getTexture() != null) {
-            renderSphere(matrices, consumers, camera, barrier, radius, barrier.getTexture());
-        } else {
-            renderSphere(matrices, consumers, camera, barrier, radius, BARRIER_TEXTURE);
+    // --- MAGICAL DEFENSIVE SPHERICAL BARRIER (REVAMPED) ---
+    // Translucent glowing azure bubble, smooth expansion bloom, dual-layer counter-rotating runic circles, and feet-level energy bands
+    private static void renderMagicalSphereBarrier(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d camera, ActiveBarrier barrier, float targetRadius, WorldRenderContext context) {
+        matrices.push();
+
+        Vec3d pos = barrier.getPosition();
+        matrices.translate(pos.x - camera.x, pos.y - camera.y, pos.z - camera.z);
+
+        long time = context.world().getTime();
+        float tickDelta = context.tickCounter().getTickProgress(false);
+        float currentTicks = barrier.getCurrentTicks() + tickDelta;
+        int remainingTicks = barrier.getMaxTicks() - barrier.getCurrentTicks();
+
+        // 1. Dynamic expansion animation (first 10 ticks: snappy ease-out expansion with over-bounce)
+        float expansionProgress = Math.min(1.0F, currentTicks / 10.0F);
+        float scaleMultiplier = (float) Math.sin(expansionProgress * Math.PI * 0.5F);
+        if (expansionProgress < 1.0F) {
+            scaleMultiplier += (float) Math.sin(expansionProgress * Math.PI) * 0.06F;
+        }
+
+        // 2. Fade out animation during final 20 ticks
+        float fadeMultiplier = 1.0F;
+        if (remainingTicks < 20) {
+            fadeMultiplier = Math.max(0.0F, (float) remainingTicks / 20.0F);
+        }
+
+        float radius = targetRadius * scaleMultiplier;
+        if (radius <= 0.05F) {
+            matrices.pop();
+            return;
+        }
+
+        Matrix4f modelMatrix = matrices.peek().getPositionMatrix();
+
+        // Pulsing luminescence
+        float pulse = (float) Math.sin((time + tickDelta) * 0.12F);
+        int shellAlpha = (int) (Math.max(15, Math.min(115, 60 + pulse * 20)) * fadeMultiplier);
+
+        int segments = 40;
+
+        // --- LAYER 1: TRANSLUCENT AZURE SPHERE SHELL (Double-sided rendering) ---
+        VertexConsumer shellBuffer = consumers.getBuffer(RenderLayer.getEntityTranslucentEmissive(BARRIER_TEXTURE));
+
+        for (int i = 0; i < segments; i++) {
+            float lat0 = (float) Math.PI * (-0.5f + (float) i / segments);
+            float lat1 = (float) Math.PI * (-0.5f + (float) (i + 1) / segments);
+
+            float y0 = (float) Math.sin(lat0);
+            float yr0 = (float) Math.cos(lat0);
+            float y1 = (float) Math.sin(lat1);
+            float yr1 = (float) Math.cos(lat1);
+
+            for (int j = 0; j < segments; j++) {
+                float lng0 = (float) (2 * Math.PI * (float) j / segments);
+                float lng1 = (float) (2 * Math.PI * (float) (j + 1) / segments);
+
+                float x0 = (float) Math.cos(lng0);
+                float z0 = (float) Math.sin(lng0);
+                float x1 = (float) Math.cos(lng1);
+                float z1 = (float) Math.sin(lng1);
+
+                float u0 = ((float) j / segments) * 2.0F;
+                float u1 = ((float) (j + 1) / segments) * 2.0F;
+                float v0 = 1.0f - ((float) i / segments);
+                float v1 = 1.0f - ((float) (i + 1) / segments);
+
+                float px1 = x0 * yr0 * radius, py1 = y0 * radius, pz1 = z0 * yr0 * radius;
+                float px2 = x1 * yr0 * radius, py2 = y0 * radius, pz2 = z1 * yr0 * radius;
+                float px3 = x1 * yr1 * radius, py3 = y1 * radius, pz3 = z1 * yr1 * radius;
+                float px4 = x0 * yr1 * radius, py4 = y1 * radius, pz4 = z0 * yr1 * radius;
+
+                // Cyan/Azure barrier tint: R=130, G=225, B=255
+                // Outward winding
+                shellBuffer.vertex(modelMatrix, px4, py4, pz4).color(130, 225, 255, shellAlpha).texture(u0, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                shellBuffer.vertex(modelMatrix, px3, py3, pz3).color(130, 225, 255, shellAlpha).texture(u1, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                shellBuffer.vertex(modelMatrix, px2, py2, pz2).color(130, 225, 255, shellAlpha).texture(u1, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                shellBuffer.vertex(modelMatrix, px1, py1, pz1).color(130, 225, 255, shellAlpha).texture(u0, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+
+                // Inward winding (viewable from inside)
+                shellBuffer.vertex(modelMatrix, px1, py1, pz1).color(130, 225, 255, shellAlpha).texture(u0, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                shellBuffer.vertex(modelMatrix, px2, py2, pz2).color(130, 225, 255, shellAlpha).texture(u1, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                shellBuffer.vertex(modelMatrix, px3, py3, pz3).color(130, 225, 255, shellAlpha).texture(u1, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                shellBuffer.vertex(modelMatrix, px4, py4, pz4).color(130, 225, 255, shellAlpha).texture(u0, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            }
+        }
+
+        // Center of sphere is at caster.getPos().add(0, 1.2, 0).
+        // Caster's feet are 1.2 blocks below center (y = -1.2 relative to center).
+        float feetY = -1.2F;
+
+        // --- LAYER 2: GLOWING ENERGY BANDS AT CASTER FEET LEVEL ---
+        VertexConsumer bandBuffer = consumers.getBuffer(RenderLayer.getEntityTranslucentEmissive(BARRIER_TEXTURE));
+        int bandAlpha = (int) ((110 + pulse * 35) * fadeMultiplier);
+        float bandWidth = 0.35F + (radius * 0.02F);
+
+        // Render energy band around the sphere at caster's feet level (one block down from eye level)
+        float feetLatAngle = (float) Math.asin(Math.max(-0.95, Math.min(0.95, feetY / radius)));
+        renderLatitudinalBand(bandBuffer, modelMatrix, radius, bandWidth, feetLatAngle, (time + tickDelta) * 0.03F, bandAlpha);
+
+        // --- LAYER 3: ROTATING MAGICAL RUNIC CIRCLES (magic_circle.png) AT CASTER FEET LEVEL ---
+        VertexConsumer circleBuffer = consumers.getBuffer(RenderLayer.getEntityTranslucentEmissive(MAGIC_CIRCLE_TEXTURE));
+        int circleAlpha = (int) ((140 + pulse * 45) * fadeMultiplier);
+
+        // Primary ground seal disk at caster feet level (feetY + 0.03 to sit cleanly on floor)
+        float feetDiskRadius = (float) Math.sqrt(Math.max(1.0, (radius * radius) - (feetY * feetY)));
+        float rotBase = (time + tickDelta) * 1.2F;
+        renderRunicDisk(matrices, circleBuffer, feetDiskRadius, feetY + 0.03F, rotBase, circleAlpha);
+
+        // Secondary counter-rotating concentric seal disk slightly above feet for rich magical depth
+        float rotMid = -(time + tickDelta) * 0.8F;
+        renderRunicDisk(matrices, circleBuffer, feetDiskRadius * 0.70F, feetY + 0.08F, rotMid, (int) (circleAlpha * 0.65F));
+
+        matrices.pop();
+    }
+
+    private static void renderRunicDisk(MatrixStack matrices, VertexConsumer buffer, float radius, float y, float rotDegrees, int alpha) {
+        matrices.push();
+        matrices.translate(0, y, 0);
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(rotDegrees));
+
+        Matrix4f mat = matrices.peek().getPositionMatrix();
+
+        // Top Face (pointing Up)
+        buffer.vertex(mat, -radius, 0, -radius).color(120, 220, 255, alpha).texture(0.0f, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+        buffer.vertex(mat, -radius, 0, radius).color(120, 220, 255, alpha).texture(0.0f, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+        buffer.vertex(mat, radius, 0, radius).color(120, 220, 255, alpha).texture(1.0f, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+        buffer.vertex(mat, radius, 0, -radius).color(120, 220, 255, alpha).texture(1.0f, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+
+        // Bottom Face (pointing Down)
+        buffer.vertex(mat, radius, 0, -radius).color(120, 220, 255, alpha).texture(1.0f, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, -1, 0);
+        buffer.vertex(mat, radius, 0, radius).color(120, 220, 255, alpha).texture(1.0f, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, -1, 0);
+        buffer.vertex(mat, -radius, 0, radius).color(120, 220, 255, alpha).texture(0.0f, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, -1, 0);
+        buffer.vertex(mat, -radius, 0, -radius).color(120, 220, 255, alpha).texture(0.0f, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, -1, 0);
+
+        matrices.pop();
+    }
+
+    private static void renderLatitudinalBand(VertexConsumer buffer, Matrix4f modelMatrix, float sphereRadius, float bandWidth, float latAngle, float uOffset, int alpha) {
+        int segs = 36;
+        float yCenter = (float) Math.sin(latAngle) * sphereRadius;
+        float ringRadius = (float) Math.cos(latAngle) * (sphereRadius + 0.02F);
+
+        float y0 = yCenter - bandWidth * 0.5F;
+        float y1 = yCenter + bandWidth * 0.5F;
+
+        for (int i = 0; i < segs; i++) {
+            float a0 = (float) (2.0 * Math.PI * i / segs);
+            float a1 = (float) (2.0 * Math.PI * (i + 1) / segs);
+
+            float x0 = (float) Math.cos(a0) * ringRadius;
+            float z0 = (float) Math.sin(a0) * ringRadius;
+            float x1 = (float) Math.cos(a1) * ringRadius;
+            float z1 = (float) Math.sin(a1) * ringRadius;
+
+            float u0 = ((float) i / segs) * 2.0F + uOffset;
+            float u1 = ((float) (i + 1) / segs) * 2.0F + uOffset;
+
+            buffer.vertex(modelMatrix, x0, y0, z0).color(140, 230, 255, alpha).texture(u0, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x1, y0, z1).color(140, 230, 255, alpha).texture(u1, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x1, y1, z1).color(140, 230, 255, alpha).texture(u1, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x0, y1, z0).color(140, 230, 255, alpha).texture(u0, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+
+            buffer.vertex(modelMatrix, x0, y1, z0).color(140, 230, 255, alpha).texture(u0, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x1, y1, z1).color(140, 230, 255, alpha).texture(u1, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x1, y0, z1).color(140, 230, 255, alpha).texture(u1, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x0, y0, z0).color(140, 230, 255, alpha).texture(u0, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
         }
     }
 
-    // Custom Spherical Barrier with a different texture
-    private static void renderSphere(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d camera, ActiveBarrier barrier, float radius, Identifier texture) {
+    // Domain Expansion Closed Sphere (Solid black shell exterior, inner texture skybox)
+    private static void renderDomainSphere(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d camera, ActiveBarrier barrier, float radius) {
+        Identifier texture = barrier.getTexture() != null ? barrier.getTexture() : BARRIER_TEXTURE;
+
         matrices.push();
 
         Vec3d pos = barrier.getPosition();
@@ -365,7 +533,7 @@ public class DefensiveMagicRenderer {
                 float nx3 = x1 * yr1, ny3 = y1, nz3 = z1 * yr1;
                 float nx4 = x0 * yr1, ny4 = y1, nz4 = z0 * yr1;
 
-                // FIXED: Flipped winding sequence (4 -> 3 -> 2 -> 1) forces the solid shell to face OUTWARD
+                // Flipped winding sequence (4 -> 3 -> 2 -> 1) forces the solid shell to face OUTWARD
                 outerBuffer.vertex(modelMatrix, px4, py4, pz4).color(255, 255, 255, alpha).texture(u0, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx4, ny4, nz4);
                 outerBuffer.vertex(modelMatrix, px3, py3, pz3).color(255, 255, 255, alpha).texture(u1, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx3, ny3, nz3);
                 outerBuffer.vertex(modelMatrix, px2, py2, pz2).color(255, 255, 255, alpha).texture(u1, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx2, ny2, nz2);
@@ -407,8 +575,7 @@ public class DefensiveMagicRenderer {
                 float ix3 = x1 * yr1 * innerRadius, iy3 = y1 * innerRadius, iz3 = z1 * yr1 * innerRadius;
                 float ix4 = x0 * yr1 * innerRadius, iy4 = y1 * innerRadius, iz4 = z0 * yr1 * innerRadius;
 
-
-                // FIXED: Standard winding sequence (1 -> 2 -> 3 -> 4) forces the glowing skybox to face INWARD
+                // Standard winding sequence (1 -> 2 -> 3 -> 4) forces the glowing skybox to face INWARD
                 innerBuffer.vertex(modelMatrix, ix1, iy1, iz1).color(255, 255, 255, alpha).texture(u0, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
                 innerBuffer.vertex(modelMatrix, ix2, iy2, iz2).color(255, 255, 255, alpha).texture(u1, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
                 innerBuffer.vertex(modelMatrix, ix3, iy3, iz3).color(255, 255, 255, alpha).texture(u1, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
