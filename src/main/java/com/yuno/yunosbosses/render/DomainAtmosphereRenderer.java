@@ -56,13 +56,14 @@ public class DomainAtmosphereRenderer {
             if (distToCenter > radius + 12.0) continue;
 
             // Density of atmospheric particles per client tick
-            int particleCount = 30;
+            int particleCount = 35;
             double spawnRadius = Math.min(24.0, radius);
 
             for (int i = 0; i < particleCount; i++) {
-                // Cylindrical spawn area around the player (above camera level to ground)
+                // Cylindrical spawn area around the player with a clear vision buffer around the camera
                 double angle = rand.nextDouble() * 2.0 * Math.PI;
-                double dist = rand.nextDouble() * spawnRadius;
+                double minClearDist = 0.8;
+                double dist = minClearDist + (rand.nextDouble() * Math.max(0.1, spawnRadius - minClearDist));
                 double px = player.getX() + Math.cos(angle) * dist;
                 double pz = player.getZ() + Math.sin(angle) * dist;
                 double py = player.getY() + 1.0 + (rand.nextDouble() * 12.0);

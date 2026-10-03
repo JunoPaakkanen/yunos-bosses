@@ -417,7 +417,6 @@ public class DomainExpansionShrine extends DomainExpansion {
                         ModSounds.REELSEIDEN_HIT, SoundCategory.NEUTRAL, 1.0f, pitch);
 
                 DamageSource source = ModDamageTypes.of(affectedEntity.getWorld(), ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster);
-                Vec3d originalVelocity = affectedEntity.getVelocity();
 
                 affectedEntity.damage((ServerWorld) affectedEntity.getWorld(), source, damage);
 
@@ -427,45 +426,73 @@ public class DomainExpansionShrine extends DomainExpansion {
                     component.addMeter(ModSpells.SHRINE, 2);
                 }
 
-                affectedEntity.setVelocity(originalVelocity);
-                affectedEntity.velocityModified = true;
-
-                Vec3d pos = affectedEntity.getBoundingBox().getCenter();
-                serverWorld.spawnParticles(
-                        ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE,
-                        pos.x, pos.y, pos.z,
-                        2,
-                        0.25, 0.25, 0.25,
-                        0.0
-                );
-
                 SimpleParticleType[] particlePool = {
                         ModParticles.DISMANTLE_A_PARTICLE,
                         ModParticles.DISMANTLE_B_PARTICLE
                 };
-                int randomIndex = affectedEntity.getRandom().nextInt(particlePool.length);
-                serverWorld.spawnParticles(
-                        particlePool[randomIndex],
-                        pos.x, pos.y, pos.z,
-                        2,
-                        0.35, 0.35, 0.35,
-                        0.08
-                );
 
-                serverWorld.spawnParticles(
-                        ParticleTypes.SWEEP_ATTACK,
-                        pos.x, pos.y, pos.z,
-                        1,
-                        0.1, 0.1, 0.1,
-                        0.0
-                );
-                serverWorld.spawnParticles(
-                        ParticleTypes.CRIT,
-                        pos.x, pos.y, pos.z,
-                        3,
-                        0.3, 0.3, 0.3,
-                        0.15
-                );
+                Random rand = affectedEntity.getRandom();
+                if (affectedEntity instanceof PlayerEntity) {
+                    // Offset slashes tangentially around the torso/legs so first-person sightlines remain completely clear
+                    double offsetAngle = rand.nextDouble() * Math.PI * 2.0;
+                    double offsetDist = 0.45 + (rand.nextDouble() * 0.35);
+                    double px = affectedEntity.getX() + Math.cos(offsetAngle) * offsetDist;
+                    double py = affectedEntity.getY() + 0.35 + (rand.nextDouble() * 0.55);
+                    double pz = affectedEntity.getZ() + Math.sin(offsetAngle) * offsetDist;
+
+                    if (rand.nextBoolean()) {
+                        serverWorld.spawnParticles(
+                                ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE,
+                                px, py, pz,
+                                1,
+                                0.05, 0.05, 0.05,
+                                0.0
+                        );
+                    } else {
+                        SimpleParticleType particleType = particlePool[rand.nextInt(particlePool.length)];
+                        serverWorld.spawnParticles(
+                                particleType,
+                                px, py, pz,
+                                1,
+                                0.08, 0.08, 0.08,
+                                0.04
+                        );
+                    }
+
+                    serverWorld.spawnParticles(
+                            ParticleTypes.CRIT,
+                            px, py, pz,
+                            2,
+                            0.12, 0.12, 0.12,
+                            0.08
+                    );
+                } else {
+                    Vec3d pos = affectedEntity.getBoundingBox().getCenter();
+                    serverWorld.spawnParticles(
+                            ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE,
+                            pos.x, pos.y, pos.z,
+                            1,
+                            0.15, 0.15, 0.15,
+                            0.0
+                    );
+
+                    SimpleParticleType particleType = particlePool[rand.nextInt(particlePool.length)];
+                    serverWorld.spawnParticles(
+                            particleType,
+                            pos.x, pos.y, pos.z,
+                            1,
+                            0.2, 0.2, 0.2,
+                            0.05
+                    );
+
+                    serverWorld.spawnParticles(
+                            ParticleTypes.CRIT,
+                            pos.x, pos.y, pos.z,
+                            2,
+                            0.15, 0.15, 0.15,
+                            0.1
+                    );
+                }
             }
         }
     }
