@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses.entity.character;
 
+import com.yuno.yunosbosses.entity.YunosBossEntity;
+
 import com.yuno.yunosbosses.entity.goal.UbelAttackGoal;
 import com.yuno.yunosbosses.item.ModItems;
 import net.minecraft.entity.Entity;
@@ -24,7 +26,7 @@ import software.bernie.geckolib.animatable.processing.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class UbelEntity extends PathAwareEntity implements GeoEntity {
+public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     public UbelEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
@@ -147,5 +149,10 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity {
 
     public void triggerDismantleAnim() {
         this.triggerAnim("controller", "dismantle");
+    }
+
+    @Override
+    public String getBossIdentifier() {
+        return "ubel";
     }
 }

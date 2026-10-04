@@ -2,6 +2,8 @@ package com.yuno.yunosbosses.mixin;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
+import com.yuno.yunosbosses.entity.YunosBossEntity;
+import com.yuno.yunosbosses.util.BossContributionTracker;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
@@ -189,6 +191,22 @@ public abstract class LivingEntityMixin {
 
             entity.onLanding();
             ci.cancel();
+        }
+    }
+
+    @Inject(method = "applyDamage", at = @At("HEAD"))
+    private void yunosbosses$trackBossDamage(ServerWorld world, DamageSource source, float amount, CallbackInfo ci) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity instanceof YunosBossEntity) {
+            BossContributionTracker.recordDamage(entity, source, amount);
+        }
+    }
+
+    @Inject(method = "onDeath", at = @At("HEAD"))
+    private void yunosbosses$onBossDeath(DamageSource damageSource, CallbackInfo ci) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity instanceof YunosBossEntity) {
+            BossContributionTracker.onBossDeath(entity, damageSource);
         }
     }
 }

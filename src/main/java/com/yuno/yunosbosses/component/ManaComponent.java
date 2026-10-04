@@ -3,6 +3,8 @@ package com.yuno.yunosbosses.component;
 import org.ladysnake.cca.api.v3.component.Component;
 import org.ladysnake.cca.api.v3.component.tick.ServerTickingComponent;
 
+import java.util.Set;
+
 public interface ManaComponent extends Component, ServerTickingComponent {
     public float getMana();
     public float getMaxMana();
@@ -12,4 +14,10 @@ public interface ManaComponent extends Component, ServerTickingComponent {
     public void addMana(float mana);
     public void setManaRegen(float regen);
     public float getManaRegen();
+
+    // Absolute Max Mana Cap & Boss Defeat Progression
+    public float getAbsoluteMaxManaCap();
+    public boolean hasDefeatedBoss(String bossId);
+    public boolean recordBossDefeat(String bossId);
+    public Set<String> getDefeatedBosses();
 }

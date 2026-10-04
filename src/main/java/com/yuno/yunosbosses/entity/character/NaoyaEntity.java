@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses.entity.character;
 
+import com.yuno.yunosbosses.entity.YunosBossEntity;
+
 import com.yuno.yunosbosses.entity.goal.NaoyaAttackGoal;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import net.minecraft.entity.EntityType;
@@ -28,7 +30,7 @@ import software.bernie.geckolib.animatable.processing.AnimationController;
 import software.bernie.geckolib.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class NaoyaEntity extends PathAwareEntity implements GeoEntity {
+public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBossEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     private static final Identifier SPEED_STACK_MODIFIER_ID = Identifier.of("yunosbosses", "naoya_speed_stacks");
@@ -230,5 +232,10 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity {
     public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);
         this.bossBar.clearPlayers();
+    }
+
+    @Override
+    public String getBossIdentifier() {
+        return "naoya";
     }
 }

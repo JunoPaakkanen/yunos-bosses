@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses.entity.character;
 
+import com.yuno.yunosbosses.entity.YunosBossEntity;
+
 import com.yuno.yunosbosses.entity.goal.MethodeAttackGoal;
 import com.yuno.yunosbosses.entity.goal.ability.DefensiveProjectileShieldAbility;
 import com.yuno.yunosbosses.item.ModItems;
@@ -31,7 +33,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
 
-public class MethodeEntity extends PathAwareEntity implements GeoEntity {
+public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBossEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     public static final int DEFENSIVE_MAGIC_COOLDOWN = 100; // 5 seconds (100 ticks)
     private int defensiveMagicCooldown = 0;
@@ -205,5 +207,10 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity {
     public void onDeath(DamageSource damageSource) {
         super.onDeath(damageSource);
         this.bossBar.clearPlayers();
+    }
+
+    @Override
+    public String getBossIdentifier() {
+        return "methode";
     }
 }
