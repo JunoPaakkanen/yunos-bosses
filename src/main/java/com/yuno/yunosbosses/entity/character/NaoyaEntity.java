@@ -4,7 +4,9 @@ import com.yuno.yunosbosses.entity.YunosBossEntity;
 
 import com.yuno.yunosbosses.entity.goal.NaoyaAttackGoal;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
@@ -118,8 +120,12 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
         this.goalSelector.add(4, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
         this.goalSelector.add(5, new LookAroundGoal(this));
 
-        this.targetSelector.add(1, new RevengeGoal(this));
-        this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
+        // Get revenge on any entity (mobs, iron golems, wolves, players) if he gets hit
+        this.targetSelector.add(1, new RevengeGoal(this).setGroupRevenge());
+
+        // Target hostile entities / golems attacking him or players
+        this.targetSelector.add(2, new ActiveTargetGoal<>(this, LivingEntity.class, 10, true, false,
+                (entity, serverWorld) -> entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this));
     }
 
     public void executeProjectionSequence() {
@@ -237,5 +243,10 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
     @Override
     public String getBossIdentifier() {
         return "naoya";
+    }
+
+    @Override
+    public boolean startRiding(Entity entity, boolean force) {
+        return false;
     }
 }

@@ -7,6 +7,7 @@ import com.yuno.yunosbosses.item.ModItems;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -67,11 +68,12 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
         // Just look around randomly while standing still.
         this.goalSelector.add(5, new LookAroundGoal(this));
 
-        // Get revenge on the player if she gets hit.
-        this.targetSelector.add(1, new RevengeGoal(this));
+        // Get revenge on any entity (mobs, iron golems, wolves, players) if she gets hit
+        this.targetSelector.add(1, new RevengeGoal(this).setGroupRevenge());
 
-        // Actively target players (checkVisibility = false so boss does not lose target behind blocks/grass)
-        this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
+        // Target hostile entities / golems attacking her or players
+        this.targetSelector.add(2, new ActiveTargetGoal<>(this, LivingEntity.class, 10, true, false,
+                (entity, serverWorld) -> entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this));
 
         // Move towards her targets to attack them.
         this.goalSelector.add(2, new UbelAttackGoal(this, 2D));
