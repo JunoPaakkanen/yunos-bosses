@@ -21,19 +21,19 @@ import net.minecraft.util.Identifier;
 public class ModEntities {
     public static final EntityType<UbelEntity> UBEL = register(
             "ubel",
-            EntityType.Builder.create(UbelEntity::new, SpawnGroup.CREATURE)
+            EntityType.Builder.create(UbelEntity::new, SpawnGroup.MONSTER)
                     .dimensions(0.6f, 1.8f)
     );
 
     public static final EntityType<MethodeEntity> METHODE = register(
             "methode",
-            EntityType.Builder.create(MethodeEntity::new, SpawnGroup.CREATURE)
+            EntityType.Builder.create(MethodeEntity::new, SpawnGroup.MONSTER)
                     .dimensions(0.8f, 2.4f)
     );
 
     public static final EntityType<NaoyaEntity> NAOYA = register(
             "naoya",
-            EntityType.Builder.create(NaoyaEntity::new, SpawnGroup.CREATURE)
+            EntityType.Builder.create(NaoyaEntity::new, SpawnGroup.MONSTER)
                     .dimensions(0.6f, 1.95f)
     );
 

@@ -1,7 +1,6 @@
 package com.yuno.yunosbosses.entity.character;
 
 import com.yuno.yunosbosses.entity.YunosBossEntity;
-
 import com.yuno.yunosbosses.entity.goal.NaoyaAttackGoal;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import net.minecraft.entity.Entity;
@@ -25,6 +24,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.manager.AnimatableManager;
@@ -128,15 +128,18 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
                 (entity, serverWorld) -> entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this));
     }
 
+    @Override
+    public void setTarget(@Nullable LivingEntity target) {
+        super.setTarget(target);
+        if (target instanceof PlayerEntity) {
+            this.setPersistent();
+        }
+    }
+
     public void executeProjectionSequence() {
         if (this.attackGoal != null) {
             this.attackGoal.triggerFlankDash();
         }
-    }
-
-    @Override
-    public boolean cannotDespawn() {
-        return true;
     }
 
     @Override

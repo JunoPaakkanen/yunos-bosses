@@ -1,7 +1,6 @@
 package com.yuno.yunosbosses.entity.character;
 
 import com.yuno.yunosbosses.entity.YunosBossEntity;
-
 import com.yuno.yunosbosses.entity.goal.UbelAttackGoal;
 import com.yuno.yunosbosses.item.ModItems;
 import net.minecraft.entity.Entity;
@@ -20,6 +19,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animatable.manager.AnimatableManager;
@@ -80,8 +80,11 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
     }
 
     @Override
-    public boolean cannotDespawn() {
-        return true; // She will stay in the world forever until killed.
+    public void setTarget(@Nullable LivingEntity target) {
+        super.setTarget(target);
+        if (target instanceof PlayerEntity) {
+            this.setPersistent();
+        }
     }
 
     @Override
