@@ -37,7 +37,7 @@
 		"java": ">=21",
 		"fabric-api": "*",
 		"geckolib": "*",
-		"player-animator": "*"
+		"player_animation_library": "*"
 	},
 	"suggests": {
 		"bendable-cuboids": "*"
