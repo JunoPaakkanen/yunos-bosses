@@ -404,7 +404,8 @@ public class FlameArrowEntity extends ProjectileEntity {
             // Barrier shielding check
             if (!isShieldedByBarrier(hitPos, target)) {
                 float potency = getPotency();
-                float damage = 75.0f * potency;
+                float baseDamage = 75.0F;
+                float damage = baseDamage * potency;
                 DamageSource source = ModDamageTypes.of(serverWorld, ModDamageTypes.FIRE_MAGIC, this.getOwner());
                 target.damage(serverWorld, source, damage);
                 target.setOnFireFor((int) (15 + potency * 10));
@@ -584,7 +585,7 @@ public class FlameArrowEntity extends ProjectileEntity {
             }
         }
 
-        // 6. Devastating Area Damage & Severe Knockback (With Barrier Shielding!)
+        // 6. Devastating Area Damage & Severe Knockback
         float baseDamage = this.isThermobaricFinisher ? 110.0f : 75.0f;
         float totalDamage = baseDamage * potency;
         double effectRadius = this.isThermobaricFinisher
