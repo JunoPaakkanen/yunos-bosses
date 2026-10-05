@@ -364,7 +364,7 @@ public class Shrine extends Spell {
 
         float slashWidth = 5.5f * Math.min(potency, 2.2f);
         float maxDistance = 22.0f + (5.0f * potency);
-        float baseDamage = 20.0f;
+        float baseDamage = 18.0f;
         float damageMultiplier = potency;
         if (staff.getItem() instanceof StaffItem staffItem) {
             damageMultiplier *= staffItem.getPowerMultiplier();
@@ -571,7 +571,7 @@ public class Shrine extends Spell {
 
     @Override
     public float getManaCost(LivingEntity caster) {
-        return 50.0F;
+        return 80.0F;
     }
 
     @Override
