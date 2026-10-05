@@ -323,7 +323,7 @@ public class UbelAttackGoal extends Goal {
         return null;
     }
 
-    private static boolean isValidStandPosition(World world, BlockPos feetPos) {
+    private boolean isValidStandPosition(World world, BlockPos feetPos) {
         BlockPos floorPos = feetPos.down();
         BlockPos headPos = feetPos.up();
         BlockState floorState = world.getBlockState(floorPos);
@@ -332,7 +332,7 @@ public class UbelAttackGoal extends Goal {
 
         boolean solidFloor = floorState.isSolidBlock(world, floorPos)
                 || floorState.isOpaqueFullCube()
-                || floorState.hasSolidTopSurface(world, floorPos, null);
+                || floorState.hasSolidTopSurface(world, floorPos, this.ubel);
 
         boolean clearFeet = feetState.getCollisionShape(world, feetPos).isEmpty();
         boolean clearHead = headState.getCollisionShape(world, headPos).isEmpty();
