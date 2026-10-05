@@ -41,7 +41,7 @@ public class ModEntityComponents implements EntityComponentInitializer {
         registry.registerForPlayers(MANA, PlayerManaComponent::new, (from, to, registryLookup, lossless, keepInventory, sameCharacter) -> {
             RespawnCopyStrategy.ALWAYS_COPY.copyForRespawn(from, to, registryLookup, lossless, keepInventory, sameCharacter);
             if (!lossless) {
-                to.setManaRegen(0.5f);
+                to.setManaRegen(0.25F);
             }
         });
 

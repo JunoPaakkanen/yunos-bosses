@@ -69,7 +69,7 @@ public class GojoBindingVow implements BindingVow {
         player.removeStatusEffect(ModEffects.GOJO_BINDING_VOW);
         if (penalized) {
             // Broken prematurely by choice: restore normal mana regeneration
-            ModEntityComponents.MANA.get(player).setManaRegen(0.5f);
+            ModEntityComponents.MANA.get(player).setManaRegen(0.25f);
         }
     }
 }

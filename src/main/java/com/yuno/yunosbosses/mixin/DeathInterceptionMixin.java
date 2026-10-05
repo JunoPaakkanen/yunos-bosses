@@ -39,7 +39,7 @@ public abstract class DeathInterceptionMixin {
             }
             var spellComp = ModEntityComponents.SPELL_DATA.get(player);
             spellComp.setCanChangeSpell(true);
-            ModEntityComponents.MANA.get(player).setManaRegen(0.5f);
+            ModEntityComponents.MANA.get(player).setManaRegen(0.25f);
             if (player instanceof ServerPlayerEntity serverPlayer) {
                 BindingVowManager.revokeVow(serverPlayer, ModBindingVows.GOJO.getId(), false);
             }
@@ -56,7 +56,7 @@ public abstract class DeathInterceptionMixin {
 
             // If the player dies while transformed, resume mana regeneration
             if (transformData.isTransformed()) {
-                ModEntityComponents.MANA.get(player).setManaRegen(0.5f);
+                ModEntityComponents.MANA.get(player).setManaRegen(0.25f);
             }
 
             // Transform if the player has the effect / vow and hasn't yet been transformed

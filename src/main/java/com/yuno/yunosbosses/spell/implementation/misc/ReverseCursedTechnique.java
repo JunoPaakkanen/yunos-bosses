@@ -61,7 +61,7 @@ public class ReverseCursedTechnique extends Spell {
 
                 // Allow mana regeneration
                 var manaComponent = ModEntityComponents.MANA.get(caster);
-                manaComponent.setManaRegen(0.5f);
+                manaComponent.setManaRegen(0.25F);
                 ModEntityComponents.MANA.sync(caster);
             }
         }
