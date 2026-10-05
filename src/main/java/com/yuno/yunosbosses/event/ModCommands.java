@@ -8,11 +8,9 @@ import com.yuno.yunosbosses.binding_vow.BindingVowManager;
 import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.BindingVowComponent;
 import com.yuno.yunosbosses.component.ModEntityComponents;
-import com.yuno.yunosbosses.network.OpenBindingVowScreenPayload;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -104,14 +102,6 @@ public class ModCommands {
 
             // Unified Binding Vow Commands
             dispatcher.register(CommandManager.literal("bindingvow")
-                    // /bindingvow menu
-                    .then(CommandManager.literal("menu")
-                            .executes(context -> {
-                                ServerPlayerEntity player = context.getSource().getPlayer();
-                                if (player == null) return 0;
-                                ServerPlayNetworking.send(player, new OpenBindingVowScreenPayload(1));
-                                return 1;
-                            }))
                     // /bindingvow list
                     .then(CommandManager.literal("list")
                             .executes(context -> {

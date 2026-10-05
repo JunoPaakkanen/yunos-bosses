@@ -25,9 +25,6 @@ public class ModMessages {
         PayloadTypeRegistry.playC2S().register(DomainClashInputPayload.ID, DomainClashInputPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(ToggleBindingVowPayload.ID, ToggleBindingVowPayload.CODEC);
 
-        // Register S2C IDs and Codecs
-        PayloadTypeRegistry.playS2C().register(OpenBindingVowScreenPayload.ID, OpenBindingVowScreenPayload.CODEC);
-
         // Register Receivers
         // Spell cycling
         ServerPlayNetworking.registerGlobalReceiver(SpellCyclePayload.ID, (payload, context) -> {
