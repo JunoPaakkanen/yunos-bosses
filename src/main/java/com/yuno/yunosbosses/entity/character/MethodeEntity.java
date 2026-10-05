@@ -7,8 +7,10 @@ import com.yuno.yunosbosses.entity.goal.ability.DefensiveProjectileShieldAbility
 import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.util.BarrierManager;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -74,11 +76,12 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
         // Look around randomly when idle.
         this.goalSelector.add(5, new LookAroundGoal(this));
 
-        // Get revenge on the player if she gets hit.
-        this.targetSelector.add(1, new RevengeGoal(this));
+        // Get revenge on any entity (mobs, iron golems, wolves, players) if she gets hit
+        this.targetSelector.add(1, new RevengeGoal(this).setGroupRevenge());
 
-        // Actively target players (checkVisibility = false so boss does not lose target behind blocks/grass)
-        this.targetSelector.add(2, new ActiveTargetGoal<>(this, PlayerEntity.class, false));
+        // Target hostile entities / golems attacking her or players
+        this.targetSelector.add(2, new ActiveTargetGoal<>(this, LivingEntity.class, 10, true, false,
+                (entity, serverWorld) -> entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this));
 
         // Move towards her targets to attack them.
         this.goalSelector.add(2, new MethodeAttackGoal(this, 2D));
@@ -145,6 +148,42 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
         handleDefensiveMagic(world);
     }
 
+    /**
+     * Attempts to raise Methode's Defensive Magic shield towards an incoming threat (projectile or beam).
+     * Returns true if the shield was successfully raised.
+     */
+    public boolean tryDefendAgainst(Vec3d threatOrigin) {
+        if (this.defensiveMagicCooldown > 0) {
+            return false;
+        }
+        if (this.isDead() || !this.isAlive()) {
+            return false;
+        }
+
+        Vec3d toThreat = threatOrigin.subtract(this.getEyePos()).normalize();
+        if (BarrierManager.hasActiveBarrierFor(this.getUuid(), toThreat)) {
+            return false;
+        }
+
+        // Snap Methode's look directly towards the incoming threat
+        double dx = toThreat.x;
+        double dy = toThreat.y;
+        double dz = toThreat.z;
+        double horizDist = Math.sqrt(dx * dx + dz * dz);
+        float targetYaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+        float targetPitch = (float) (-(Math.atan2(dy, horizDist) * (180.0 / Math.PI)));
+        this.setHeadYaw(targetYaw);
+        this.setBodyYaw(targetYaw);
+        this.setYaw(targetYaw);
+        this.setPitch(targetPitch);
+        this.getLookControl().lookAt(threatOrigin.x, threatOrigin.y, threatOrigin.z, 360.0F, 360.0F);
+
+        // Cast Defensive Magic
+        ModSpells.DEFENSIVE_MAGIC.cast(this.getWorld(), this, this.getMainHandStack());
+        this.defensiveMagicCooldown = DEFENSIVE_MAGIC_COOLDOWN; // 5-second cooldown (100 ticks)
+        return true;
+    }
+
     private void handleDefensiveMagic(ServerWorld world) {
         // Enforce 5-second cooldown: decrement and return early if on cooldown
         if (this.defensiveMagicCooldown > 0) {
@@ -176,31 +215,9 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
             }
         }
 
-        if (closest == null) return;
-
-        Vec3d toProj = closest.getPos().subtract(this.getEyePos()).normalize();
-
-        // If Methode already has an active barrier in front of her protecting that direction, return
-        if (BarrierManager.hasActiveBarrierFor(this.getUuid(), toProj)) {
-            return;
+        if (closest != null) {
+            tryDefendAgainst(closest.getPos());
         }
-
-        // Snap Methode's look to the incoming projectile
-        double dx = toProj.x;
-        double dy = toProj.y;
-        double dz = toProj.z;
-        double horizDist = Math.sqrt(dx * dx + dz * dz);
-        float targetYaw = (float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
-        float targetPitch = (float) (-(Math.atan2(dy, horizDist) * (180.0 / Math.PI)));
-        this.setHeadYaw(targetYaw);
-        this.setBodyYaw(targetYaw);
-        this.setYaw(targetYaw);
-        this.setPitch(targetPitch);
-        this.getLookControl().lookAt(closest.getX(), closest.getY(), closest.getZ(), 360.0F, 360.0F);
-
-        // Cast Defensive Magic!
-        ModSpells.DEFENSIVE_MAGIC.cast(world, this, this.getMainHandStack());
-        this.defensiveMagicCooldown = DEFENSIVE_MAGIC_COOLDOWN; // 5-second cooldown (100 ticks)
     }
 
     @Override
@@ -212,5 +229,10 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
     @Override
     public String getBossIdentifier() {
         return "methode";
+    }
+
+    @Override
+    public boolean startRiding(Entity entity, boolean force) {
+        return false;
     }
 }

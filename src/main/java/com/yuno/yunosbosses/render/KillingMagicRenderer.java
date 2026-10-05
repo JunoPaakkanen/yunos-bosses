@@ -1,6 +1,8 @@
 package com.yuno.yunosbosses.render;
 
+import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.ActiveBeam;
+import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.BeamManager;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -11,7 +13,10 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -164,7 +169,75 @@ public class KillingMagicRenderer {
             if (beamAlpha > 0) {
                 float dynamicRadius = baseRadius * (1.0F - (firingProgress * 0.15F));
 
-                Vec3d renderDir = activeLookDir.multiply(beam.getRange());
+                float visualRange = beam.getRange();
+                Vec3d rayStart = activeVisualStart;
+
+                // 1. Raycast against active barriers on client
+                for (ActiveBarrier barrier : BarrierManager.ACTIVE_BARRIERS_CLIENT) {
+                    if (barrier.isExpired()) continue;
+
+                    boolean isSphere = barrier.getDirection().equals(Vec3d.ZERO);
+                    if (isSphere) {
+                        if (barrier.isOpenBarrier()) continue;
+
+                        Vec3d center = barrier.getPosition();
+                        float sphereRadius = barrier.getRadius();
+                        boolean casterOutside = rayStart.distanceTo(center) > sphereRadius;
+
+                        // Spherical barrier blocks beams from inside AND outside, even for the owner
+                        Vec3d toCenter = center.subtract(rayStart);
+                        double proj = toCenter.dotProduct(unitDir);
+                        Vec3d closestPoint = rayStart.add(unitDir.multiply(proj));
+                        double distToCenter = closestPoint.distanceTo(center);
+
+                        if (distToCenter <= sphereRadius) {
+                            double halfChord = Math.sqrt(Math.max(0, sphereRadius * sphereRadius - distToCenter * distToCenter));
+                            double hitDist;
+                            if (casterOutside) {
+                                hitDist = Math.max(0, proj - halfChord);
+                            } else {
+                                // Firing from inside: stops at inner surface
+                                hitDist = proj + halfChord;
+                            }
+                            if (hitDist > 0 && hitDist < visualRange) {
+                                visualRange = (float) hitDist;
+                            }
+                        }
+                    } else {
+                        // Directional Hex Shield
+                        // Allows the owner to fire through it, but no one else!
+                        if (barrier.getOwnerUuid().equals(beam.getOwnerUuid())) {
+                            continue;
+                        }
+                        Vec3d shieldPos = barrier.getPosition();
+                        float shieldRadius = barrier.getRadius() > 0 ? barrier.getRadius() : 1.6F;
+
+                        Vec3d toShield = shieldPos.subtract(rayStart);
+                        double proj = toShield.dotProduct(unitDir);
+                        if (proj > 0 && proj < visualRange) {
+                            Vec3d rayPoint = rayStart.add(unitDir.multiply(proj));
+                            if (rayPoint.distanceTo(shieldPos) <= shieldRadius + 0.3) {
+                                visualRange = (float) proj;
+                            }
+                        }
+                    }
+                }
+
+                // 2. Raycast against solid block colliders in the world
+                BlockHitResult blockHit = clientWorld.raycast(new RaycastContext(
+                        rayStart,
+                        rayStart.add(unitDir.multiply(visualRange)),
+                        RaycastContext.ShapeType.COLLIDER,
+                        RaycastContext.FluidHandling.NONE,
+                        owner
+                ));
+                if (blockHit.getType() != HitResult.Type.MISS) {
+                    visualRange = (float) rayStart.distanceTo(blockHit.getPos());
+                }
+
+                if (visualRange < 0.1F) visualRange = 0.1F;
+
+                Vec3d renderDir = unitDir.multiply(visualRange);
                 Matrix4f posMatrix = matrices.peek().getPositionMatrix();
                 VertexConsumer beamBuffer = context.consumers().getBuffer(RenderLayer.getLightning());
 

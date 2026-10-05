@@ -17,6 +17,7 @@ import net.minecraft.world.World;
 public class KillingMagicBarrage extends KillingMagic {
     private static final int BEAM_COUNT = 10;
     private static final int DELAY_BETWEEN_BEAMS = 2; // Every 2 ticks a new beam fires
+    private static final float BASE_DAMAGE = 10.0F;
 
     public KillingMagicBarrage(Identifier id, SpellRarity rarity) {
         super(id, rarity);
@@ -29,7 +30,7 @@ public class KillingMagicBarrage extends KillingMagic {
 
     @Override
     public float getManaCost(LivingEntity caster) {
-        return 35.0F;
+        return 55.0F;
     }
 
     @Override
@@ -45,7 +46,7 @@ public class KillingMagicBarrage extends KillingMagic {
         if (staff.getItem() instanceof StaffItem staffItem) {
             damageMultiplier = staffItem.getPowerMultiplier();
         }
-        final float trueDamage = 14.0F * damageMultiplier;
+        final float trueDamage = BASE_DAMAGE * damageMultiplier;
 
         // Visual hand swing
         caster.swingHand(Hand.MAIN_HAND, true);

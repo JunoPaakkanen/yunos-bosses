@@ -68,7 +68,12 @@ public class ActiveBarrier {
     public Identifier getTexture() { return this.texture; }
     public BiConsumer<Entity, ActiveBarrier> getDomainEffect() { return this.domainEffect; }
     public DomainExpansion getDomainExpansion() { return this.domainExpansion; }
-    public float getRadius() { return this.radius; }
+    public float getRadius() {
+        if (this.radius <= 0.0F && !this.direction.equals(Vec3d.ZERO)) {
+            return 1.6F;
+        }
+        return this.radius;
+    }
     public boolean isOpenBarrier() { return this.openBarrier; }
 
     public boolean isFurnaceCueSent() { return this.furnaceCueSent; }
