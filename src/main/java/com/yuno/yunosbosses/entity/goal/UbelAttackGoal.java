@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.offensive.Shrine;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -13,6 +14,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 
 import java.util.EnumSet;
@@ -38,10 +40,13 @@ public class UbelAttackGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        this.target = this.ubel.getTarget();
-        if (this.target == null || !this.target.isAlive()) {
-            findTarget();
+        LivingEntity currentTarget = this.ubel.getTarget();
+        if (currentTarget != null && currentTarget.isAlive()) {
+            this.target = currentTarget;
+            return true;
         }
+
+        findTarget();
         return this.target != null && this.target.isAlive();
     }
 
@@ -51,6 +56,15 @@ public class UbelAttackGoal extends Goal {
     }
 
     private void findTarget() {
+        LivingEntity attacker = this.ubel.getAttacker();
+        if (attacker != null && attacker.isAlive() && !attacker.isSpectator()) {
+            if (!(attacker instanceof PlayerEntity player && player.isCreative())) {
+                this.ubel.setTarget(attacker);
+                this.target = attacker;
+                return;
+            }
+        }
+
         PlayerEntity nearest = this.ubel.getWorld().getClosestPlayer(this.ubel, 32.0);
         if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
             this.ubel.setTarget(nearest);
@@ -106,18 +120,30 @@ public class UbelAttackGoal extends Goal {
 
         double distanceSq = this.ubel.squaredDistanceTo(this.target);
         double directDistance = this.ubel.distanceTo(this.target);
+        double dy = this.target.getY() - this.ubel.getY();
+        boolean verticallyUnreachable = dy > 1.8;
+        boolean obstructed = !this.ubel.canSee(this.target);
 
         // --- SAFE TELEPORT LOGIC (periodically evaluated to avoid pathfinding spam) ---
-        if (this.teleportCooldown <= 0 && directDistance > 6.0 && this.ubel.age % 10 == 0) {
-            var path = this.ubel.getNavigation().findPathTo(this.target, 0);
-            boolean shouldTeleport = (path == null || !path.reachesTarget());
-            if (!shouldTeleport && path != null && path.getLength() > directDistance * 2.0 && directDistance > 10.0) {
-                shouldTeleport = true;
-            }
+        if (this.teleportCooldown <= 0 && this.ubel.age % 10 == 0) {
+            boolean canBypassDistance = verticallyUnreachable || (obstructed && directDistance <= 6.0);
+            if (directDistance > 6.0 || canBypassDistance) {
+                var path = this.ubel.getNavigation().findPathTo(this.target, 0);
+                boolean shouldTeleport = (path == null || !path.reachesTarget());
+                if (canBypassDistance) {
+                    shouldTeleport = true;
+                }
+                if (!shouldTeleport && path != null && path.getLength() > directDistance * 2.0 && directDistance > 10.0) {
+                    shouldTeleport = true;
+                }
+                if (directDistance > 18.0) {
+                    shouldTeleport = true;
+                }
 
-            if (shouldTeleport) {
-                this.teleportToTarget();
-                this.teleportCooldown = 100; // 5-second cooldown
+                if (shouldTeleport) {
+                    this.teleportToTarget();
+                    this.teleportCooldown = 100; // 5-second cooldown
+                }
             }
         }
 
@@ -262,7 +288,7 @@ public class UbelAttackGoal extends Goal {
     }
 
     private void teleportToTarget() {
-        Vec3d safePos = findSafePositionNear(this.target.getPos(), 3.0, 5.0);
+        Vec3d safePos = findSafePositionNear(this.target.getPos(), 2.0, 5.0);
         if (safePos != null) {
             this.ubel.refreshPositionAndAngles(safePos.x, safePos.y, safePos.z, this.ubel.getYaw(), this.ubel.getPitch());
             this.ubel.getNavigation().stop();
@@ -272,25 +298,45 @@ public class UbelAttackGoal extends Goal {
 
     private Vec3d findSafePositionNear(Vec3d center, double minR, double maxR) {
         World world = this.ubel.getWorld();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 16; i++) {
             double angle = this.ubel.getRandom().nextDouble() * Math.PI * 2.0;
             double r = minR + this.ubel.getRandom().nextDouble() * (maxR - minR);
             double x = center.x + Math.cos(angle) * r;
             double z = center.z + Math.sin(angle) * r;
-            BlockPos targetBlock = BlockPos.ofFloored(x, center.y, z);
+            BlockPos targetCol = BlockPos.ofFloored(x, center.y, z);
 
-            for (int dy = 3; dy >= -3; dy--) {
-                BlockPos feetPos = targetBlock.up(dy);
-                BlockPos floorPos = feetPos.down();
-                BlockPos headPos = feetPos.up();
-
-                if (world.getBlockState(floorPos).isSolidBlock(world, floorPos)
-                        && world.getBlockState(feetPos).isAir()
-                        && world.getBlockState(headPos).isAir()) {
+            // 1. Search vertically around target Y (from dy = +4 down to dy = -12)
+            // Catches elevated pillars, hills, floors, and platforms
+            for (int dy = 4; dy >= -12; dy--) {
+                BlockPos feetPos = targetCol.up(dy);
+                if (isValidStandPosition(world, feetPos)) {
                     return new Vec3d(feetPos.getX() + 0.5, feetPos.getY(), feetPos.getZ() + 0.5);
                 }
             }
+
+            // 2. Fallback: world surface top position (for extreme heights / pillars)
+            BlockPos topPos = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, targetCol);
+            if (isValidStandPosition(world, topPos)) {
+                return new Vec3d(topPos.getX() + 0.5, topPos.getY(), topPos.getZ() + 0.5);
+            }
         }
         return null;
+    }
+
+    private static boolean isValidStandPosition(World world, BlockPos feetPos) {
+        BlockPos floorPos = feetPos.down();
+        BlockPos headPos = feetPos.up();
+        BlockState floorState = world.getBlockState(floorPos);
+        BlockState feetState = world.getBlockState(feetPos);
+        BlockState headState = world.getBlockState(headPos);
+
+        boolean solidFloor = floorState.isSolidBlock(world, floorPos)
+                || floorState.isOpaqueFullCube()
+                || floorState.hasSolidTopSurface(world, floorPos, null);
+
+        boolean clearFeet = feetState.getCollisionShape(world, feetPos).isEmpty();
+        boolean clearHead = headState.getCollisionShape(world, headPos).isEmpty();
+
+        return solidFloor && clearFeet && clearHead;
     }
 }

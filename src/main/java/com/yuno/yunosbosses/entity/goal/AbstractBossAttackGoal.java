@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.entity.character.MethodeEntity;
 import com.yuno.yunosbosses.entity.goal.ability.BossAbility;
 import com.yuno.yunosbosses.entity.goal.ability.DefensiveProjectileShieldAbility;
 import com.yuno.yunosbosses.util.BarrierManager;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.mob.MobEntity;
@@ -11,6 +12,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
@@ -55,10 +57,13 @@ public abstract class AbstractBossAttackGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        this.target = this.boss.getTarget();
-        if (this.target == null || !this.target.isAlive()) {
-            findTarget();
+        LivingEntity currentTarget = this.boss.getTarget();
+        if (currentTarget != null && currentTarget.isAlive()) {
+            this.target = currentTarget;
+            return true;
         }
+
+        findTarget();
         return this.target != null && this.target.isAlive();
     }
 
@@ -68,6 +73,15 @@ public abstract class AbstractBossAttackGoal extends Goal {
     }
 
     protected void findTarget() {
+        LivingEntity attacker = this.boss.getAttacker();
+        if (attacker != null && attacker.isAlive() && !attacker.isSpectator()) {
+            if (!(attacker instanceof PlayerEntity player && player.isCreative())) {
+                this.boss.setTarget(attacker);
+                this.target = attacker;
+                return;
+            }
+        }
+
         PlayerEntity nearest = this.boss.getWorld().getClosestPlayer(this.boss, 32.0);
         if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
             this.boss.setTarget(nearest);
@@ -297,13 +311,21 @@ public abstract class AbstractBossAttackGoal extends Goal {
     protected void handleTeleportation() {
         if (this.teleportCooldown > 0) return;
         double directDistance = this.boss.distanceTo(this.target);
-        if (directDistance <= 6.0) return;
+        double dy = this.target.getY() - this.boss.getY();
+        boolean verticallyUnreachable = dy > 1.8;
+        boolean obstructed = !this.boss.canSee(this.target);
+
+        // Don't teleport if already near target on the same level with clear line of sight
+        if (directDistance <= 6.0 && !verticallyUnreachable && !obstructed) return;
 
         // Periodically evaluate path to prevent per-tick navigation spam
         if (this.boss.age % 10 == 0) {
             var path = this.boss.getNavigation().findPathTo(this.target, 0);
 
             boolean shouldTeleport = (path == null || !path.reachesTarget());
+            if (verticallyUnreachable || (obstructed && directDistance <= 6.0)) {
+                shouldTeleport = true;
+            }
             if (!shouldTeleport && path != null && path.getLength() > directDistance * 2.0 && directDistance > 10.0) {
                 shouldTeleport = true;
             }
@@ -312,7 +334,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
             }
 
             if (shouldTeleport) {
-                Vec3d safePos = findSafePositionNear(this.target.getPos(), 3.0, 5.0);
+                Vec3d safePos = findSafePositionNear(this.target.getPos(), 2.0, 5.0);
                 if (safePos != null) {
                     performTeleport(safePos);
                 }
@@ -328,25 +350,45 @@ public abstract class AbstractBossAttackGoal extends Goal {
 
     protected Vec3d findSafePositionNear(Vec3d center, double minR, double maxR) {
         World world = this.boss.getWorld();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 16; i++) {
             double angle = this.boss.getRandom().nextDouble() * Math.PI * 2.0;
             double r = minR + this.boss.getRandom().nextDouble() * (maxR - minR);
             double x = center.x + Math.cos(angle) * r;
             double z = center.z + Math.sin(angle) * r;
-            BlockPos targetBlock = BlockPos.ofFloored(x, center.y, z);
+            BlockPos targetCol = BlockPos.ofFloored(x, center.y, z);
 
-            for (int dy = 3; dy >= -3; dy--) {
-                BlockPos feetPos = targetBlock.up(dy);
-                BlockPos floorPos = feetPos.down();
-                BlockPos headPos = feetPos.up();
-
-                if (world.getBlockState(floorPos).isSolidBlock(world, floorPos)
-                        && world.getBlockState(feetPos).isAir()
-                        && world.getBlockState(headPos).isAir()) {
+            // 1. First priority: search vertically around center.y (from dy = +4 down to dy = -12)
+            // This catches elevated pillars, hills, floors, and platforms
+            for (int dy = 4; dy >= -12; dy--) {
+                BlockPos feetPos = targetCol.up(dy);
+                if (isValidStandPosition(world, feetPos)) {
                     return new Vec3d(feetPos.getX() + 0.5, feetPos.getY(), feetPos.getZ() + 0.5);
                 }
             }
+
+            // 2. Fallback: world surface top position (for extreme heights / pillars)
+            BlockPos topPos = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, targetCol);
+            if (isValidStandPosition(world, topPos)) {
+                return new Vec3d(topPos.getX() + 0.5, topPos.getY(), topPos.getZ() + 0.5);
+            }
         }
         return null;
+    }
+
+    private static boolean isValidStandPosition(World world, BlockPos feetPos) {
+        BlockPos floorPos = feetPos.down();
+        BlockPos headPos = feetPos.up();
+        BlockState floorState = world.getBlockState(floorPos);
+        BlockState feetState = world.getBlockState(feetPos);
+        BlockState headState = world.getBlockState(headPos);
+
+        boolean solidFloor = floorState.isSolidBlock(world, floorPos)
+                || floorState.isOpaqueFullCube()
+                || floorState.hasSolidTopSurface(world, floorPos, null);
+
+        boolean clearFeet = feetState.getCollisionShape(world, feetPos).isEmpty();
+        boolean clearHead = headState.getCollisionShape(world, headPos).isEmpty();
+
+        return solidFloor && clearFeet && clearHead;
     }
 }
