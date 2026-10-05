@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.domain.clash;
 
+import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.network.DomainClashEndPayload;
@@ -174,8 +175,8 @@ public class DomainClashManager {
             base += healthRatio * 20.0f;
 
             // Innate refinement for boss entities
-            if (entity instanceof UbelEntity) {
-                base += 10.0f;
+            if (entity instanceof YunosBossEntity) {
+                base += 15.0f;
             }
 
             return base;
