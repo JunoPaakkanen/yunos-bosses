@@ -128,6 +128,6 @@ public class StaffItem extends Item {
     }
 
     public float getRefinementMultiplier() {
-        return powerMultiplier;
+        return refinementMultiplier;
     }
 }
