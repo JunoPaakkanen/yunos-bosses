@@ -39,7 +39,7 @@ public class CuttingMagicReelseiden extends Spell {
     }
 
     public float baseDamage = 11.0F;
-    public float manaCost = 42.0F;
+    public float manaCost = 33.0F;
 
     private static class ComboTracker {
         int step;
