@@ -41,6 +41,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
 import java.util.HashSet;
@@ -537,7 +538,10 @@ public class Shrine extends Spell {
                     BlockState state = serverWorld.getBlockState(bPos);
                     if (!state.isAir() && state.getFluidState().isEmpty() && state.getHardness(serverWorld, bPos) >= 0.0F) {
                         brokenBlocks.add(bPos);
-                        serverWorld.setBlockState(bPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                        // Do NOT destroy blocks if MobGriefing is disabled
+                        if (serverWorld.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
+                            serverWorld.setBlockState(bPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                        }
 
                         serverWorld.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, state),
                                 currentPos.x, currentPos.y, currentPos.z, 10, 0.25, 0.25, 0.25, 0.12);

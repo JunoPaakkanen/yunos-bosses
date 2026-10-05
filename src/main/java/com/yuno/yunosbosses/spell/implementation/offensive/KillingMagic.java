@@ -29,6 +29,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 
 import java.util.HashSet;
@@ -469,7 +470,9 @@ public class KillingMagic extends Spell {
                         if (!state.getFluidState().isEmpty()) continue;
 
                         brokenBlocks.add(bPos.toImmutable());
-                        world.setBlockState(bPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                        if (world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
+                            world.setBlockState(bPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                        }
 
                         // Block fragments
                         world.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, state),
@@ -531,7 +534,10 @@ public class KillingMagic extends Spell {
                         && !state.isOf(Blocks.BEDROCK) && state.getFluidState().isEmpty()) {
 
                     brokenBlocks.add(bPos.toImmutable());
-                    world.setBlockState(bPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                    // Do NOT destroy blocks if MobGriefing is disabled
+                    if (world.getGameRules().getBoolean(GameRules.DO_MOB_GRIEFING)) {
+                        world.setBlockState(bPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_LISTENERS);
+                    }
                     world.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, state),
                             bPos.getX() + 0.5, bPos.getY() + 0.5, bPos.getZ() + 0.5, 3, 0.2, 0.2, 0.2, 0.05);
                 }
