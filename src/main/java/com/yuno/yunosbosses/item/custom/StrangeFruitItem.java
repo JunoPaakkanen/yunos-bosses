@@ -78,7 +78,6 @@ public class StrangeFruitItem extends Item {
 
             if (rolledSpell != null) {
                 var spellComponent = ModEntityComponents.SPELL_DATA.get(player);
-                spellComponent.learnSpell(rolledSpell);
 
                 if (spellComponent.getKnownSpells().contains(rolledSpell)) {
                     player.sendMessage(
@@ -93,6 +92,7 @@ public class StrangeFruitItem extends Item {
                             false
                     );
                 }
+                spellComponent.learnSpell(rolledSpell);
             }
 
             // Awakening particles
