@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
+import com.yuno.yunosbosses.entity.character.NaoyaEntity;
 import com.yuno.yunosbosses.network.SpawnImagePayload;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
@@ -33,6 +34,9 @@ import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ProjectionSorcery extends Spell {
     /*
@@ -49,6 +53,11 @@ public class ProjectionSorcery extends Spell {
     public static final int IMAGE_COUNT = 5;
     public static final int MAX_TICKS = 100; // 5 seconds
     public static final int INTERVAL_TICKS = 2; // 0.1s delay between frame spawns (2 ticks)
+
+    // Per-entity cooldown tracking for high-speed ram (caster UUID + target UUID -> next allowed game tick)
+    private record RamTargetKey(UUID casterUuid, UUID targetUuid) {}
+    private static final Map<RamTargetKey, Long> RAM_COOLDOWNS = new ConcurrentHashMap<>();
+    public static final int RAM_COOLDOWN_TICKS = 20; // 1.0 second cooldown per entity
 
     public ProjectionSorcery(Identifier id, SpellRarity rarity) {
         super(id, true, rarity, true);
@@ -279,11 +288,19 @@ public class ProjectionSorcery extends Spell {
     }
 
     public static void handleHighSpeedRam(LivingEntity caster, int speedStacks) {
-        if (!caster.isSprinting() || speedStacks < 10 || !caster.isAlive() || caster.isSpectator()) {
+        boolean isSprintingOrDashing = caster.isSprinting() || (caster instanceof NaoyaEntity naoya && naoya.isDashing());
+        if (!isSprintingOrDashing || speedStacks < 10 || !caster.isAlive() || caster.isSpectator()) {
             return;
         }
 
         if (caster.getWorld() instanceof ServerWorld serverWorld) {
+            long currentTick = serverWorld.getTime();
+
+            // Periodic cleanup of expired cooldown entries
+            if (currentTick % 100 == 0) {
+                RAM_COOLDOWNS.entrySet().removeIf(entry -> entry.getValue() <= currentTick);
+            }
+
             double range = 1.5;
             Box damageBox = caster.getBoundingBox().expand(range, 0.5, range);
             List<LivingEntity> nearbyEntities = serverWorld.getEntitiesByClass(
@@ -295,10 +312,19 @@ public class ProjectionSorcery extends Spell {
             float damage = 8.0F + (speedStacks - 10) * 2.0F;
 
             for (LivingEntity target : nearbyEntities) {
+                RamTargetKey cooldownKey = new RamTargetKey(caster.getUuid(), target.getUuid());
+                Long nextAllowedTick = RAM_COOLDOWNS.get(cooldownKey);
+                if (nextAllowedTick != null && currentTick < nextAllowedTick) {
+                    continue; // Cooldown for this specific entity is still active
+                }
+
                 DamageSource damageSource = caster instanceof PlayerEntity player
                         ? player.getDamageSources().playerAttack(player)
                         : caster.getDamageSources().mobAttack(caster);
                 if (target.damage(serverWorld, damageSource, damage)) {
+                    // Set per-entity cooldown
+                    RAM_COOLDOWNS.put(cooldownKey, currentTick + RAM_COOLDOWN_TICKS);
+
                     // Spawn particles
                     serverWorld.spawnParticles(
                             ParticleTypes.EXPLOSION,
@@ -406,10 +432,10 @@ public class ProjectionSorcery extends Spell {
         if (caster instanceof PlayerEntity) {
             SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);
             if (component.hasAltCastWindow(this)) {
-                return 10.0F; // Cost for alt cast
+                return 3.0F; // Cost for alt cast
             }
         }
-        return 50.0F; // Cost for default cast
+        return 20.0F; // Cost for default cast
     }
 
     @Override
