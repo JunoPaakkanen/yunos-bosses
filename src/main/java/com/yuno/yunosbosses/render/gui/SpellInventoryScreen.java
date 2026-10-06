@@ -15,11 +15,14 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SpellInventoryScreen extends Screen {
+    private static final Identifier GUI_TEXTURE = Identifier.of("yunosbosses", "textures/gui/spell_gui.png");
+
     // Standard GUI size
     private final int guiWidth = 176;
     private final int guiHeight = 166;
@@ -57,13 +60,19 @@ public class SpellInventoryScreen extends Screen {
         // Draw Tabs at top
         drawTabs(context, mouseX, mouseY);
 
-        // Draw GUI Background panel
-        context.fill(guiLeft, guiTop, guiLeft + guiWidth, guiTop + guiHeight, 0xFF1E1E2E); // Dark blue/gray background
-        context.drawBorder(guiLeft, guiTop, guiWidth, guiHeight, 0xFF45475A); // Border
+        // Draw GUI Background panel texture (176 x 166 on 256 x 256 sheet)
+        context.drawTexture(
+                RenderPipelines.GUI_TEXTURED,
+                GUI_TEXTURE,
+                guiLeft, guiTop,
+                0.0F, 0.0F,
+                guiWidth, guiHeight,
+                256, 256
+        );
 
         if (activeTab == 0) {
             // Title Text
-            context.drawText(this.textRenderer, "SPELL INVENTORY", guiLeft + 12, guiTop + 10, 0xFFCDD6F4, false);
+            context.drawText(this.textRenderer, "SPELL INVENTORY", guiLeft + 12, guiTop + 10, 0xFFE0F8F5, false);
 
             var component = ModEntityComponents.SPELL_DATA.get(this.client.player);
             // Draw Known Spells Grid & Equipped Sidebar
@@ -84,34 +93,34 @@ public class SpellInventoryScreen extends Screen {
         int tabY = guiTop - 16;
         int tabH = 16;
 
+        // Matching color palette from spell_gui.png (top color ~0xFF414265, border 0xFF488885)
+        int tabActiveBg = 0xFF414265;
+        int tabBorder = 0xFF488885;
+        int tabInactiveBorder = 0xFF3A5858;
+
         // Spells Tab
         int tab0X = guiLeft + 8;
         int tab0W = 56;
         boolean tab0Active = (activeTab == 0);
-        int tab0Bg = tab0Active ? 0xFF1E1E2E : (isHovering(tab0X, tabY, tab0W, tabH, mouseX, mouseY) ? 0xFF2A2B3D : 0xFF181825);
-        int tab0TextCol = tab0Active ? 0xFFCDD6F4 : 0xFF7F849C;
+        int tab0Bg = tab0Active ? tabActiveBg : (isHovering(tab0X, tabY, tab0W, tabH, mouseX, mouseY) ? 0xFF2D3048 : 0xFF202235);
+        int tab0BorderCol = tab0Active ? tabBorder : tabInactiveBorder;
+        int tab0TextCol = tab0Active ? 0xFFE0F8F5 : 0xFF8892B0;
 
         context.fill(tab0X, tabY, tab0X + tab0W, tabY + tabH, tab0Bg);
-        context.drawBorder(tab0X, tabY, tab0W, tabH, 0xFF45475A);
+        context.drawBorder(tab0X, tabY, tab0W, tabH, tab0BorderCol);
         context.drawText(this.textRenderer, "Spells", tab0X + 11, tabY + 4, tab0TextCol, false);
 
         // Binding Vows Tab
         int tab1X = guiLeft + 66;
         int tab1W = 86;
         boolean tab1Active = (activeTab == 1);
-        int tab1Bg = tab1Active ? 0xFF1E1E2E : (isHovering(tab1X, tabY, tab1W, tabH, mouseX, mouseY) ? 0xFF2A2B3D : 0xFF181825);
-        int tab1TextCol = tab1Active ? 0xFFF9E2AF : 0xFF7F849C;
+        int tab1Bg = tab1Active ? tabActiveBg : (isHovering(tab1X, tabY, tab1W, tabH, mouseX, mouseY) ? 0xFF2D3048 : 0xFF202235);
+        int tab1BorderCol = tab1Active ? tabBorder : tabInactiveBorder;
+        int tab1TextCol = tab1Active ? 0xFFF9E2AF : 0xFF8892B0;
 
         context.fill(tab1X, tabY, tab1X + tab1W, tabY + tabH, tab1Bg);
-        context.drawBorder(tab1X, tabY, tab1W, tabH, 0xFF45475A);
+        context.drawBorder(tab1X, tabY, tab1W, tabH, tab1BorderCol);
         context.drawText(this.textRenderer, "Binding Vows", tab1X + 9, tabY + 4, tab1TextCol, false);
-
-        // Fill overlap lines so active tab seamlessly connects to main box
-        if (tab0Active) {
-            context.fill(tab0X + 1, guiTop, tab0X + tab0W - 1, guiTop + 1, 0xFF1E1E2E);
-        } else if (tab1Active) {
-            context.fill(tab1X + 1, guiTop, tab1X + tab1W - 1, guiTop + 1, 0xFF1E1E2E);
-        }
     }
 
     private void drawBindingVowsTab(DrawContext context, int mouseX, int mouseY) {
@@ -121,7 +130,7 @@ public class SpellInventoryScreen extends Screen {
 
         // Title and Subtitle
         context.drawText(this.textRenderer, "BINDING VOWS", guiLeft + 12, guiTop + 10, 0xFFF9E2AF, false);
-        context.drawText(this.textRenderer, "Sacred Pacts & Restrictions", guiLeft + 12, guiTop + 21, 0xFF6C7086, false);
+        context.drawText(this.textRenderer, "Sacred Pacts & Restrictions", guiLeft + 12, guiTop + 21, 0xFF94A3B8, false);
 
         List<BindingVow> vows = new ArrayList<>(ModBindingVows.getAll());
         int cardX = guiLeft + 10;
@@ -138,9 +147,9 @@ public class SpellInventoryScreen extends Screen {
             boolean isActive = vowComponent != null && vowComponent.hasVow(vow.getId());
             boolean canAccept = vow.canAccept(player);
 
-            // Card background & border
-            int cardBg = isActive ? 0xFF181D2A : 0xFF181825;
-            int cardBorder = isActive ? 0xFF89B4FA : 0xFF313244;
+            // Card background & border (tinted to complement background)
+            int cardBg = isActive ? 0xD0182438 : 0xC0151825;
+            int cardBorder = isActive ? 0xFF89B4FA : 0xFF384358;
             context.fill(cardX, y, cardX + cardW, y + cardH, cardBg);
             context.drawBorder(cardX, y, cardW, cardH, cardBorder);
 
@@ -151,7 +160,7 @@ public class SpellInventoryScreen extends Screen {
             if (isActive) {
                 context.drawText(this.textRenderer, "[ACTIVE]", cardX + cardW - 48, y + 5, 0xFFA6E3A1, false);
             } else {
-                context.drawText(this.textRenderer, "[SEALED]", cardX + cardW - 50, y + 5, 0xFF6C7086, false);
+                context.drawText(this.textRenderer, "[SEALED]", cardX + cardW - 50, y + 5, 0xFF94A3B8, false);
             }
 
             // Sacrifice line
@@ -242,8 +251,8 @@ public class SpellInventoryScreen extends Screen {
             int x = startX + (col * (slotSize + 2));
             int y = startY + (row * (slotSize + 2));
 
-            context.fill(x, y, x + slotSize, y + slotSize, 0xFF181825);
-            context.drawBorder(x, y, slotSize, slotSize, 0xFF313244);
+            context.fill(x, y, x + slotSize, y + slotSize, 0x90101420);
+            context.drawBorder(x, y, slotSize, slotSize, 0xFF384358);
 
             context.drawTexture(
                     RenderPipelines.GUI_TEXTURED,
@@ -287,12 +296,12 @@ public class SpellInventoryScreen extends Screen {
             Spell equipped = component.getEquippedSpell(i);
             boolean isInnateSlot = (i == 0);
 
-            context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0xFF181825);
+            context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x90101420);
 
             if (isInnateSlot) {
                 context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFFF9E2AF);
             } else {
-                context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFF313244);
+                context.drawBorder(sidebarX, y, slotSize, slotSize, 0xFF384358);
             }
 
             if (equipped != null) {
