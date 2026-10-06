@@ -54,7 +54,7 @@ public class ModEntitySpawns {
                 ),
                 SpawnGroup.MONSTER,
                 ModEntities.UBEL,
-                2, // Rare spawn weight (e.g. Wolf is weight ~8)
+                1, // Rare spawn weight (e.g. Wolf is weight ~8)
                 1,
                 1
         );
@@ -69,7 +69,7 @@ public class ModEntitySpawns {
                 ),
                 SpawnGroup.MONSTER,
                 ModEntities.METHODE,
-                2, // Rare spawn weight
+                1, // Rare spawn weight
                 1,
                 1
         );
@@ -85,7 +85,7 @@ public class ModEntitySpawns {
                 ),
                 SpawnGroup.MONSTER,
                 ModEntities.NAOYA,
-                2, // Rare spawn weight
+                1, // Rare spawn weight
                 1,
                 1
         );
