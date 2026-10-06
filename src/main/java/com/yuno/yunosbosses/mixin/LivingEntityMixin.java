@@ -21,6 +21,7 @@ import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,6 +32,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Collection;
+import java.util.List;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
@@ -211,6 +213,19 @@ public abstract class LivingEntityMixin {
         LivingEntity entity = (LivingEntity) (Object) this;
         if (entity instanceof YunosBossEntity) {
             BossContributionTracker.onBossDeath(entity, damageSource);
+        }
+        if (entity instanceof PlayerEntity player) {
+            if (entity.getWorld() instanceof ServerWorld serverWorld) {
+                // Clear target and attacker on any boss currently engaged with this player
+                Box searchBox = player.getBoundingBox().expand(128.0);
+                List<MobEntity> nearbyBosses = serverWorld.getEntitiesByClass(MobEntity.class, searchBox,
+                        mob -> mob instanceof YunosBossEntity && (mob.getTarget() == player || mob.getAttacker() == player));
+                for (MobEntity boss : nearbyBosses) {
+                    boss.setTarget(null);
+                    boss.setAttacker(null);
+                    boss.getNavigation().stop();
+                }
+            }
         }
     }
 }

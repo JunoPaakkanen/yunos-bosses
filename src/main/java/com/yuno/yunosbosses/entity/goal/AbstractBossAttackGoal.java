@@ -59,6 +59,14 @@ public abstract class AbstractBossAttackGoal extends Goal {
     public boolean canStart() {
         LivingEntity currentTarget = this.boss.getTarget();
         if (currentTarget != null && currentTarget.isAlive()) {
+            if (currentTarget instanceof PlayerEntity player && (player.isCreative() || player.isSpectator())) {
+                this.boss.setTarget(null);
+                return false;
+            }
+            if (this.boss.squaredDistanceTo(currentTarget) > 40.0 * 40.0) {
+                this.boss.setTarget(null);
+                return false;
+            }
             this.target = currentTarget;
             return true;
         }
@@ -69,16 +77,36 @@ public abstract class AbstractBossAttackGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        return this.canStart();
+        if (this.target == null || !this.target.isAlive()) {
+            this.boss.setTarget(null);
+            this.boss.setAttacker(null);
+            this.target = null;
+            return false;
+        }
+        if (this.target instanceof PlayerEntity player && (player.isCreative() || player.isSpectator())) {
+            this.boss.setTarget(null);
+            this.boss.setAttacker(null);
+            this.target = null;
+            return false;
+        }
+        if (this.boss.squaredDistanceTo(this.target) > 40.0 * 40.0) {
+            this.boss.setTarget(null);
+            this.boss.setAttacker(null);
+            this.target = null;
+            return false;
+        }
+        return true;
     }
 
     protected void findTarget() {
         LivingEntity attacker = this.boss.getAttacker();
         if (attacker != null && attacker.isAlive() && !attacker.isSpectator()) {
             if (!(attacker instanceof PlayerEntity player && player.isCreative())) {
-                this.boss.setTarget(attacker);
-                this.target = attacker;
-                return;
+                if (this.boss.squaredDistanceTo(attacker) <= 40.0 * 40.0) {
+                    this.boss.setTarget(attacker);
+                    this.target = attacker;
+                    return;
+                }
             }
         }
 
@@ -86,6 +114,9 @@ public abstract class AbstractBossAttackGoal extends Goal {
         if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
             this.boss.setTarget(nearest);
             this.target = nearest;
+        } else {
+            this.boss.setTarget(null);
+            this.target = null;
         }
     }
 
@@ -158,18 +189,31 @@ public abstract class AbstractBossAttackGoal extends Goal {
     @Override
     public void tick() {
         if (this.target == null || !this.target.isAlive()) {
-            findTarget();
-            if (this.target == null) {
-                if (this.activeAbility != null) {
-                    this.activeAbility.stop(this.boss);
-                    this.activeAbility = null;
-                }
-                this.attackTimer = 0;
-                return;
+            this.boss.setTarget(null);
+            this.boss.setAttacker(null);
+            this.target = null;
+            if (this.activeAbility != null) {
+                this.activeAbility.stop(this.boss);
+                this.activeAbility = null;
             }
+            this.attackTimer = 0;
+            this.stop();
+            return;
         }
 
         double distanceSq = this.boss.squaredDistanceTo(this.target);
+        if (distanceSq > 40.0 * 40.0) {
+            this.boss.setTarget(null);
+            this.boss.setAttacker(null);
+            this.target = null;
+            if (this.activeAbility != null) {
+                this.activeAbility.stop(this.boss);
+                this.activeAbility = null;
+            }
+            this.attackTimer = 0;
+            this.stop();
+            return;
+        }
 
         // 1. Universal Tracking & Movement (only when not in windup or executing multi-tick ability)
         if (this.attackTimer > 0) {
@@ -309,8 +353,12 @@ public abstract class AbstractBossAttackGoal extends Goal {
     }
 
     protected void handleTeleportation() {
-        if (this.teleportCooldown > 0) return;
+        if (this.teleportCooldown > 0 || this.target == null || !this.target.isAlive()) return;
         double directDistance = this.boss.distanceTo(this.target);
+        if (directDistance > 32.0) {
+            // Target is too far to teleport to (e.g. fled or respawned)
+            return;
+        }
         double dy = this.target.getY() - this.boss.getY();
         boolean verticallyUnreachable = dy > 1.8;
         boolean obstructed = !this.boss.canSee(this.target);
@@ -329,7 +377,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
             if (!shouldTeleport && path != null && path.getLength() > directDistance * 2.0 && directDistance > 10.0) {
                 shouldTeleport = true;
             }
-            if (directDistance > 18.0) {
+            if (directDistance > 18.0 && directDistance <= 32.0) {
                 shouldTeleport = true;
             }
 

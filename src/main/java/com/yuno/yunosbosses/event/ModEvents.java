@@ -2,13 +2,19 @@ package com.yuno.yunosbosses.event;
 
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.effect.ModEffects;
+import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.util.BarrierManager;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.math.Box;
+
+import java.util.List;
 
 public class ModEvents {
 
@@ -20,6 +26,20 @@ public class ModEvents {
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (entity.getWorld() instanceof ServerWorld serverWorld) {
                 BarrierManager.onOwnerDeath(entity, serverWorld);
+            }
+        });
+
+        // Ensure bosses never target or spawncamp a respawned player
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            if (newPlayer.getWorld() instanceof ServerWorld serverWorld) {
+                Box searchBox = newPlayer.getBoundingBox().expand(128.0);
+                List<MobEntity> nearbyBosses = serverWorld.getEntitiesByClass(MobEntity.class, searchBox,
+                        mob -> mob instanceof YunosBossEntity && (mob.getTarget() == newPlayer || mob.getTarget() == oldPlayer || mob.getAttacker() == newPlayer || mob.getAttacker() == oldPlayer));
+                for (MobEntity boss : nearbyBosses) {
+                    boss.setTarget(null);
+                    boss.setAttacker(null);
+                    boss.getNavigation().stop();
+                }
             }
         });
 

@@ -42,6 +42,14 @@ public class UbelAttackGoal extends Goal {
     public boolean canStart() {
         LivingEntity currentTarget = this.ubel.getTarget();
         if (currentTarget != null && currentTarget.isAlive()) {
+            if (currentTarget instanceof PlayerEntity player && (player.isCreative() || player.isSpectator())) {
+                this.ubel.setTarget(null);
+                return false;
+            }
+            if (this.ubel.squaredDistanceTo(currentTarget) > 40.0 * 40.0) {
+                this.ubel.setTarget(null);
+                return false;
+            }
             this.target = currentTarget;
             return true;
         }
@@ -52,16 +60,36 @@ public class UbelAttackGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        return this.canStart();
+        if (this.target == null || !this.target.isAlive()) {
+            this.ubel.setTarget(null);
+            this.ubel.setAttacker(null);
+            this.target = null;
+            return false;
+        }
+        if (this.target instanceof PlayerEntity player && (player.isCreative() || player.isSpectator())) {
+            this.ubel.setTarget(null);
+            this.ubel.setAttacker(null);
+            this.target = null;
+            return false;
+        }
+        if (this.ubel.squaredDistanceTo(this.target) > 40.0 * 40.0) {
+            this.ubel.setTarget(null);
+            this.ubel.setAttacker(null);
+            this.target = null;
+            return false;
+        }
+        return true;
     }
 
     private void findTarget() {
         LivingEntity attacker = this.ubel.getAttacker();
         if (attacker != null && attacker.isAlive() && !attacker.isSpectator()) {
             if (!(attacker instanceof PlayerEntity player && player.isCreative())) {
-                this.ubel.setTarget(attacker);
-                this.target = attacker;
-                return;
+                if (this.ubel.squaredDistanceTo(attacker) <= 40.0 * 40.0) {
+                    this.ubel.setTarget(attacker);
+                    this.target = attacker;
+                    return;
+                }
             }
         }
 
@@ -69,6 +97,9 @@ public class UbelAttackGoal extends Goal {
         if (nearest != null && !nearest.isCreative() && !nearest.isSpectator() && nearest.isAlive()) {
             this.ubel.setTarget(nearest);
             this.target = nearest;
+        } else {
+            this.ubel.setTarget(null);
+            this.target = null;
         }
     }
 
@@ -103,8 +134,22 @@ public class UbelAttackGoal extends Goal {
     @Override
     public void tick() {
         if (this.target == null || !this.target.isAlive()) {
-            findTarget();
-            if (this.target == null) return;
+            this.ubel.setTarget(null);
+            this.ubel.setAttacker(null);
+            this.target = null;
+            this.attackDurationTimer = 0;
+            this.stop();
+            return;
+        }
+
+        double distanceSq = this.ubel.squaredDistanceTo(this.target);
+        if (distanceSq > 40.0 * 40.0) {
+            this.ubel.setTarget(null);
+            this.ubel.setAttacker(null);
+            this.target = null;
+            this.attackDurationTimer = 0;
+            this.stop();
+            return;
         }
 
         if (this.attackDurationTimer > 0) {
@@ -118,14 +163,13 @@ public class UbelAttackGoal extends Goal {
             this.teleportCooldown--;
         }
 
-        double distanceSq = this.ubel.squaredDistanceTo(this.target);
         double directDistance = this.ubel.distanceTo(this.target);
         double dy = this.target.getY() - this.ubel.getY();
         boolean verticallyUnreachable = dy > 1.8;
         boolean obstructed = !this.ubel.canSee(this.target);
 
         // --- SAFE TELEPORT LOGIC (periodically evaluated to avoid pathfinding spam) ---
-        if (this.teleportCooldown <= 0 && this.ubel.age % 10 == 0) {
+        if (this.teleportCooldown <= 0 && this.ubel.age % 10 == 0 && directDistance <= 32.0) {
             boolean canBypassDistance = verticallyUnreachable || (obstructed && directDistance <= 6.0);
             if (directDistance > 6.0 || canBypassDistance) {
                 var path = this.ubel.getNavigation().findPathTo(this.target, 0);
@@ -136,7 +180,7 @@ public class UbelAttackGoal extends Goal {
                 if (!shouldTeleport && path != null && path.getLength() > directDistance * 2.0 && directDistance > 10.0) {
                     shouldTeleport = true;
                 }
-                if (directDistance > 18.0) {
+                if (directDistance > 18.0 && directDistance <= 32.0) {
                     shouldTeleport = true;
                 }
 
@@ -288,6 +332,9 @@ public class UbelAttackGoal extends Goal {
     }
 
     private void teleportToTarget() {
+        if (this.target == null || !this.target.isAlive() || this.ubel.distanceTo(this.target) > 32.0) {
+            return;
+        }
         Vec3d safePos = findSafePositionNear(this.target.getPos(), 2.0, 5.0);
         if (safePos != null) {
             this.ubel.refreshPositionAndAngles(safePos.x, safePos.y, safePos.z, this.ubel.getYaw(), this.ubel.getPitch());
