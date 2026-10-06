@@ -61,6 +61,42 @@ public class ModAdvancementProvider extends FabricAdvancementProvider {
                         EntityPredicate.Builder.create().type(EntityTypePredicate.create(null,ModEntities.UBEL))
                 ))
                 .build(consumer, "yunosbosses:defeat_ubel");
+
+        // --- METHODE ADVANCEMENT ---
+        AdvancementEntry methodeAdvancement = Advancement.Builder.create()
+                .parent(rootAdvancement)
+                .display(
+                        ModItems.METHODE_STAFF.getDefaultStack(),
+                        Text.translatable("advancements.yunosbosses.methode.title"),
+                        Text.translatable("advancements.yunosbosses.methode.description"),
+                        null,
+                        AdvancementFrame.CHALLENGE,
+                        true,
+                        true,
+                        false
+                )
+                .criterion("defeat_methode", OnKilledCriterion.Conditions.createPlayerKilledEntity(
+                        EntityPredicate.Builder.create().type(EntityTypePredicate.create(null, ModEntities.METHODE))
+                ))
+                .build(consumer, "yunosbosses:defeat_methode");
+
+        // --- NAOYA ADVANCEMENT ---
+        AdvancementEntry naoyaAdvancement = Advancement.Builder.create()
+                .parent(rootAdvancement)
+                .display(
+                        ModItems.METHODE_STAFF.getDefaultStack(),
+                        Text.translatable("advancements.yunosbosses.naoya.title"),
+                        Text.translatable("advancements.yunosbosses.naoya.description"),
+                        null,
+                        AdvancementFrame.CHALLENGE,
+                        true,
+                        true,
+                        false
+                )
+                .criterion("defeat_naoya", OnKilledCriterion.Conditions.createPlayerKilledEntity(
+                        EntityPredicate.Builder.create().type(EntityTypePredicate.create(null, ModEntities.NAOYA))
+                ))
+                .build(consumer, "yunosbosses:defeat_naoya");
     }
 
 
