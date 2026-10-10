@@ -6,10 +6,9 @@ import com.yuno.yunosbosses.entity.goal.ability.DefensiveProjectileShieldAbility
 import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.util.BarrierManager;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
+import com.yuno.yunosbosses.util.DuoModeCheckHelper;
+import com.yuno.yunosbosses.world.ModGameRules;
+import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -22,8 +21,12 @@ import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -39,6 +42,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     public static final int DEFENSIVE_MAGIC_COOLDOWN = 100; // 5 seconds (100 ticks)
     private int defensiveMagicCooldown = 0;
+    private boolean difficultyInitialized = false;
 
     public MethodeEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -60,6 +64,39 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
                 .add(EntityAttributes.ATTACK_DAMAGE, 9.0D) // Attack damage
                 .add(EntityAttributes.ARMOR, 10.0D)
                 .add(EntityAttributes.FOLLOW_RANGE, 48.0D); // Aggro follow range
+    }
+
+    public void applyDifficultyStats(boolean isDuo) {
+        var maxHealthAttr = this.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            double maxHp = isDuo ? 350.0D : 150.0D;
+            maxHealthAttr.setBaseValue(maxHp);
+            this.setHealth((float) maxHp);
+        }
+        var armorAttr = this.getAttributeInstance(EntityAttributes.ARMOR);
+        if (armorAttr != null) {
+            armorAttr.setBaseValue(isDuo ? 15.0D : 10.0D);
+        }
+        this.difficultyInitialized = true;
+    }
+
+    @Override
+    public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData) {
+        EntityData data = super.initialize(world, difficulty, spawnReason, entityData);
+        applyDifficultyStats(world.toServerWorld().getGameRules().getBoolean(ModGameRules.DUO_BOSS_DIFFICULTY));
+        return data;
+    }
+
+    @Override
+    protected void writeCustomData(WriteView view) {
+        super.writeCustomData(view);
+        view.putBoolean("DifficultyInitialized", this.difficultyInitialized);
+    }
+
+    @Override
+    protected void readCustomData(ReadView view) {
+        super.readCustomData(view);
+        this.difficultyInitialized = view.getBoolean("DifficultyInitialized", false);
     }
 
     @Override
@@ -144,6 +181,9 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
     @Override
     protected void mobTick(ServerWorld world) {
         super.mobTick(world);
+        if (!this.difficultyInitialized) {
+            applyDifficultyStats(DuoModeCheckHelper.isDuoMode(world));
+        }
         // Sets the progress to health percentage (0.0 to 1.0)
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
 
@@ -183,12 +223,13 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
 
         // Cast Defensive Magic
         ModSpells.DEFENSIVE_MAGIC.cast(this.getWorld(), this, this.getMainHandStack());
-        this.defensiveMagicCooldown = DEFENSIVE_MAGIC_COOLDOWN; // 5-second cooldown (100 ticks)
+        int cooldown = DuoModeCheckHelper.isDuoMode(this.getWorld()) ? 50 : DEFENSIVE_MAGIC_COOLDOWN; // Shorter cooldown in Duo mode
+        this.defensiveMagicCooldown = cooldown;
         return true;
     }
 
     private void handleDefensiveMagic(ServerWorld world) {
-        // Enforce 5-second cooldown: decrement and return early if on cooldown
+        // Enforce shield cooldown: decrement and return early if on practical cooldown
         if (this.defensiveMagicCooldown > 0) {
             this.defensiveMagicCooldown--;
             return;

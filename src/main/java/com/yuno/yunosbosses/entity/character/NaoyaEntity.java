@@ -3,9 +3,9 @@ package com.yuno.yunosbosses.entity.character;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.goal.NaoyaAttackGoal;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
+import com.yuno.yunosbosses.util.DuoModeCheckHelper;
+import com.yuno.yunosbosses.world.ModGameRules;
+import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
@@ -22,7 +22,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -34,6 +38,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBossEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    private boolean difficultyInitialized = false;
 
     private static final Identifier SPEED_STACK_MODIFIER_ID = Identifier.of("yunosbosses", "naoya_speed_stacks");
 
@@ -60,8 +65,45 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
                 .add(EntityAttributes.MAX_HEALTH, 250.0D)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.32D)
                 .add(EntityAttributes.ATTACK_DAMAGE, 8.0D)
-                .add(EntityAttributes.ARMOR, 5.0D)
+                .add(EntityAttributes.ARMOR, 15.0D)
                 .add(EntityAttributes.FOLLOW_RANGE, 48.0D);
+    }
+
+    public void applyDifficultyStats(boolean isDuo) {
+        var maxHealthAttr = this.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            double maxHp = isDuo ? 400.0D : 250.0D;
+            maxHealthAttr.setBaseValue(maxHp);
+            this.setHealth((float) maxHp);
+        }
+        var armorAttr = this.getAttributeInstance(EntityAttributes.ARMOR);
+        if (armorAttr != null) {
+            armorAttr.setBaseValue(isDuo ? 20.0D : 15.0D);
+        }
+        var movementSpeedAttr = this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+        if (movementSpeedAttr != null) {
+            movementSpeedAttr.setBaseValue(isDuo ? 0.35D : 0.32D);
+        }
+        this.difficultyInitialized = true;
+    }
+
+    @Override
+    public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData) {
+        EntityData data = super.initialize(world, difficulty, spawnReason, entityData);
+        applyDifficultyStats(world.toServerWorld().getGameRules().getBoolean(ModGameRules.DUO_BOSS_DIFFICULTY));
+        return data;
+    }
+
+    @Override
+    protected void writeCustomData(WriteView view) {
+        super.writeCustomData(view);
+        view.putBoolean("DifficultyInitialized", this.difficultyInitialized);
+    }
+
+    @Override
+    protected void readCustomData(ReadView view) {
+        super.readCustomData(view);
+        this.difficultyInitialized = view.getBoolean("DifficultyInitialized", false);
     }
 
     @Override
@@ -196,6 +238,9 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
     @Override
     protected void mobTick(ServerWorld world) {
         super.mobTick(world);
+        if (!this.difficultyInitialized) {
+            applyDifficultyStats(DuoModeCheckHelper.isDuoMode(world));
+        }
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
 
         // Passive speed decay when out of action
@@ -229,12 +274,7 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
             this.attackGoal.tryEvasiveStep(source);
         }
 
-        boolean result = super.damage(world, source, amount);
-        if (result && amount > 15.0F) {
-            // Heavy hit breaks his speed accumulation rhythm
-            this.setSpeedStacks(Math.max(0, this.getSpeedStacks() - 3));
-        }
-        return result;
+        return super.damage(world, source, amount);
     }
 
     @Override

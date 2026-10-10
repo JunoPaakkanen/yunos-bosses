@@ -3,10 +3,9 @@ package com.yuno.yunosbosses.entity.character;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.goal.UbelAttackGoal;
 import com.yuno.yunosbosses.item.ModItems;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
+import com.yuno.yunosbosses.util.DuoModeCheckHelper;
+import com.yuno.yunosbosses.world.ModGameRules;
+import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -18,6 +17,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -29,6 +32,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    private boolean difficultyInitialized = false;
 
     public UbelEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -77,6 +81,43 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
 
         // Move towards her targets to attack them.
         this.goalSelector.add(2, new UbelAttackGoal(this, 2D));
+    }
+
+    public void applyDifficultyStats(boolean isDuo) {
+        var maxHealthAttr = this.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            double maxHp = isDuo ? 550.0D : 250.0D;
+            maxHealthAttr.setBaseValue(maxHp);
+            this.setHealth((float) maxHp);
+        }
+        var armorAttr = this.getAttributeInstance(EntityAttributes.ARMOR);
+        if (armorAttr != null) {
+            armorAttr.setBaseValue(isDuo ? 15.0D : 10.0D);
+        }
+        var movementSpeedAttr = this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
+        if (movementSpeedAttr != null) {
+            movementSpeedAttr.setBaseValue(isDuo ? 0.27D : 0.25D);
+        }
+        this.difficultyInitialized = true;
+    }
+
+    @Override
+    public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData) {
+        EntityData data = super.initialize(world, difficulty, spawnReason, entityData);
+        applyDifficultyStats(world.toServerWorld().getGameRules().getBoolean(ModGameRules.DUO_BOSS_DIFFICULTY));
+        return data;
+    }
+
+    @Override
+    protected void writeCustomData(WriteView view) {
+        super.writeCustomData(view);
+        view.putBoolean("DifficultyInitialized", this.difficultyInitialized);
+    }
+
+    @Override
+    protected void readCustomData(ReadView view) {
+        super.readCustomData(view);
+        this.difficultyInitialized = view.getBoolean("DifficultyInitialized", false);
     }
 
     @Override
@@ -128,7 +169,10 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
 
     @Override
     protected void mobTick(ServerWorld world) {
-        super.mobTick((ServerWorld) this.getWorld());
+        super.mobTick(world);
+        if (!this.difficultyInitialized) {
+            applyDifficultyStats(DuoModeCheckHelper.isDuoMode(world));
+        }
         // Sets the progress to health percentage (0.0 to 1.0)
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
     }

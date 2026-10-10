@@ -17,6 +17,7 @@ import com.yuno.yunosbosses.unlock.UnlockManager;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import com.yuno.yunosbosses.world.ModEntitySpawns;
+import com.yuno.yunosbosses.world.ModGameRules;
 import com.yuno.yunosbosses.world.ModLootTableModifiers;
 import net.fabricmc.api.ModInitializer;
 
@@ -54,6 +55,7 @@ public class YunosBosses implements ModInitializer {
 		ModBlocks.registerModBlocks();
 		ModEntitySpawns.registerEntitySpawns();
 		ModLootTableModifiers.registerLootTableModifiers();
+		ModGameRules.register();
 		UnlockManager.register();
 
 		// Register payload types

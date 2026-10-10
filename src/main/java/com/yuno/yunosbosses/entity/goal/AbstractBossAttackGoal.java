@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.entity.character.MethodeEntity;
 import com.yuno.yunosbosses.entity.goal.ability.BossAbility;
 import com.yuno.yunosbosses.entity.goal.ability.DefensiveProjectileShieldAbility;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
@@ -156,6 +157,24 @@ public abstract class AbstractBossAttackGoal extends Goal {
     }
 
     protected void onAbilityExecuted(BossAbility ability) {
+        if (DuoModeCheckHelper.isDuoMode(this.boss.getWorld())) {
+            // In Duo mode, look for the other nearby attacker after finishing an ability
+            LivingEntity attacker = this.boss.getAttacker();
+            if (attacker != null && attacker.isAlive() && attacker != this.target && this.boss.squaredDistanceTo(attacker) <= 32.0 * 32.0) {
+                // 50% chance to pivot to the off-target player
+                if (this.boss.getRandom().nextFloat() < 0.50F) {
+                    this.boss.setTarget(attacker);
+                    this.target = attacker;
+                }
+            }
+        }
+    }
+
+    protected int calculateAdjustedRecovery(int baseRecovery) {
+        if (DuoModeCheckHelper.isDuoMode(this.boss.getWorld())) {
+            return Math.max(3, (int) (baseRecovery * 0.75F));
+        }
+        return baseRecovery;
     }
 
     public BossAbility getActiveAbility() {
@@ -179,7 +198,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
         if (this.attackTimer <= 0) {
             this.activeAbility.execute(this.boss, this.target);
             if (!this.activeAbility.isMultiTickExecution()) {
-                this.globalCooldown = this.activeAbility.getRecoveryTicks();
+                this.globalCooldown = calculateAdjustedRecovery(this.activeAbility.getRecoveryTicks());
                 onAbilityExecuted(this.activeAbility);
                 this.activeAbility = null;
             }
@@ -188,6 +207,14 @@ public abstract class AbstractBossAttackGoal extends Goal {
 
     @Override
     public void tick() {
+        // Sync target if boss acquired a new valid target (e.g. from RevengeGoal)
+        LivingEntity currentBossTarget = this.boss.getTarget();
+        if (currentBossTarget != null && currentBossTarget.isAlive() && currentBossTarget != this.target) {
+            if (!(currentBossTarget instanceof PlayerEntity player && (player.isCreative() || player.isSpectator()))) {
+                this.target = currentBossTarget;
+            }
+        }
+
         if (this.target == null || !this.target.isAlive()) {
             this.boss.setTarget(null);
             this.boss.setAttacker(null);
@@ -252,7 +279,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
                 snapLookAtTarget();
                 activeAbility.execute(this.boss, this.target);
                 if (!this.activeAbility.isMultiTickExecution()) {
-                    this.globalCooldown = activeAbility.getRecoveryTicks();
+                    this.globalCooldown = calculateAdjustedRecovery(activeAbility.getRecoveryTicks());
                     onAbilityExecuted(activeAbility);
                     this.activeAbility = null;
                 }
@@ -264,7 +291,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
         if (this.activeAbility != null && this.activeAbility.isMultiTickExecution()) {
             boolean finished = this.activeAbility.tickExecution(this.boss, this.target);
             if (finished) {
-                this.globalCooldown = this.activeAbility.getRecoveryTicks();
+                this.globalCooldown = calculateAdjustedRecovery(this.activeAbility.getRecoveryTicks());
                 onAbilityExecuted(this.activeAbility);
                 this.activeAbility = null;
             }
@@ -311,6 +338,9 @@ public abstract class AbstractBossAttackGoal extends Goal {
                 // Instantly execute defensive barrier
                 defensive.execute(this.boss, this.target);
                 int recovery = defensive.getRecoveryTicks();
+                if (DuoModeCheckHelper.isDuoMode(this.boss.getWorld())) {
+                    recovery = Math.max(30, recovery / 2);
+                }
                 this.defensiveCooldown = recovery;
                 if (this.boss instanceof MethodeEntity methode) {
                     methode.setDefensiveMagicCooldown(recovery);

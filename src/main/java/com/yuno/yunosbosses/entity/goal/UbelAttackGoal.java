@@ -4,6 +4,7 @@ import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.offensive.Shrine;
+import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.Goal;
@@ -131,8 +132,30 @@ public class UbelAttackGoal extends Goal {
         this.ubel.setPitch(targetPitch);
     }
 
+    private void onAttackFinished() {
+        if (DuoModeCheckHelper.isDuoMode(this.ubel.getWorld())) {
+            // In Duo mode, look for the other nearby attacker after finishing an attack
+            LivingEntity attacker = this.ubel.getAttacker();
+            if (attacker != null && attacker.isAlive() && attacker != this.target && this.ubel.squaredDistanceTo(attacker) <= 32.0 * 32.0) {
+                // 50% chance to pivot to the off-target player
+                if (this.ubel.getRandom().nextFloat() < 0.50F) {
+                    this.ubel.setTarget(attacker);
+                    this.target = attacker;
+                }
+            }
+        }
+    }
+
     @Override
     public void tick() {
+        // Sync target if boss acquired a new valid target (e.g. from RevengeGoal or targetSelector)
+        LivingEntity currentBossTarget = this.ubel.getTarget();
+        if (currentBossTarget != null && currentBossTarget.isAlive() && currentBossTarget != this.target) {
+            if (!(currentBossTarget instanceof PlayerEntity player && (player.isCreative() || player.isSpectator()))) {
+                this.target = currentBossTarget;
+            }
+        }
+
         if (this.target == null || !this.target.isAlive()) {
             this.ubel.setTarget(null);
             this.ubel.setAttacker(null);
@@ -202,8 +225,8 @@ public class UbelAttackGoal extends Goal {
             }
         }
 
-        // --- DOMAIN EXPANSION (HEALTH THRESHOLD) ---
-        if (this.ubel.getHealth() <= 150.0 && !this.usedDomainExpansion && !DomainClashManager.hasBurnout(this.ubel.getUuid())) {
+        // --- DOMAIN EXPANSION (HEALTH THRESHOLD: <= 60% HP) ---
+        if (this.ubel.getHealth() <= (this.ubel.getMaxHealth() * 0.60F) && !this.usedDomainExpansion && !DomainClashManager.hasBurnout(this.ubel.getUuid())) {
             this.teleportToTarget();
             this.domainExpansion();
             this.ubel.triggerDomainAnim();
@@ -268,7 +291,8 @@ public class UbelAttackGoal extends Goal {
                 }
 
                 if (this.attackDurationTimer == 0) {
-                    this.cooldownTimer = 20; // 1-second cooldown after landing
+                    this.cooldownTimer = DuoModeCheckHelper.isDuoMode(this.ubel.getWorld()) ? 14 : 20; // Shorter attack cooldown in Duo mode.
+                    onAttackFinished();
                 }
             } else {
                 // Trigger attack animation
@@ -297,7 +321,8 @@ public class UbelAttackGoal extends Goal {
 
                 // Once the animation ends, set the next cooldown
                 if (this.attackDurationTimer == 0) {
-                    this.cooldownTimer = 10; // 0.5s cadence between strikes
+                    this.cooldownTimer = DuoModeCheckHelper.isDuoMode(this.ubel.getWorld()) ? 7 : 10;
+                    onAttackFinished();
                 }
             }
         }
