@@ -139,29 +139,36 @@ public class BlackFlash {
 
         // 7. Delayed Detonation: After hitstop ticks, release explosive kinetic energy and wall slam
         DelayedServerEffects.delay(hitstopTicks, () -> {
-            if (!target.isAlive() && target.getHealth() <= 0) return;
-
-            // Delayed Knockback detonation
-            Vec3d pushDirection = target.getPos().subtract(user.getPos()).normalize();
-            if (pushDirection.lengthSquared() < 0.001) {
-                pushDirection = user.getRotationVector();
+            Vec3d pushDirection = user != null ? user.getRotationVector() : new Vec3d(0, 0, 1);
+            if (user != null && target != null) {
+                Vec3d diff = target.getPos().subtract(user.getPos());
+                if (diff.lengthSquared() >= 0.001) {
+                    pushDirection = diff.normalize();
+                }
             }
-            double pushStrength = isFinisher ? 7.2 : (4.2 + (chainCount * 0.4));
-            double verticalLift = isFinisher ? 0.42 : 0.28;
-            target.addVelocity(pushDirection.x * pushStrength, verticalLift, pushDirection.z * pushStrength);
-            target.velocityModified = true;
 
-            // Activate Wall Slam timer for massive collision damage
-            if (target instanceof WallSlamData data) {
-                data.yunos$setWallSlamTimer(isFinisher ? 60 : 40);
+            // Only apply physical knockback and wall slam if the target is still alive
+            if (target != null && target.isAlive() && target.getHealth() > 0) {
+                double pushStrength = isFinisher ? 7.2 : (4.2 + (chainCount * 0.4));
+                double verticalLift = isFinisher ? 0.42 : 0.28;
+                target.addVelocity(pushDirection.x * pushStrength, verticalLift, pushDirection.z * pushStrength);
+                target.velocityModified = true;
+
+                // Activate Wall Slam timer for massive collision damage
+                if (target instanceof WallSlamData data) {
+                    data.yunos$setWallSlamTimer(isFinisher ? 60 : 40);
+                }
             }
+
+            Vec3d soundPos = (target != null && !target.isRemoved()) ? target.getPos() : impactPos;
+            Vec3d particlePos = (target != null && !target.isRemoved()) ? target.getBoundingBox().getCenter() : impactPos;
 
             // Delayed Detonation Audio & Shockwave Particles
-            playDetonationSounds(serverWorld, target.getPos(), isFinisher);
-            spawnDetonationParticles(serverWorld, target.getBoundingBox().getCenter(), pushDirection, isFinisher);
+            playDetonationSounds(serverWorld, soundPos, isFinisher);
+            spawnDetonationParticles(serverWorld, particlePos, pushDirection, isFinisher);
 
             // Deterministic voiceline playback for this entity with randomized speed & pitch variation
-            playBlackFlashSound(serverWorld, target.getPos(), user, isFinisher);
+            playBlackFlashSound(serverWorld, soundPos, user, isFinisher);
         });
 
         // Notify unlock progression manager
