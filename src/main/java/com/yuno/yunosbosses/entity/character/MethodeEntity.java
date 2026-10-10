@@ -192,8 +192,45 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
     }
 
     /**
+     * Attempts to deploy a spherical barrier (Charge Level 0 SphereBarrier) if attacked from multiple angles at once.
+     * Shares the exact same cooldown with directional Defensive Magic.
+     */
+    public boolean deploySphereBarrier() {
+        if (this.defensiveMagicCooldown > 0 || this.isDead() || !this.isAlive()) {
+            return false;
+        }
+
+        // Cast Charge Level 0 Sphere Barrier (2.5-block radius, 40-tick / 2s duration)
+        ModSpells.SPHERE_BARRIER.cast(this.getWorld(), this, this.getMainHandStack(), 0);
+        int cooldown = DuoModeCheckHelper.isDuoMode(this.getWorld()) ? 70 : DEFENSIVE_MAGIC_COOLDOWN;
+        this.defensiveMagicCooldown = cooldown;
+        return true;
+    }
+
+    /**
+     * Checks whether incoming projectiles are arriving from multiple angles simultaneously (> 50 degree angle difference).
+     */
+    public boolean isShotFromMultipleAngles(List<ProjectileEntity> incomingProjectiles) {
+        if (incomingProjectiles.size() < 2) return false;
+        Vec3d eye = this.getEyePos();
+
+        for (int i = 0; i < incomingProjectiles.size(); i++) {
+            Vec3d v1 = incomingProjectiles.get(i).getPos().subtract(eye).normalize();
+            for (int j = i + 1; j < incomingProjectiles.size(); j++) {
+                Vec3d v2 = incomingProjectiles.get(j).getPos().subtract(eye).normalize();
+                // Angle difference > 50 degrees (dot product < 0.65)
+                if (v1.dotProduct(v2) < 0.65) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Attempts to raise Methode's Defensive Magic shield towards an incoming threat (projectile or beam).
-     * Returns true if the shield was successfully raised.
+     * If incoming threats arrive from multiple angles, deploys the omnidirectional SphereBarrier instead.
+     * Returns true if a defensive barrier was successfully deployed.
      */
     public boolean tryDefendAgainst(Vec3d threatOrigin) {
         if (this.defensiveMagicCooldown > 0) {
@@ -201,6 +238,26 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
         }
         if (this.isDead() || !this.isAlive()) {
             return false;
+        }
+
+        // Check if there are other incoming projectiles from conflicting angles
+        if (this.getWorld() instanceof ServerWorld sw) {
+            Box searchBox = this.getBoundingBox().expand(16.0);
+            List<ProjectileEntity> incomingProjectiles = sw.getEntitiesByClass(
+                    ProjectileEntity.class,
+                    searchBox,
+                    projectile -> DefensiveProjectileShieldAbility.isProjectileHeadingTowardsBoss(this, projectile)
+            );
+
+            if (!incomingProjectiles.isEmpty()) {
+                Vec3d toThreat = threatOrigin.subtract(this.getEyePos()).normalize();
+                for (ProjectileEntity p : incomingProjectiles) {
+                    Vec3d toProj = p.getPos().subtract(this.getEyePos()).normalize();
+                    if (toThreat.dotProduct(toProj) < 0.65) {
+                        return deploySphereBarrier();
+                    }
+                }
+            }
         }
 
         Vec3d toThreat = threatOrigin.subtract(this.getEyePos()).normalize();
@@ -221,7 +278,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
         this.setPitch(targetPitch);
         this.getLookControl().lookAt(threatOrigin.x, threatOrigin.y, threatOrigin.z, 360.0F, 360.0F);
 
-        // Cast Defensive Magic
+        // Cast standard directional Hex Defensive Magic
         ModSpells.DEFENSIVE_MAGIC.cast(this.getWorld(), this, this.getMainHandStack());
         int cooldown = DuoModeCheckHelper.isDuoMode(this.getWorld()) ? 50 : DEFENSIVE_MAGIC_COOLDOWN; // Shorter cooldown in Duo mode
         this.defensiveMagicCooldown = cooldown;
@@ -248,7 +305,13 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
             return;
         }
 
-        // Find the closest incoming projectile
+        // If being shot at from multiple angles at once, deploy Charge Level 0 SphereBarrier
+        if (isShotFromMultipleAngles(incomingProjectiles)) {
+            deploySphereBarrier();
+            return;
+        }
+
+        // Otherwise find the closest incoming projectile and raise directional hex shield
         ProjectileEntity closest = null;
         double closestDistSq = Double.MAX_VALUE;
         for (ProjectileEntity p : incomingProjectiles) {

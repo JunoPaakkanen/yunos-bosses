@@ -41,18 +41,21 @@ public class SphereBarrierSpell extends Spell {
                 return;
             }
 
+            // Charge Level 0: Extremely quick protective bubble (2.5 blocks, 2s) (Only usable by Bosses)
             // Charge Level 1: Quick protective bubble (4.5 blocks, 10s)
             // Charge Level 2: Medium combat dome (9.0 blocks, 16s)
             // Charge Level 3: Sanctuary dome (16.0 blocks, 25s)
             float radius = switch (chargeLevel) {
                 case 3 -> 16.0F;
                 case 2 -> 9.0F;
+                case 0 -> 2.5F;
                 default -> 4.5F;
             };
 
             int lifetime = switch (chargeLevel) {
                 case 3 -> 500; // 25s
                 case 2 -> 320; // 16s
+                case 0 -> 40; // 2s
                 default -> 200; // 10s
             };
 

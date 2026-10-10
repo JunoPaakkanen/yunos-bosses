@@ -1,7 +1,11 @@
 package com.yuno.yunosbosses.entity.goal;
 
 import com.yuno.yunosbosses.domain.clash.DomainClashManager;
+import com.yuno.yunosbosses.entity.ModEntities;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
+import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
+import com.yuno.yunosbosses.particle.ModParticles;
+import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.offensive.Shrine;
 import com.yuno.yunosbosses.util.DuoModeCheckHelper;
@@ -11,7 +15,9 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -19,6 +25,7 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 
 import java.util.EnumSet;
+import java.util.List;
 
 public class UbelAttackGoal extends Goal {
     private final UbelEntity ubel;
@@ -28,6 +35,8 @@ public class UbelAttackGoal extends Goal {
     private int cooldownTimer; // Ticks to wait between attacks
     private int teleportCooldown;
     private int enhancedDismantleCooldown;
+    private int whirlwindCooldown = 0; // Cooldown for anti-surround Whirlwind Reelseiden
+    private int whirlwindWindupTimer = 0; // 4-tick telegraph windup before detonating
     private final double speed; // Movement speed
     private int currentAttackType = 0; // 0: Cutting Magic Reelseiden, 1: Melee, 2: Long range Dismantle, 3: Enhanced Dismantle
     private boolean usedDomainExpansion = false;
@@ -108,12 +117,14 @@ public class UbelAttackGoal extends Goal {
     public void start() {
         this.cooldownTimer = 10;
         this.enhancedDismantleCooldown = 200;
+        this.whirlwindCooldown = 40;
     }
 
     @Override
     public void stop() {
         this.target = null;
         this.attackDurationTimer = 0;
+        this.whirlwindWindupTimer = 0;
         this.ubel.getNavigation().stop();
     }
 
@@ -184,6 +195,38 @@ public class UbelAttackGoal extends Goal {
         // --- TELEPORT COOLDOWN ---
         if (this.teleportCooldown > 0) {
             this.teleportCooldown--;
+        }
+
+        // --- WHIRLWIND COOLDOWN ---
+        if (this.whirlwindCooldown > 0) {
+            this.whirlwindCooldown--;
+        }
+
+        // --- WHIRLWIND WINDUP / TELEGRAPH (4 ticks / 0.2s) ---
+        if (this.whirlwindWindupTimer > 0) {
+            this.whirlwindWindupTimer--;
+            this.ubel.getNavigation().stop();
+            if (this.ubel.getWorld() instanceof ServerWorld serverWorld) {
+                // Telegraph visual: dark slash/scissor particles swirling around Ubel
+                serverWorld.spawnParticles(ParticleTypes.CRIT,
+                        this.ubel.getX(), this.ubel.getY() + 1.0, this.ubel.getZ(),
+                        4, 0.4, 0.4, 0.4, 0.05);
+                serverWorld.spawnParticles(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE,
+                        this.ubel.getX(), this.ubel.getY() + 1.0, this.ubel.getZ(),
+                        2, 0.3, 0.3, 0.3, 0.02);
+            }
+            if (this.whirlwindWindupTimer == 0 && this.ubel.getWorld() instanceof ServerWorld serverWorld) {
+                executeWhirlwindReelseiden(serverWorld);
+            }
+            return;
+        }
+
+        // --- ANTI-SURROUND REACTION: WHIRLWIND REELSEIDEN ---
+        // Checks if 2+ opposing players are sandwiching / flanking Übel within 5 blocks
+        if (this.whirlwindCooldown <= 0 && this.attackDurationTimer <= 0) {
+            if (checkAndExecuteWhirlwind()) {
+                return;
+            }
         }
 
         double directDistance = this.ubel.distanceTo(this.target);
@@ -325,6 +368,147 @@ public class UbelAttackGoal extends Goal {
                     onAttackFinished();
                 }
             }
+        }
+    }
+
+    /**
+     * Checks if 2 or more players are flanking Übel from opposing sides within 5.0 blocks.
+     * If detected, unleashes an immediate 360-degree Whirlwind Reelseiden to knock back both players.
+     */
+    private boolean checkAndExecuteWhirlwind() {
+        World world = this.ubel.getWorld();
+        if (!(world instanceof ServerWorld serverWorld)) return false;
+
+        List<PlayerEntity> nearbyPlayers = serverWorld.getEntitiesByClass(
+                PlayerEntity.class,
+                this.ubel.getBoundingBox().expand(5.0),
+                p -> p.isAlive() && !p.isCreative() && !p.isSpectator() && this.ubel.distanceTo(p) <= 5.0
+        );
+
+        if (nearbyPlayers.size() < 2) return false;
+
+        // Check if any two players are on opposing sides (dot product < -0.40)
+        boolean opposing = false;
+        for (int i = 0; i < nearbyPlayers.size(); i++) {
+            PlayerEntity p1 = nearbyPlayers.get(i);
+            Vec3d v1 = new Vec3d(p1.getX() - this.ubel.getX(), 0, p1.getZ() - this.ubel.getZ());
+            if (v1.lengthSquared() < 1e-4) continue;
+            v1 = v1.normalize();
+
+            for (int j = i + 1; j < nearbyPlayers.size(); j++) {
+                PlayerEntity p2 = nearbyPlayers.get(j);
+                Vec3d v2 = new Vec3d(p2.getX() - this.ubel.getX(), 0, p2.getZ() - this.ubel.getZ());
+                if (v2.lengthSquared() < 1e-4) continue;
+                v2 = v2.normalize();
+
+                if (v1.dotProduct(v2) < -0.40) {
+                    opposing = true;
+                    break;
+                }
+            }
+            if (opposing) break;
+        }
+
+        if (!opposing) return false;
+
+        // Start 4-tick (0.2s) telegraph
+        this.whirlwindWindupTimer = 4;
+        this.whirlwindCooldown = DuoModeCheckHelper.isDuoMode(serverWorld) ? 70 : 100;
+        this.cooldownTimer = 10;
+        this.attackDurationTimer = 12;
+        this.ubel.getNavigation().stop();
+
+        // Telegraph audio cues: distinct shears snip & windup whoosh
+        serverWorld.playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                SoundEvents.ITEM_SHEARS_SNIP, SoundCategory.HOSTILE, 1.6F, 0.85F);
+        serverWorld.playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.HOSTILE, 1.2F, 0.7F);
+
+        return true;
+    }
+
+    private void executeWhirlwindReelseiden(ServerWorld serverWorld) {
+        this.whirlwindCooldown = DuoModeCheckHelper.isDuoMode(serverWorld) ? 70 : 100;
+        this.cooldownTimer = 10;
+        this.attackDurationTimer = 8;
+
+        // 1. Play animation
+        this.ubel.triggerMeleeAnim();
+
+        // 2. Audio cues
+        serverWorld.playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.HOSTILE, 1.8F, 1.4F);
+        serverWorld.playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                SoundEvents.ITEM_SHEARS_SNIP, SoundCategory.HOSTILE, 1.6F, 1.2F);
+        serverWorld.playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                ModSounds.REELSEIDEN_HIT, SoundCategory.HOSTILE, 1.5F, 1.35F);
+
+        // 3. 360-degree radial particles
+        Vec3d center = this.ubel.getEyePos().subtract(0, 0.2, 0);
+        int ringParticles = 32;
+        for (int i = 0; i < ringParticles; i++) {
+            double angle = (2.0 * Math.PI * i) / ringParticles;
+            double dx = Math.cos(angle) * 3.5;
+            double dz = Math.sin(angle) * 3.5;
+            serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK,
+                    center.x + dx * 0.5, center.y, center.z + dz * 0.5, 1, 0, 0, 0, 0);
+            serverWorld.spawnParticles(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE,
+                    center.x + dx, center.y, center.z + dz, 1, 0.05, 0.05, 0.05, 0.02);
+            serverWorld.spawnParticles(ParticleTypes.CRIT,
+                    center.x + dx, center.y, center.z + dz, 2, 0.1, 0.1, 0.1, 0.08);
+        }
+
+        // 4. Spawn 8 SlashProjectileEntity projectiles radiating in 360 degrees (every 45 degrees)
+        for (int i = 0; i < 8; i++) {
+            double angle = i * (Math.PI / 4.0);
+            Vec3d dir = new Vec3d(Math.cos(angle), 0, Math.sin(angle)).normalize();
+
+            SlashProjectileEntity slash = new SlashProjectileEntity(
+                    ModEntities.SLASH_PROJECTILE,
+                    serverWorld,
+                    16.0F, // Damage
+                    0.0F,  // Roll
+                    2,     // Finisher style
+                    1.6F,  // Slash width
+                    true   // Finisher flag
+            );
+            Vec3d spawnPos = center.add(dir.multiply(0.6));
+            slash.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
+            slash.setVelocity(dir.multiply(2.5));
+            slash.setOwner(this.ubel);
+            serverWorld.spawnEntity(slash);
+        }
+
+        // 5. Radial knockback and shield break on all nearby living targets within 5.5 blocks
+        List<LivingEntity> targets = serverWorld.getEntitiesByClass(
+                LivingEntity.class,
+                this.ubel.getBoundingBox().expand(5.5),
+                e -> e != this.ubel && e.isAlive() && !e.isTeammate(this.ubel)
+        );
+
+        for (LivingEntity target : targets) {
+            Vec3d toTarget = target.getPos().subtract(this.ubel.getPos());
+            Vec3d horizPush = new Vec3d(toTarget.x, 0, toTarget.z);
+            if (horizPush.lengthSquared() > 1e-4) {
+                horizPush = horizPush.normalize();
+            } else {
+                horizPush = this.ubel.getRotationVec(1.0F).normalize();
+            }
+
+            // Disable shields on surrounding targets
+            if (target.isBlocking()) {
+                if (target instanceof PlayerEntity player) {
+                    player.getItemCooldownManager().set(player.getActiveItem(), 60);
+                    player.clearActiveItem();
+                    serverWorld.sendEntityStatus(player, (byte) 30);
+                    serverWorld.playSound(null, target.getX(), target.getY(), target.getZ(),
+                            SoundEvents.ITEM_SHIELD_BREAK, SoundCategory.PLAYERS, 1.2F, 1.0F);
+                }
+            }
+
+            // Heavy radial knockback
+            target.takeKnockback(1.8, -horizPush.x, -horizPush.z);
+            target.velocityModified = true;
         }
     }
 

@@ -25,6 +25,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
@@ -269,9 +270,32 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
 
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
-        // Chance to evasively side-step incoming attacks using 24-FPS reaction
-        if (this.attackGoal != null && this.getRandom().nextFloat() < 0.40F) {
-            this.attackGoal.tryEvasiveStep(source);
+        if (this.attackGoal != null) {
+            Entity attacker = source.getAttacker();
+            if (attacker instanceof LivingEntity livingAttacker) {
+                Vec3d look = this.getRotationVec(1.0F);
+                Vec3d toAttacker = livingAttacker.getPos().subtract(this.getPos());
+                Vec3d horizToAttacker = new Vec3d(toAttacker.x, 0, toAttacker.z);
+
+                if (horizToAttacker.lengthSquared() > 1e-4) {
+                    horizToAttacker = horizToAttacker.normalize();
+                    Vec3d horizLook = new Vec3d(look.x, 0, look.z).normalize();
+                    double dot = horizLook.dotProduct(horizToAttacker);
+
+                    // Attacked from behind (< 0.20 dot) or during a combo by an off-target player
+                    boolean isBehind = dot < 0.20;
+                    boolean duringCombo = this.attackGoal.getActiveAbility() != null && livingAttacker != this.getTarget();
+
+                    if ((isBehind || duringCombo) && this.attackGoal.tryFlankCounter(source, livingAttacker)) {
+                        return super.damage(world, source, amount * 0.7F); // Reduced damage on successful decoy counter
+                    }
+                }
+            }
+
+            // Chance to evasively side-step frontal incoming attacks
+            if (this.getRandom().nextFloat() < 0.40F) {
+                this.attackGoal.tryEvasiveStep(source);
+            }
         }
 
         return super.damage(world, source, amount);
