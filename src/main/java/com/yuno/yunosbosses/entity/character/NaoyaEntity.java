@@ -198,7 +198,8 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
         })
         .triggerableAnim("attack", RawAnimation.begin().thenPlay("animation.naoya.attack"))
         .triggerableAnim("barrage", RawAnimation.begin().thenLoop("animation.naoya.punch_barrage"))
-        .triggerableAnim("run", RawAnimation.begin().thenLoop("animation.naoya.run")));
+        .triggerableAnim("run", RawAnimation.begin().thenLoop("animation.naoya.run"))
+        .triggerableAnim("domain_cast", RawAnimation.begin().thenPlay("animation.naoya.domain_cast")));
     }
 
     public void triggerAttackAnim() {
@@ -211,6 +212,10 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
 
     public void triggerRunAnim() {
         this.triggerAnim("controller", "run");
+    }
+
+    public void triggerDomainAnim() {
+        this.triggerAnim("controller", "domain_cast");
     }
 
     @Override
@@ -298,7 +303,14 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
             }
         }
 
-        return super.damage(world, source, amount);
+        boolean result = super.damage(world, source, amount);
+        if (result && amount > 15.0F) {
+            // Heavy hit breaks his speed accumulation rhythm
+            int speedStackPenalty = DuoModeCheckHelper.isDuoMode(world) ? 1 : 2; // -1 stack for Duo, -2 for standard
+            this.setSpeedStacks(Math.max(0, this.getSpeedStacks() - speedStackPenalty));
+        }
+
+        return result;
     }
 
     @Override

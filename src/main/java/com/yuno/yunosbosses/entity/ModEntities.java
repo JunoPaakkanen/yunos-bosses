@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.entity.character.NaoyaEntity;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.entity.character.modified.UselessChickenEntity;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
+import com.yuno.yunosbosses.entity.other.DomainTcmpEyeEntity;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
 import com.yuno.yunosbosses.entity.projectile.FlameArrowEntity;
 import com.yuno.yunosbosses.entity.projectile.SlashProjectileEntity;
@@ -65,6 +66,12 @@ public class ModEntities {
             "domain_shrine",
             EntityType.Builder.create(DomainShrineEntity::new, SpawnGroup.MISC)
                     .dimensions(7f, 6.5f)
+    );
+
+    public static final EntityType<DomainTcmpEyeEntity> DOMAIN_TCMP_EYE = register(
+            "domain_tcmp_eye",
+            EntityType.Builder.create(DomainTcmpEyeEntity::new, SpawnGroup.MISC)
+                    .dimensions(2.2f, 2.5f)
     );
 
     private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {

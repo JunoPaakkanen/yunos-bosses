@@ -56,6 +56,21 @@ public abstract class DomainExpansion extends Spell {
         return false;
     }
 
+    /**
+     * The floor block type to construct within this domain.
+     */
+    public Block getDomainFloorBlock() {
+        return ModBlocks.DOMAIN_FLOOR;
+    }
+
+    /**
+     * Whether this domain expansion should instantly clear/destroy all blocks within its interior
+     * upon activation to eliminate visual clutter.
+     */
+    public boolean shouldClearBlocksInside() {
+        return false;
+    }
+
     // Default mana cost
     public float manaCost = 300.0F;
     protected Identifier castAnimation;
@@ -74,18 +89,14 @@ public abstract class DomainExpansion extends Spell {
     }
 
     public void startDomainExpansionCast(World world, LivingEntity caster, String domainName, boolean isOpenBarrier) {
-        for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
+        int durationTicks = caster.isPlayer() ? 40 : 60;
+        startDomainExpansionCast(world, caster, domainName, isOpenBarrier, durationTicks);
+    }
 
+    public void startDomainExpansionCast(World world, LivingEntity caster, String domainName, boolean isOpenBarrier, int durationTicks) {
+        for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, caster.getPos(), 64)) {
             // 3D Player Animation
             ServerPlayNetworking.send(player, getDomainCastAnimation(caster, castAnimation));
-
-            int durationTicks;
-            // 2-second cast duration for players, 3-seconds for bosses
-            if (caster.isPlayer()) {
-                durationTicks = 40;
-            } else {
-                durationTicks = 60;
-            }
 
             // 2D Cutscene
             ServerPlayNetworking.send(player, new DomainCutscenePayload(caster.getUuid(), domainName, durationTicks, isOpenBarrier));
@@ -127,6 +138,7 @@ public abstract class DomainExpansion extends Spell {
 
     // Hooks used for custom domain logic upon creation and removal
     public void onDomainCreated(ServerWorld world, LivingEntity caster, Vec3d barrierCenter) {}
+
     public void onDomainRemoved(ServerWorld world, ActiveBarrier barrier) {}
 
     public void onGlobalTick(World world, ActiveBarrier barrier) {
@@ -134,7 +146,6 @@ public abstract class DomainExpansion extends Spell {
     }
 
     public void createDomainFloor(World world, LivingEntity caster, double radius) {
-        // --- DOMAIN FLOOR ---
         // Establish the Center and the fixed Floor Height
         BlockPos centerPos = caster.getBlockPos();
         int floorY = centerPos.getY() - 1;
@@ -143,10 +154,41 @@ public abstract class DomainExpansion extends Spell {
         int loopRadius = (int) Math.ceil(radius + 1);
 
         // BlockState definitions
-        var floorState = ModBlocks.DOMAIN_FLOOR.getDefaultState();
+        var floorState = getDomainFloorBlock().getDefaultState();
         var airState = Blocks.AIR.getDefaultState();
 
-        // --- PASS 1: BLOCK MODIFICATION PIPELINE ---
+        // --- OPTIONAL: INSTANT INTERIOR BLOCK CLEARING (Eliminates visual clutter) ---
+        // ONLY clear blocks strictly ABOVE the floor (y >= floorY + 1). Never touch or destroy blocks below the floor.
+        if (shouldClearBlocksInside()) {
+            Vec3d barrierCenter = caster.getPos().add(0, 2, 0);
+            double sphereRadiusSq = (radius + 0.5) * (radius + 0.5);
+            int minX = (int) Math.floor(barrierCenter.x - radius - 1.0);
+            int maxX = (int) Math.ceil(barrierCenter.x + radius + 1.0);
+            int minY = floorY + 1; // Never destroy blocks below the floor
+            int maxY = (int) Math.ceil(barrierCenter.y + radius + 1.0);
+            int minZ = (int) Math.floor(barrierCenter.z - radius - 1.0);
+            int maxZ = (int) Math.ceil(barrierCenter.z + radius + 1.0);
+
+            BlockPos.Mutable mutablePos = new BlockPos.Mutable();
+            for (int y = minY; y <= maxY; y++) {
+                for (int x = minX; x <= maxX; x++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        double dx = (x + 0.5) - barrierCenter.x;
+                        double dy = (y + 0.5) - barrierCenter.y;
+                        double dz = (z + 0.5) - barrierCenter.z;
+                        if ((dx * dx) + (dy * dy) + (dz * dz) <= sphereRadiusSq) {
+                            mutablePos.set(x, y, z);
+                            var state = world.getBlockState(mutablePos);
+                            if (!state.isAir() && state.getHardness(world, mutablePos) >= 0.0f) {
+                                world.setBlockState(mutablePos, airState, Block.NOTIFY_LISTENERS);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- PASS 1: FLOOR BLOCK PLACEMENT ---
         for (int x = -loopRadius; x <= loopRadius; x++) {
             for (int z = -loopRadius; z <= loopRadius; z++) {
                 double distanceSq = (x * x) + (z * z);
@@ -214,8 +256,9 @@ public abstract class DomainExpansion extends Spell {
                     int targetZ = centerPos.getZ() + z;
                     BlockPos floorPos = new BlockPos(targetX, floorY, targetZ);
 
-                    // ONLY remove it if it's a domain floor block
-                    if (world.getBlockState(floorPos).isOf(ModBlocks.DOMAIN_FLOOR)) {
+                    // Remove if it's either standard domain floor or void domain floor
+                    var state = world.getBlockState(floorPos);
+                    if (state.isOf(ModBlocks.DOMAIN_FLOOR) || state.isOf(ModBlocks.DOMAIN_FLOOR_VOID)) {
                         world.setBlockState(floorPos, airState, Block.NOTIFY_LISTENERS);
                     }
                 }

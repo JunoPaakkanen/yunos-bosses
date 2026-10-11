@@ -128,5 +128,11 @@
   "black_flash_finisher_3": {
     "subtitle": "subtitles.yunosbosses.black_flash_finisher",
     "sounds": [ "yunosbosses:black_flash_finisher_3" ]
+  },
+  "domain_expansion_tcmp": {
+    "subtitle": "subtitles.yunosbosses.domain_expansion_tcmp",
+    "sounds": [
+      "yunosbosses:domain_expansion_tcmp"
+    ]
   }
 }

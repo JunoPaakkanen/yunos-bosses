@@ -24,6 +24,13 @@ public class ModBlocks {
             .sounds(BlockSoundGroup.MUD)
     );
 
+    public static final Block DOMAIN_FLOOR_VOID = registerBlock("domain_floor_void", DomainFloorVoidBlock::new, AbstractBlock.Settings.create()
+            .strength(-1.0f, 3600000.0f)
+            .dropsNothing()
+            .luminance(state -> 9)
+            .sounds(BlockSoundGroup.AMETHYST_BLOCK)
+    );
+
     private static Block registerBlock(String name, Function<AbstractBlock.Settings, Block> blockFactory, AbstractBlock.Settings settings) {
         Identifier id = Identifier.of(YunosBosses.MOD_ID, name);
         RegistryKey<Block> blockKey = RegistryKey.of(RegistryKeys.BLOCK, id);

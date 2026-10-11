@@ -7,36 +7,32 @@
   "item.yunosbosses.methode_spawn_egg": "Methode Spawn Egg",
   "item.yunosbosses.naoya_spawn_egg": "Naoya Spawn Egg",
   "item.yunosbosses.useless_chicken_spawn_egg": "Useless Chicken Spawn Egg",
-
   "block.yunosbosses.domain_floor": "Domain Floor",
-
+  "block.yunosbosses.domain_floor_void": "Void Domain Floor",
   "entity.yunosbosses.ubel": "Ubel",
   "entity.yunosbosses.methode": "Methode",
   "entity.yunosbosses.naoya": "Naoya",
   "entity.yunosbosses.useless_chicken": "Useless Chicken",
   "entity.yunosbosses.severed_torso": "Severed Torso",
   "entity.yunosbosses.domain_shrine": "Domain Shrine",
-
   "category.yunosbosses": "Yuno's Bosses",
   "key.yunosbosses.spellcycle": "Cycle Spell",
   "key.yunosbosses.castspell": "Cast Spell",
   "key.yunosbosses.open_spell_inventory": "Open Spell Inventory",
-
   "effect.yunosbosses.gojobindingvow": "Binding Vow: Gojo",
   "effect.yunosbosses.gojo": "Binding Vow: Gojo",
   "effect.yunosbosses.frame_freeze": "Frame Freeze",
-
   "death.attack.cutting_magic": "%1$s was sliced apart by %2$s",
   "death.attack.cutting_magic.item": "%1$s was sliced apart by %2$s using %3$s",
   "death.attack.cutting_magic_shallow": "%1$s was sliced apart by %2$s",
   "death.attack.cutting_magic_shallow.item": "%1$s was sliced apart by %2$s using %3$s",
   "death.attack.fire_magic": "%1$s was incinerated by %2$s",
   "death.attack.fire_magic.item": "%1$s was incinerated by %2$s using %3$s",
-
   "yunosbosses.spell.defensive_magic": "Defensive Magic",
   "yunosbosses.spell.killing_magic": "Killing Magic",
   "yunosbosses.spell.sphere_barrier": "Sphere Barrier",
   "yunosbosses.spell.domain_expansion_shrine": "Domain Expansion: Shrine",
+  "yunosbosses.spell.domain_expansion_tcmp": "Domain Expansion: Time Cell Moon Palace",
   "yunosbosses.spell.reverse_cursed_technique": "Reverse Cursed Technique",
   "yunosbosses.spell.cutting_magic_reelseiden": "Cutting Magic: Reelseiden",
   "yunosbosses.spell.killing_magic_barrage": "Killing Magic Barrage",
@@ -45,9 +41,7 @@
   "yunosbosses.spell.dismantle": "Dismantle",
   "yunosbosses.spell.projection_sorcery": "Projection Sorcery",
   "yunosbosses.spell.shrine": "Shrine",
-
   "itemGroup.yunosbosses.yunos_bosses_items": "Yuno's Bosses",
-
   "advancements.yunosbosses.root.title": "Yuno's Bosses",
   "advancements.yunosbosses.root.description": "Thanks For Playing!",
   "advancements.yunosbosses.ubel.title": "Killing Feels Good",
@@ -56,7 +50,6 @@
   "advancements.yunosbosses.methode.title": "Want headpats?",
   "advancements.yunosbosses.naoya.description": "Defeat Naoya",
   "advancements.yunosbosses.naoya.title": "Don't you have a human heart?",
-
   "subtitles.yunosbosses.black_flash": "Black Flash",
   "subtitles.yunosbosses.black_flash_finisher": "Black Flash Finisher",
   "subtitles.yunosbosses.reelseiden_hit": "Reelseiden slices",
@@ -69,5 +62,6 @@
   "subtitles.yunosbosses.frame_shatter": "Frame shatters",
   "subtitles.yunosbosses.frame_shatter_from_damage": "Frame shatters under impact",
   "subtitles.yunosbosses.frame_shatter_finisher": "Frame shattered decisively",
-  "subtitles.yunosbosses.fuga": "Furnace opens"
+  "subtitles.yunosbosses.fuga": "Furnace opens",
+  "subtitles.yunosbosses.domain_expansion_tcmp": "Time Cell Moon Palace manifests"
 }

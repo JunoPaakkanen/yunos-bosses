@@ -54,6 +54,7 @@ public class YunosBossesClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.SEVERED_TORSO, SeveredTorsoRenderer::new);
         EntityRendererRegistry.register(ModEntities.USELESS_CHICKEN, UselessChickenRenderer::new);
         EntityRendererRegistry.register(ModEntities.DOMAIN_SHRINE, DomainShrineRenderer::new);
+        EntityRendererRegistry.register(ModEntities.DOMAIN_TCMP_EYE, DomainTcmpEyeRenderer::new);
 
         // Register particle factories
         ParticleFactoryRegistry.getInstance().register(ModParticles.SLASH_IMPACT_SCISSORS_PARTICLE, SlashImpactScissorsParticle.Factory::new);

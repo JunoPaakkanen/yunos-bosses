@@ -24,9 +24,12 @@ public class DomainCutsceneManager {
     }
 
     public static boolean isInvertedFlashActive() {
-        if (ticksRemaining > 0 && domainName != null && domainName.toLowerCase().contains("malevolent")) {
-            // Flash on the climax of the hand sign / voice chant (last 10 ticks of cutscene)
-            return ticksRemaining <= 12 && ticksRemaining >= 2;
+        if (ticksRemaining > 0 && domainName != null) {
+            String lower = domainName.toLowerCase();
+            if (lower.contains("malevolent") || lower.contains("moon palace") || lower.contains("time cell")) {
+                // Flash on the climax of the hand sign / voice chant (last 12 ticks of cutscene)
+                return ticksRemaining <= 12 && ticksRemaining >= 2;
+            }
         }
         return false;
     }

@@ -38,12 +38,13 @@ public class DefensiveMagicRenderer {
                 // If direction is ZERO, treat it as a Sphere or Open Domain
                 if (barrier.getDirection().equals(Vec3d.ZERO)) {
                     boolean isShrine = barrier.getTexture() != null && barrier.getTexture().getPath().contains("shrine");
+                    boolean isDomain = barrier.getDomainExpansion() != null || (barrier.getTexture() != null && barrier.getTexture().getPath().contains("domain_expansion"));
 
                     if (isShrine) {
                         // Both Open and Closed Malevolent Shrine share identical visuals:
                         // red perimeter boundary cylinder, luminous ground fissures, and 3D slashes
                         renderOpenDomainShrine(matrices, consumers, cameraPos, barrier, barrier.getRadius(), context);
-                    } else if (barrier.getDomainExpansion() != null) {
+                    } else if (isDomain) {
                         // Closed Domain Expansion (opaque black exterior shell, inner skybox)
                         renderDomainSphere(matrices, consumers, cameraPos, barrier, barrier.getRadius());
                     } else {
@@ -483,9 +484,10 @@ public class DefensiveMagicRenderer {
         }
     }
 
-    // Domain Expansion Closed Sphere (Solid black shell exterior, inner texture skybox)
+    // Domain Expansion Closed Sphere (Solid black shell exterior, completely opaque black barrier)
     private static void renderDomainSphere(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d camera, ActiveBarrier barrier, float radius) {
         Identifier texture = barrier.getTexture() != null ? barrier.getTexture() : BARRIER_TEXTURE;
+        boolean isTcmp = texture.getPath().contains("tcmp");
 
         matrices.push();
 
@@ -496,6 +498,9 @@ public class DefensiveMagicRenderer {
 
         int segments = 48; // Quality of the sphere
         int alpha = 255;
+        int r = isTcmp ? 0 : 255;
+        int g = isTcmp ? 0 : 255;
+        int b = isTcmp ? 0 : 255;
 
         // --- PASS 1: OUTER SPHERE ---
         VertexConsumer outerBuffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(DOMAIN_EXTERIOR));
@@ -534,16 +539,16 @@ public class DefensiveMagicRenderer {
                 float nx4 = x0 * yr1, ny4 = y1, nz4 = z0 * yr1;
 
                 // Flipped winding sequence (4 -> 3 -> 2 -> 1) forces the solid shell to face OUTWARD
-                outerBuffer.vertex(modelMatrix, px4, py4, pz4).color(255, 255, 255, alpha).texture(u0, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx4, ny4, nz4);
-                outerBuffer.vertex(modelMatrix, px3, py3, pz3).color(255, 255, 255, alpha).texture(u1, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx3, ny3, nz3);
-                outerBuffer.vertex(modelMatrix, px2, py2, pz2).color(255, 255, 255, alpha).texture(u1, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx2, ny2, nz2);
-                outerBuffer.vertex(modelMatrix, px1, py1, pz1).color(255, 255, 255, alpha).texture(u0, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx1, ny1, nz1);
+                outerBuffer.vertex(modelMatrix, px4, py4, pz4).color(r, g, b, alpha).texture(u0, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx4, ny4, nz4);
+                outerBuffer.vertex(modelMatrix, px3, py3, pz3).color(r, g, b, alpha).texture(u1, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx3, ny3, nz3);
+                outerBuffer.vertex(modelMatrix, px2, py2, pz2).color(r, g, b, alpha).texture(u1, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx2, ny2, nz2);
+                outerBuffer.vertex(modelMatrix, px1, py1, pz1).color(r, g, b, alpha).texture(u0, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(nx1, ny1, nz1);
             }
         }
 
         // --- PASS 2: INNER SPHERE ---
         float innerRadius = radius - 0.05f;
-        VertexConsumer innerBuffer = consumers.getBuffer(RenderLayer.getEntityTranslucentEmissive(texture));
+        VertexConsumer innerBuffer = consumers.getBuffer(isTcmp ? RenderLayer.getEntityTranslucent(DOMAIN_EXTERIOR) : RenderLayer.getEntityTranslucentEmissive(texture));
 
         for (int i = 0; i < segments; i++) {
             float lat0 = (float) Math.PI * (-0.5f + (float) i / segments);
@@ -575,11 +580,11 @@ public class DefensiveMagicRenderer {
                 float ix3 = x1 * yr1 * innerRadius, iy3 = y1 * innerRadius, iz3 = z1 * yr1 * innerRadius;
                 float ix4 = x0 * yr1 * innerRadius, iy4 = y1 * innerRadius, iz4 = z0 * yr1 * innerRadius;
 
-                // Standard winding sequence (1 -> 2 -> 3 -> 4) forces the glowing skybox to face INWARD
-                innerBuffer.vertex(modelMatrix, ix1, iy1, iz1).color(255, 255, 255, alpha).texture(u0, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
-                innerBuffer.vertex(modelMatrix, ix2, iy2, iz2).color(255, 255, 255, alpha).texture(u1, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
-                innerBuffer.vertex(modelMatrix, ix3, iy3, iz3).color(255, 255, 255, alpha).texture(u1, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
-                innerBuffer.vertex(modelMatrix, ix4, iy4, iz4).color(255, 255, 255, alpha).texture(u0, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                // Standard winding sequence (1 -> 2 -> 3 -> 4) forces the skybox to face INWARD
+                innerBuffer.vertex(modelMatrix, ix1, iy1, iz1).color(r, g, b, alpha).texture(u0, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                innerBuffer.vertex(modelMatrix, ix2, iy2, iz2).color(r, g, b, alpha).texture(u1, v0).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                innerBuffer.vertex(modelMatrix, ix3, iy3, iz3).color(r, g, b, alpha).texture(u1, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+                innerBuffer.vertex(modelMatrix, ix4, iy4, iz4).color(r, g, b, alpha).texture(u0, v1).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
             }
         }
 

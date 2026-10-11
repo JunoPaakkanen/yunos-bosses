@@ -29,6 +29,7 @@ public class ModItemGroups {
                         entries.add(ModItems.USELESS_CHICKEN_SPAWN_EGG);
                         // Add all blocks to the group
                         entries.add(ModBlocks.DOMAIN_FLOOR.asItem());
+                        entries.add(ModBlocks.DOMAIN_FLOOR_VOID.asItem());
                     }).build());
 
     public static void registerItemGroups() {

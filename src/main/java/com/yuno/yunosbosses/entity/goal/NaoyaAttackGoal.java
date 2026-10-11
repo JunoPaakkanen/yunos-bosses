@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.entity.goal;
 
+import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.character.NaoyaEntity;
 import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaFlankDashAbility;
@@ -9,6 +10,7 @@ import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaMachRamAbility;
 import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaPalmStrikeAbility;
 import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaPunchBarrageAbility;
 import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
 import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import com.yuno.yunosbosses.util.WallSlamData;
@@ -34,6 +36,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
     private final NaoyaEntity naoya;
     private final NaoyaFlankDashAbility flankDashAbility;
     private int evasionCooldown = 0;
+    private boolean usedDomainExpansion = false;
 
     public NaoyaAttackGoal(NaoyaEntity naoya, double speed) {
         super(naoya, speed);
@@ -69,7 +72,39 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
         if (this.evasionCooldown > 0) {
             this.evasionCooldown--;
         }
+
+        // --- COUNTER DOMAIN EXPANSION (INSTANT CLASH RESPONSE) ---
+        if (!this.usedDomainExpansion && !DomainClashManager.hasBurnout(this.naoya.getUuid())) {
+            if (DomainClashManager.isEntityCastingDomainNear(this.naoya, 35.0)) {
+                performDomainExpansion();
+                return;
+            }
+        }
+
+        // --- DOMAIN EXPANSION (HEALTH THRESHOLD: <= 60% HP) ---
+        if (this.naoya.getHealth() <= (this.naoya.getMaxHealth() * 0.60F) && !this.usedDomainExpansion && !DomainClashManager.hasBurnout(this.naoya.getUuid())) {
+            performDomainExpansion();
+            return;
+        }
+
         super.tick();
+    }
+
+    private void performDomainExpansion() {
+        if (this.activeAbility != null) {
+            this.activeAbility.stop(this.naoya);
+            this.activeAbility = null;
+        }
+        this.naoya.getNavigation().stop();
+        this.naoya.setDashing(false);
+        if (this.target != null) {
+            snapLook(this.naoya, this.target);
+        }
+        this.naoya.triggerDomainAnim();
+        ModSpells.DOMAIN_EXPANSION_TCMP.cast(this.naoya.getWorld(), this.naoya, this.naoya.getMainHandStack());
+        this.usedDomainExpansion = true;
+        this.attackTimer = 85;
+        this.globalCooldown = 90;
     }
 
     @Override
