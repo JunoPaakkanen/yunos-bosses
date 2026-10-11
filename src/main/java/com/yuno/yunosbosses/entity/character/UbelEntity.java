@@ -33,6 +33,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private boolean difficultyInitialized = false;
+    private UbelAttackGoal attackGoal;
 
     public UbelEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -80,7 +81,8 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
                 (entity, serverWorld) -> entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this));
 
         // Move towards her targets to attack them.
-        this.goalSelector.add(2, new UbelAttackGoal(this, 2D));
+        this.attackGoal = new UbelAttackGoal(this, 2D);
+        this.goalSelector.add(2, this.attackGoal);
     }
 
     public void applyDifficultyStats(boolean isDuo) {
@@ -175,6 +177,14 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
         }
         // Sets the progress to health percentage (0.0 to 1.0)
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+    }
+
+    @Override
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        if (this.attackGoal != null) {
+            this.attackGoal.tryShadowSplitFeint(source);
+        }
+        return super.damage(world, source, amount);
     }
 
     @Override

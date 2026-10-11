@@ -43,6 +43,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
     public static final int DEFENSIVE_MAGIC_COOLDOWN = 100; // 5 seconds (100 ticks)
     private int defensiveMagicCooldown = 0;
     private boolean difficultyInitialized = false;
+    private MethodeAttackGoal attackGoal;
 
     public MethodeEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -121,7 +122,8 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
                 (entity, serverWorld) -> entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this));
 
         // Move towards her targets to attack them.
-        this.goalSelector.add(2, new MethodeAttackGoal(this, 2D));
+        this.attackGoal = new MethodeAttackGoal(this, 2D);
+        this.goalSelector.add(2, this.attackGoal);
     }
 
     @Override
@@ -325,6 +327,20 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
         if (closest != null) {
             tryDefendAgainst(closest.getPos());
         }
+    }
+
+    public MethodeAttackGoal getAttackGoal() {
+        return this.attackGoal;
+    }
+
+    @Override
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        if (this.attackGoal != null && this.attackGoal.getRestraintCooldown() <= 0) {
+            if (source.getAttacker() instanceof LivingEntity attacker && this.distanceTo(attacker) <= 4.5) {
+                this.attackGoal.checkAndExecuteRestraintRepulsion();
+            }
+        }
+        return super.damage(world, source, amount);
     }
 
     @Override

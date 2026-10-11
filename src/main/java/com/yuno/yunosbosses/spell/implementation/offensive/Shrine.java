@@ -348,8 +348,12 @@ public class Shrine extends Spell {
     }
 
     public void fireSingleDismantle(ServerWorld serverWorld, LivingEntity caster, ItemStack staff, float potency, int orientation, int slashCount) {
+        fireSingleDismantleTowards(serverWorld, caster, staff, caster.getRotationVec(1.0F), potency, orientation, slashCount);
+    }
+
+    public void fireSingleDismantleTowards(ServerWorld serverWorld, LivingEntity caster, ItemStack staff, Vec3d targetLookDir, float potency, int orientation, int slashCount) {
         Vec3d eyePos = caster.getEyePos();
-        Vec3d lookDir = caster.getRotationVec(1.0F).normalize();
+        Vec3d lookDir = targetLookDir.normalize();
 
         Vec3d globalUp = new Vec3d(0, 1, 0);
         Vec3d rightDir = Math.abs(lookDir.y) > 0.99 ? new Vec3d(1, 0, 0) : lookDir.crossProduct(globalUp).normalize();

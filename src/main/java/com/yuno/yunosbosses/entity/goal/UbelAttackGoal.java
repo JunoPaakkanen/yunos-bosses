@@ -37,6 +37,7 @@ public class UbelAttackGoal extends Goal {
     private int enhancedDismantleCooldown;
     private int whirlwindCooldown = 0; // Cooldown for anti-surround Whirlwind Reelseiden
     private int whirlwindWindupTimer = 0; // 4-tick telegraph windup before detonating
+    private int shadowFeintCooldown = 0; // Cooldown for Split-Target Shadow Feint Dismantle
     private final double speed; // Movement speed
     private int currentAttackType = 0; // 0: Cutting Magic Reelseiden, 1: Melee, 2: Long range Dismantle, 3: Enhanced Dismantle
     private boolean usedDomainExpansion = false;
@@ -118,6 +119,7 @@ public class UbelAttackGoal extends Goal {
         this.cooldownTimer = 10;
         this.enhancedDismantleCooldown = 200;
         this.whirlwindCooldown = 40;
+        this.shadowFeintCooldown = 40;
     }
 
     @Override
@@ -200,6 +202,11 @@ public class UbelAttackGoal extends Goal {
         // --- WHIRLWIND COOLDOWN ---
         if (this.whirlwindCooldown > 0) {
             this.whirlwindCooldown--;
+        }
+
+        // --- SHADOW FEINT COOLDOWN ---
+        if (this.shadowFeintCooldown > 0) {
+            this.shadowFeintCooldown--;
         }
 
         // --- WHIRLWIND WINDUP / TELEGRAPH (4 ticks / 0.2s) ---
@@ -594,5 +601,52 @@ public class UbelAttackGoal extends Goal {
         boolean clearHead = headState.getCollisionShape(world, headPos).isEmpty();
 
         return solidFloor && clearFeet && clearHead;
+    }
+    /**
+     * Shadow Split Feint:
+     * When taking damage from a player > 15 blocks away while engaged in melee (target <= 6 blocks),
+     * Übel throws a fast long-range Dismantle at the sniper without changing her primary melee target,
+     * maintaining simultaneous pressure on both players.
+     */
+    public boolean tryShadowSplitFeint(net.minecraft.entity.damage.DamageSource source) {
+        if (this.shadowFeintCooldown > 0) return false;
+        if (this.target == null || !this.target.isAlive() || this.ubel.distanceTo(this.target) > 6.0) {
+            return false;
+        }
+
+        net.minecraft.entity.Entity attacker = source.getAttacker();
+        if (!(attacker instanceof PlayerEntity sniper) || sniper == this.target || !sniper.isAlive() || sniper.isCreative() || sniper.isSpectator()) {
+            return false;
+        }
+
+        double distToSniper = this.ubel.distanceTo(sniper);
+        if (distToSniper < 15.0) return false;
+
+        World world = this.ubel.getWorld();
+        if (!(world instanceof ServerWorld serverWorld)) return false;
+
+        // Visual shadow feint at current location
+        serverWorld.spawnParticles(ParticleTypes.SQUID_INK, this.ubel.getX(), this.ubel.getY() + 1.0, this.ubel.getZ(),
+                12, 0.3, 0.4, 0.3, 0.05);
+        serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK, this.ubel.getX(), this.ubel.getY() + 1.2, this.ubel.getZ(),
+                2, 0.2, 0.2, 0.2, 0.0);
+
+        // Sound cues: snip and slash
+        serverWorld.playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                SoundEvents.ITEM_SHEARS_SNIP, SoundCategory.HOSTILE, 1.6F, 1.4F);
+        serverWorld.playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.HOSTILE, 1.8F, 1.3F);
+        serverWorld.playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                ModSounds.REELSEIDEN_HIT, SoundCategory.HOSTILE, 1.4F, 1.5F);
+
+        // Calculate direction to sniper's eye
+        Vec3d toSniper = sniper.getEyePos().subtract(this.ubel.getEyePos()).normalize();
+
+        // Fire fast long-range Dismantle towards the sniper without altering Übel's target
+        var shrine = (Shrine) ModSpells.SHRINE;
+        shrine.fireSingleDismantleTowards(serverWorld, this.ubel, this.ubel.getMainHandStack(), toSniper, 1.5F, 2, 1);
+
+        this.shadowFeintCooldown = DuoModeCheckHelper.isDuoMode(serverWorld) ? 80 : 120; // 4s Duo, 6s standard
+        return true;
     }
 }
