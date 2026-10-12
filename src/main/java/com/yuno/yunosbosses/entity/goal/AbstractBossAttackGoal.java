@@ -59,7 +59,11 @@ public abstract class AbstractBossAttackGoal extends Goal {
     @Override
     public boolean canStart() {
         LivingEntity currentTarget = this.boss.getTarget();
-        if (currentTarget != null && currentTarget.isAlive()) {
+        if (currentTarget == this.boss) {
+            this.boss.setTarget(null);
+            return false;
+        }
+        if (currentTarget != null && currentTarget != this.boss && currentTarget.isAlive()) {
             if (currentTarget instanceof PlayerEntity player && (player.isCreative() || player.isSpectator())) {
                 this.boss.setTarget(null);
                 return false;
@@ -73,12 +77,12 @@ public abstract class AbstractBossAttackGoal extends Goal {
         }
 
         findTarget();
-        return this.target != null && this.target.isAlive();
+        return this.target != null && this.target != this.boss && this.target.isAlive();
     }
 
     @Override
     public boolean shouldContinue() {
-        if (this.target == null || !this.target.isAlive()) {
+        if (this.target == null || this.target == this.boss || !this.target.isAlive()) {
             this.boss.setTarget(null);
             this.boss.setAttacker(null);
             this.target = null;
@@ -101,7 +105,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
 
     protected void findTarget() {
         LivingEntity attacker = this.boss.getAttacker();
-        if (attacker != null && attacker.isAlive() && !attacker.isSpectator()) {
+        if (attacker != null && attacker != this.boss && attacker.isAlive() && !attacker.isSpectator()) {
             if (!(attacker instanceof PlayerEntity player && player.isCreative())) {
                 if (this.boss.squaredDistanceTo(attacker) <= 40.0 * 40.0) {
                     this.boss.setTarget(attacker);
@@ -160,7 +164,7 @@ public abstract class AbstractBossAttackGoal extends Goal {
         if (DuoModeCheckHelper.isDuoMode(this.boss.getWorld())) {
             // In Duo mode, look for the other nearby attacker after finishing an ability
             LivingEntity attacker = this.boss.getAttacker();
-            if (attacker != null && attacker.isAlive() && attacker != this.target && this.boss.squaredDistanceTo(attacker) <= 32.0 * 32.0) {
+            if (attacker != null && attacker != this.boss && attacker.isAlive() && attacker != this.target && this.boss.squaredDistanceTo(attacker) <= 32.0 * 32.0) {
                 // 50% chance to pivot to the off-target player
                 if (this.boss.getRandom().nextFloat() < 0.50F) {
                     this.boss.setTarget(attacker);
@@ -209,13 +213,13 @@ public abstract class AbstractBossAttackGoal extends Goal {
     public void tick() {
         // Sync target if boss acquired a new valid target (e.g. from RevengeGoal)
         LivingEntity currentBossTarget = this.boss.getTarget();
-        if (currentBossTarget != null && currentBossTarget.isAlive() && currentBossTarget != this.target) {
+        if (currentBossTarget != null && currentBossTarget != this.boss && currentBossTarget.isAlive() && currentBossTarget != this.target) {
             if (!(currentBossTarget instanceof PlayerEntity player && (player.isCreative() || player.isSpectator()))) {
                 this.target = currentBossTarget;
             }
         }
 
-        if (this.target == null || !this.target.isAlive()) {
+        if (this.target == null || this.target == this.boss || !this.target.isAlive()) {
             this.boss.setTarget(null);
             this.boss.setAttacker(null);
             this.target = null;

@@ -3,34 +3,47 @@ package com.yuno.yunosbosses.mixin;
 import com.yuno.yunosbosses.binding_vow.BindingVowManager;
 import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.effect.AntiTotemEffect;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.ModEntities;
+import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.other.SeveredTorsoEntity;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.yuno.yunosbosses.util.BossTotemTracker;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.List;
+
 @Mixin(LivingEntity.class)
 public abstract class DeathInterceptionMixin {
+
+    @Unique
+    private static final ThreadLocal<Boolean> yunosbosses$gojoVowTriggered = ThreadLocal.withInitial(() -> false);
 
     @Inject(method = "onDeath", at = @At("HEAD"))
     private void yunosbosses$onOwnerDeath(DamageSource damageSource, CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;
         if (!entity.getWorld().isClient() && entity.getWorld() instanceof ServerWorld serverWorld) {
             BarrierManager.onOwnerDeath(entity, serverWorld);
+        }
+        if (entity instanceof YunosBossEntity) {
+            BossTotemTracker.clearBoss(entity.getUuid());
         }
         if (entity instanceof PlayerEntity player) {
             var transformData = ModEntityComponents.TRANSFORMATION_DATA.get(player);
@@ -60,9 +73,10 @@ public abstract class DeathInterceptionMixin {
             }
 
             // Transform if the player has the effect / vow and hasn't yet been transformed
-            // --- BINDING VOW: GOJO ---
+            // --- BINDING VOW: GOJO (Takes priority, bypasses anti-totem) ---
             boolean hasGojoVow = player.hasStatusEffect(ModEffects.GOJO_BINDING_VOW) || BindingVowManager.hasVow(player, ModBindingVows.GOJO);
             if (hasGojoVow && !transformData.isTransformed()) {
+                yunosbosses$gojoVowTriggered.set(true);
 
                 // Play voice line
                 player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -108,7 +122,51 @@ public abstract class DeathInterceptionMixin {
 
                 // Return true to stop death
                 cir.setReturnValue(true);
+                return;
             }
+        }
+
+        // --- ANTI-TOTEM STATUS EFFECT: PREVENT TOTEM RESURRECTION ---
+        if (entity.hasStatusEffect(ModEffects.ANTI_TOTEM)) {
+            AntiTotemEffect.onTotemBlocked(entity);
+            cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "tryUseDeathProtector", at = @At("RETURN"))
+    private void yunosbosses$trackTotemPop(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
+        if (!cir.getReturnValue()) return;
+
+        // If Gojo vow triggered, it was not a totem of undying
+        if (yunosbosses$gojoVowTriggered.get()) {
+            yunosbosses$gojoVowTriggered.set(false);
+            return;
+        }
+
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (!(entity instanceof ServerPlayerEntity player)) return;
+
+        // A totem of undying saved the player. Find the responsible boss:
+        LivingEntity boss = null;
+        if (source.getAttacker() instanceof LivingEntity attacker && attacker instanceof YunosBossEntity) {
+            boss = attacker;
+        } else {
+            // Find nearby active boss within 48 blocks
+            List<PathAwareEntity> nearbyBosses = ((ServerWorld) player.getWorld()).getEntitiesByClass(
+                    PathAwareEntity.class,
+                    player.getBoundingBox().expand(48.0),
+                    b -> b instanceof YunosBossEntity && b.isAlive()
+            );
+            if (!nearbyBosses.isEmpty()) {
+                boss = nearbyBosses.stream()
+                        .filter(b -> b.getTarget() == player || player.getAttacker() == b)
+                        .findFirst()
+                        .orElse(nearbyBosses.get(0));
+            }
+        }
+
+        if (boss != null) {
+            BossTotemTracker.recordTotemUsed(boss, player);
         }
     }
 }

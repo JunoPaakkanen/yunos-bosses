@@ -86,16 +86,20 @@ public class DomainCutsceneOverlay implements HudRenderCallback {
 
                     int modelSize = 45; // How zoomed in the model is
 
-                    // Draw the 3D Entity
-                    net.minecraft.client.gui.screen.ingame.InventoryScreen.drawEntity(
-                            drawContext,
-                            modelX1, modelY1,
-                            modelX2, modelY2,
-                            modelSize,
-                            0.0625f,
-                            0f, 0f,
-                            caster
-                    );
+                    // Draw the 3D Entity safely
+                    try {
+                        net.minecraft.client.gui.screen.ingame.InventoryScreen.drawEntity(
+                                drawContext,
+                                modelX1, modelY1,
+                                modelX2, modelY2,
+                                modelSize,
+                                0.0625f,
+                                0f, 0f,
+                                caster
+                        );
+                    } catch (Throwable ignored) {
+                        // Protect HUD rendering from any 3D entity model state glitches
+                    }
                 }
             }
 

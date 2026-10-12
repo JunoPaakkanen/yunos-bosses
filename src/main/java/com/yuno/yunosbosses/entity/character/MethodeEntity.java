@@ -15,10 +15,12 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
@@ -64,7 +66,8 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.25D) // Movement speed
                 .add(EntityAttributes.ATTACK_DAMAGE, 9.0D) // Attack damage
                 .add(EntityAttributes.ARMOR, 10.0D)
-                .add(EntityAttributes.FOLLOW_RANGE, 48.0D); // Aggro follow range
+                .add(EntityAttributes.FOLLOW_RANGE, 48.0D) // Aggro follow range
+                .add(EntityAttributes.WATER_MOVEMENT_EFFICIENCY, 0.4);
     }
 
     public void applyDifficultyStats(boolean isDuo) {
@@ -119,7 +122,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
 
         // Target hostile entities / golems attacking her or players
         this.targetSelector.add(2, new ActiveTargetGoal<>(this, LivingEntity.class, 10, true, false,
-                (entity, serverWorld) -> entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this));
+                (entity, serverWorld) -> entity != this && (entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this)));
 
         // Move towards her targets to attack them.
         this.attackGoal = new MethodeAttackGoal(this, 2D);
@@ -128,6 +131,10 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
 
     @Override
     public void setTarget(@Nullable LivingEntity target) {
+        if (target == this || (target != null && target.getUuid().equals(this.getUuid()))) {
+            super.setTarget(null);
+            return;
+        }
         super.setTarget(target);
         if (target instanceof PlayerEntity) {
             this.setPersistent();
@@ -191,6 +198,23 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
 
         // Always intercept incoming projectiles with Defensive Magic (works in Creative, Survival, Idle, etc.)
         handleDefensiveMagic(world);
+    }
+
+    @Override
+    protected float modifyAppliedDamage(DamageSource source, float amount) {
+        amount = super.modifyAppliedDamage(source, amount);
+
+        if (source.isIn(DamageTypeTags.IS_EXPLOSION)) {
+            // Multiplies damage by 0.10 (90% resistance)
+            amount *= 0.10F;
+        }
+
+        if (source.isOf(DamageTypes.LAVA)) {
+            // Reduce direct lava contact damage (70% resistance)
+            amount *= 0.3F;
+        }
+
+        return amount;
     }
 
     /**

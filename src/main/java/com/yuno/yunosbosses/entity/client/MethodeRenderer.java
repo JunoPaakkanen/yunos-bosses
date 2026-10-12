@@ -8,6 +8,7 @@ import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
@@ -38,6 +39,11 @@ public class MethodeRenderer<R extends EntityRenderState & GeoRenderState> exten
                 super.renderStackForBone(poseStack, bone, stack, displayContext, renderState, bufferSource, light, overlay);
             }
         });
+    }
+
+    @Override
+    public R createRenderState() {
+        return (R) new LivingEntityRenderState();
     }
 
     @Override

@@ -17,6 +17,15 @@ public class ModEffects {
     public static final RegistryEntry<StatusEffect> FRAME_FREEZE = registerStatusEffect("frame_freeze",
             new FrameFreezeEffect());
 
+    public static final RegistryEntry<StatusEffect> ANTI_TELEPORT = registerStatusEffect("anti_teleport",
+            new AntiTeleportEffect(StatusEffectCategory.HARMFUL, 0x4A148C));
+
+    public static final RegistryEntry<StatusEffect> ANTI_TOTEM = registerStatusEffect("anti_totem",
+            new AntiTotemEffect(StatusEffectCategory.HARMFUL, 0x8B0000));
+
+    public static final RegistryEntry<StatusEffect> ANTI_ESCAPE = registerStatusEffect("anti_escape",
+            new AntiEscapeEffect(StatusEffectCategory.HARMFUL, 0x2B3A42));
+
     private static RegistryEntry<StatusEffect> registerStatusEffect(String name, StatusEffect effect) {
         return Registry.registerReference(Registries.STATUS_EFFECT, Identifier.of(YunosBosses.MOD_ID, name), effect);
     }

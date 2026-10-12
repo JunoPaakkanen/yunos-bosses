@@ -3,6 +3,9 @@ package com.yuno.yunosbosses.spell;
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.spell.implementation.defensive.DefensiveMagic;
 import com.yuno.yunosbosses.spell.implementation.defensive.SphereBarrierSpell;
+import com.yuno.yunosbosses.spell.implementation.misc.AntiEscapeMagic;
+import com.yuno.yunosbosses.spell.implementation.misc.AntiTeleportMagic;
+import com.yuno.yunosbosses.spell.implementation.misc.AntiTotemMagic;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionTCMP;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
@@ -39,6 +42,9 @@ public class ModSpells {
     public static final Spell DOMAIN_EXPANSION_SHRINE = registerSpell(new DomainExpansionShrine(Identifier.of("yunosbosses", "domainexpansionshrine"), SpellRarity.LEGENDARY));
     public static final Spell DOMAIN_EXPANSION_TCMP = registerSpell(new DomainExpansionTCMP(Identifier.of("yunosbosses", "domainexpansiontcmp"), SpellRarity.LEGENDARY));
     public static final Spell PROJECTION_SORCERY = registerSpell(new ProjectionSorcery(Identifier.of("yunosbosses", "projectionsorcery"), SpellRarity.EPIC));
+    public static final Spell ANTI_TELEPORT_MAGIC = registerSpell(new AntiTeleportMagic(Identifier.of("yunosbosses", "antiteleportmagic"), SpellRarity.SPECIAL));
+    public static final Spell ANTI_TOTEM_MAGIC = registerSpell(new AntiTotemMagic(Identifier.of("yunosbosses", "antitotemmagic"), SpellRarity.SPECIAL));
+    public static final Spell ANTI_ESCAPE_MAGIC = registerSpell(new AntiEscapeMagic(Identifier.of("yunosbosses", "antiescapemagic"), SpellRarity.SPECIAL));
 
     private static Spell registerSpell(Spell spell) {
         SPELLS.put(spell.getId(), spell);

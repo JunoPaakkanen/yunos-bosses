@@ -100,6 +100,8 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
         if (this.target != null) {
             snapLook(this.naoya, this.target);
         }
+        ModSpells.ANTI_TELEPORT_MAGIC.cast(this.naoya.getWorld(), this.naoya, this.naoya.getMainHandStack());
+        ModSpells.ANTI_ESCAPE_MAGIC.cast(this.naoya.getWorld(), this.naoya, this.naoya.getMainHandStack());
         this.naoya.triggerDomainAnim();
         ModSpells.DOMAIN_EXPANSION_TCMP.cast(this.naoya.getWorld(), this.naoya, this.naoya.getMainHandStack());
         this.usedDomainExpansion = true;
@@ -177,7 +179,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
      * Otherwise, he delivers an immediate evasive back strike.
      */
     public boolean tryFlankCounter(DamageSource source, LivingEntity rearAttacker) {
-        if (this.evasionCooldown > 0) return false;
+        if (this.evasionCooldown > 0 || rearAttacker == this.naoya) return false;
         World world = this.naoya.getWorld();
         if (!(world instanceof ServerWorld sw)) return false;
 

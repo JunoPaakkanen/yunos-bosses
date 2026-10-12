@@ -14,12 +14,14 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
@@ -66,8 +68,9 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
                 .add(EntityAttributes.MAX_HEALTH, 250.0D)
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.32D)
                 .add(EntityAttributes.ATTACK_DAMAGE, 8.0D)
-                .add(EntityAttributes.ARMOR, 15.0D)
-                .add(EntityAttributes.FOLLOW_RANGE, 48.0D);
+                .add(EntityAttributes.ARMOR, 12.0D)
+                .add(EntityAttributes.FOLLOW_RANGE, 48.0D)
+                .add(EntityAttributes.WATER_MOVEMENT_EFFICIENCY, 0.5);
     }
 
     public void applyDifficultyStats(boolean isDuo) {
@@ -79,7 +82,7 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
         }
         var armorAttr = this.getAttributeInstance(EntityAttributes.ARMOR);
         if (armorAttr != null) {
-            armorAttr.setBaseValue(isDuo ? 20.0D : 15.0D);
+            armorAttr.setBaseValue(isDuo ? 16.0D : 12.0D);
         }
         var movementSpeedAttr = this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
         if (movementSpeedAttr != null) {
@@ -168,11 +171,15 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
 
         // Target hostile entities / golems attacking him or players
         this.targetSelector.add(2, new ActiveTargetGoal<>(this, LivingEntity.class, 10, true, false,
-                (entity, serverWorld) -> entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this));
+                (entity, serverWorld) -> entity != this && (entity instanceof PlayerEntity player ? (!player.isCreative() && !player.isSpectator()) : entity.getAttacking() == this)));
     }
 
     @Override
     public void setTarget(@Nullable LivingEntity target) {
+        if (target == this || (target != null && target.getUuid().equals(this.getUuid()))) {
+            super.setTarget(null);
+            return;
+        }
         super.setTarget(target);
         if (target instanceof PlayerEntity) {
             this.setPersistent();
@@ -200,6 +207,23 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
         .triggerableAnim("barrage", RawAnimation.begin().thenLoop("animation.naoya.punch_barrage"))
         .triggerableAnim("run", RawAnimation.begin().thenLoop("animation.naoya.run"))
         .triggerableAnim("domain_cast", RawAnimation.begin().thenPlay("animation.naoya.domain_cast")));
+    }
+
+    @Override
+    protected float modifyAppliedDamage(DamageSource source, float amount) {
+        amount = super.modifyAppliedDamage(source, amount);
+
+        if (source.isIn(DamageTypeTags.IS_EXPLOSION)) {
+            // Multiplies damage by 0.10 (90% resistance)
+            amount *= 0.10F;
+        }
+
+        if (source.isOf(DamageTypes.LAVA)) {
+            // Reduce direct lava contact damage (70% resistance)
+            amount *= 0.3F;
+        }
+
+        return amount;
     }
 
     public void triggerAttackAnim() {

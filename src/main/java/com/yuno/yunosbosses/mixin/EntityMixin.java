@@ -1,27 +1,74 @@
 package com.yuno.yunosbosses.mixin;
 
+import com.yuno.yunosbosses.effect.AntiTeleportEffect;
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.util.WallSlamData;
 import com.yuno.yunosbosses.util.HitstopData;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MovementType;
+import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.TeleportTarget;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.Set;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements WallSlamData, HitstopData {
 
     @Shadow
     public boolean horizontalCollision;
+
+    @Inject(method = "teleportTo", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$cancelTeleportTo(TeleportTarget target, CallbackInfoReturnable<Entity> cir) {
+        if ((Object) this instanceof LivingEntity living && living.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+            AntiTeleportEffect.onTeleportBlocked(living);
+            cir.setReturnValue(null);
+        }
+    }
+
+    @Inject(method = "teleport(Lnet/minecraft/server/world/ServerWorld;DDDLjava/util/Set;FFZ)Z", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$cancelServerTeleport(ServerWorld world, double destX, double destY, double destZ, Set<PositionFlag> flags, float yaw, float pitch, boolean resetCamera, CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof LivingEntity living && living.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+            AntiTeleportEffect.onTeleportBlocked(living);
+            cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "requestTeleport", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$cancelRequestTeleport(double destX, double destY, double destZ, CallbackInfo ci) {
+        if ((Object) this instanceof LivingEntity living && living.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+            AntiTeleportEffect.onTeleportBlocked(living);
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "requestTeleportAndDismount", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$cancelRequestTeleportAndDismount(double destX, double destY, double destZ, CallbackInfo ci) {
+        if ((Object) this instanceof LivingEntity living && living.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+            AntiTeleportEffect.onTeleportBlocked(living);
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "requestTeleportOffset", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$cancelRequestTeleportOffset(double destX, double destY, double destZ, CallbackInfo ci) {
+        if ((Object) this instanceof LivingEntity living && living.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+            AntiTeleportEffect.onTeleportBlocked(living);
+            ci.cancel();
+        }
+    }
 
     @Unique
     private int yunos$wallSlamTimer = 0;

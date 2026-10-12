@@ -72,7 +72,7 @@ public abstract class DomainExpansion extends Spell {
     }
 
     // Default mana cost
-    public float manaCost = 300.0F;
+    public float manaCost = 250.0F;
     protected Identifier castAnimation;
 
     @Override

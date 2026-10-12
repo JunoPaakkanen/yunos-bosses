@@ -1,6 +1,8 @@
 package com.yuno.yunosbosses.mixin;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.effect.AntiEscapeEffect;
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.BlackFlash;
@@ -11,6 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Arrays;
 
@@ -38,6 +41,17 @@ public abstract class PlayerEntityMixin {
         // Check if the attack cooldown is fully charged
         if (player.getAttackCooldownProgress(0.5F) >= 0.9F && target instanceof LivingEntity livingTarget) {
             BlackFlash.blackFlashChance(player, livingTarget, 0.01F);
+        }
+    }
+
+    @Inject(method = "checkGliding", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$preventGliding(CallbackInfoReturnable<Boolean> cir) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+        if (player.hasStatusEffect(ModEffects.ANTI_ESCAPE)) {
+            if (player.age % 20 == 0) {
+                AntiEscapeEffect.onEscapeAttemptBlocked(player, "Elytra flight");
+            }
+            cir.setReturnValue(false);
         }
     }
 }

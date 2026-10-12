@@ -37,6 +37,40 @@ import java.util.List;
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
 
+    @Inject(method = "setAttacker", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$preventBossSelfAttacker(LivingEntity attacker, CallbackInfo ci) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity instanceof YunosBossEntity && attacker != null && (attacker == entity || attacker.getUuid().equals(entity.getUuid()))) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "getAttacker", at = @At("RETURN"), cancellable = true)
+    private void yunosbosses$sanitizeBossAttacker(CallbackInfoReturnable<LivingEntity> cir) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity instanceof YunosBossEntity && cir.getReturnValue() != null) {
+            if (cir.getReturnValue() == entity || cir.getReturnValue().getUuid().equals(entity.getUuid())) {
+                cir.setReturnValue(null);
+            }
+        }
+    }
+
+    @Inject(method = "canGlide", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$preventGliding(CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity.hasStatusEffect(ModEffects.ANTI_ESCAPE)) {
+            cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "isUsingRiptide", at = @At("HEAD"), cancellable = true)
+    private void yunosbosses$cancelRiptide(CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity.hasStatusEffect(ModEffects.ANTI_ESCAPE)) {
+            cir.setReturnValue(false);
+        }
+    }
+
     @Inject(method = "jump", at = @At("HEAD"), cancellable = true)
     private void yunosbosses$cancelJumping(CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;

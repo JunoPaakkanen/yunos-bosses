@@ -2,6 +2,8 @@ package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
+import com.yuno.yunosbosses.effect.AntiTeleportEffect;
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.character.NaoyaEntity;
 import com.yuno.yunosbosses.network.SpawnImagePayload;
 import com.yuno.yunosbosses.particle.ModParticles;
@@ -66,6 +68,11 @@ public class ProjectionSorcery extends Spell {
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (world.isClient) return;
+
+        if (caster.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+            AntiTeleportEffect.onTeleportBlocked(caster);
+            return;
+        }
 
         if (caster instanceof PlayerEntity) {
             SpellComponent component = ModEntityComponents.SPELL_DATA.get(caster);

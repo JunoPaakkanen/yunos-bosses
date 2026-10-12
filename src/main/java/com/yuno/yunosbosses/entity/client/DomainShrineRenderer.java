@@ -19,6 +19,11 @@ public class DomainShrineRenderer<R extends EntityRenderState & GeoRenderState> 
     }
 
     @Override
+    public R createRenderState() {
+        return (R) new EntityRenderState();
+    }
+
+    @Override
     public void adjustPositionForRender(R renderState, MatrixStack poseStack, BakedGeoModel model, boolean isReRender) {
         super.adjustPositionForRender(renderState, poseStack, model, isReRender);
         if (!isReRender) {

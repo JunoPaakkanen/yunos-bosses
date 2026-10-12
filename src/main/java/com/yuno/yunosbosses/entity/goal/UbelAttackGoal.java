@@ -52,7 +52,11 @@ public class UbelAttackGoal extends Goal {
     @Override
     public boolean canStart() {
         LivingEntity currentTarget = this.ubel.getTarget();
-        if (currentTarget != null && currentTarget.isAlive()) {
+        if (currentTarget == this.ubel) {
+            this.ubel.setTarget(null);
+            return false;
+        }
+        if (currentTarget != null && currentTarget != this.ubel && currentTarget.isAlive()) {
             if (currentTarget instanceof PlayerEntity player && (player.isCreative() || player.isSpectator())) {
                 this.ubel.setTarget(null);
                 return false;
@@ -66,12 +70,12 @@ public class UbelAttackGoal extends Goal {
         }
 
         findTarget();
-        return this.target != null && this.target.isAlive();
+        return this.target != null && this.target != this.ubel && this.target.isAlive();
     }
 
     @Override
     public boolean shouldContinue() {
-        if (this.target == null || !this.target.isAlive()) {
+        if (this.target == null || this.target == this.ubel || !this.target.isAlive()) {
             this.ubel.setTarget(null);
             this.ubel.setAttacker(null);
             this.target = null;
@@ -94,7 +98,7 @@ public class UbelAttackGoal extends Goal {
 
     private void findTarget() {
         LivingEntity attacker = this.ubel.getAttacker();
-        if (attacker != null && attacker.isAlive() && !attacker.isSpectator()) {
+        if (attacker != null && attacker != this.ubel && attacker.isAlive() && !attacker.isSpectator()) {
             if (!(attacker instanceof PlayerEntity player && player.isCreative())) {
                 if (this.ubel.squaredDistanceTo(attacker) <= 40.0 * 40.0) {
                     this.ubel.setTarget(attacker);
@@ -149,7 +153,7 @@ public class UbelAttackGoal extends Goal {
         if (DuoModeCheckHelper.isDuoMode(this.ubel.getWorld())) {
             // In Duo mode, look for the other nearby attacker after finishing an attack
             LivingEntity attacker = this.ubel.getAttacker();
-            if (attacker != null && attacker.isAlive() && attacker != this.target && this.ubel.squaredDistanceTo(attacker) <= 32.0 * 32.0) {
+            if (attacker != null && attacker != this.ubel && attacker.isAlive() && attacker != this.target && this.ubel.squaredDistanceTo(attacker) <= 32.0 * 32.0) {
                 // 50% chance to pivot to the off-target player
                 if (this.ubel.getRandom().nextFloat() < 0.50F) {
                     this.ubel.setTarget(attacker);
@@ -169,7 +173,7 @@ public class UbelAttackGoal extends Goal {
             }
         }
 
-        if (this.target == null || !this.target.isAlive()) {
+        if (this.target == null || this.target == this.ubel || !this.target.isAlive()) {
             this.ubel.setTarget(null);
             this.ubel.setAttacker(null);
             this.target = null;
@@ -540,10 +544,21 @@ public class UbelAttackGoal extends Goal {
     }
 
     public void domainExpansion() {
-        ModSpells.DOMAIN_EXPANSION_SHRINE.cast(
+        ModSpells.ANTI_TELEPORT_MAGIC.cast(
                 this.ubel.getWorld(),
                 this.ubel,
                 this.ubel.getMainHandStack()
+        );
+        ModSpells.ANTI_ESCAPE_MAGIC.cast(
+                this.ubel.getWorld(),
+                this.ubel,
+                this.ubel.getMainHandStack()
+        );
+        ModSpells.DOMAIN_EXPANSION_SHRINE.cast(
+                this.ubel.getWorld(),
+                this.ubel,
+                this.ubel.getMainHandStack(),
+                2
         );
     }
 
@@ -610,12 +625,12 @@ public class UbelAttackGoal extends Goal {
      */
     public boolean tryShadowSplitFeint(net.minecraft.entity.damage.DamageSource source) {
         if (this.shadowFeintCooldown > 0) return false;
-        if (this.target == null || !this.target.isAlive() || this.ubel.distanceTo(this.target) > 6.0) {
+        if (this.target == null || this.target == this.ubel || !this.target.isAlive() || this.ubel.distanceTo(this.target) > 6.0) {
             return false;
         }
 
         net.minecraft.entity.Entity attacker = source.getAttacker();
-        if (!(attacker instanceof PlayerEntity sniper) || sniper == this.target || !sniper.isAlive() || sniper.isCreative() || sniper.isSpectator()) {
+        if (attacker == this.ubel || !(attacker instanceof PlayerEntity sniper) || sniper == this.target || !sniper.isAlive() || sniper.isCreative() || sniper.isSpectator()) {
             return false;
         }
 

@@ -8,6 +8,7 @@ import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import software.bernie.geckolib.constant.DataTickets;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
@@ -18,6 +19,11 @@ public class NaoyaRenderer<R extends EntityRenderState & GeoRenderState> extends
     public NaoyaRenderer(EntityRendererFactory.Context renderManager) {
         super(renderManager, new NaoyaModel());
         this.shadowRadius = 0.5f;
+    }
+
+    @Override
+    public R createRenderState() {
+        return (R) new LivingEntityRenderState();
     }
 
     @Override

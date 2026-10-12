@@ -5,6 +5,8 @@
   "mixins": [
     "CreeperEntityMixin",
     "DeathInterceptionMixin",
+    "EnderPearlEntityMixin",
+    "EnderPearlItemMixin",
     "EntityMixin",
     "ItemEntityMixin",
     "LivingEntityMixin",
@@ -12,7 +14,9 @@
     "MobEntityMixin",
     "PlayerEntityMixin",
     "PlayerInventoryMixin",
-    "SlimeEntityMixin"
+    "ServerPlayerEntityMixin",
+    "SlimeEntityMixin",
+    "TridentItemMixin"
   ],
   "client": [
     "AbstractClientPlayerEntityMixin",

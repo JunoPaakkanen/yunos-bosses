@@ -2,6 +2,8 @@ package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.domain.clash.DomainClashManager;
+import com.yuno.yunosbosses.effect.AntiTeleportEffect;
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansion;
@@ -15,6 +17,11 @@ public class SpellCastHelper {
 
     // Check if the player has enough mana to start casting the spell
     public static boolean canStartCasting(Spell spell, LivingEntity caster) {
+        if (spell == ModSpells.PROJECTION_SORCERY && caster.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+            AntiTeleportEffect.onTeleportBlocked(caster);
+            return false;
+        }
+
         if (!(caster instanceof PlayerEntity player)) {
             if (spell instanceof DomainExpansion && DomainClashManager.hasBurnout(caster.getUuid())) {
                 return false;
