@@ -326,9 +326,9 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
 
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
-        if (this.attackGoal != null) {
+        if (this.attackGoal != null && !this.attackGoal.isExecutingCounter()) {
             Entity attacker = source.getAttacker();
-            if (attacker instanceof LivingEntity livingAttacker) {
+            if (attacker instanceof LivingEntity livingAttacker && !(livingAttacker instanceof NaoyaEntity) && !livingAttacker.isTeammate(this)) {
                 Vec3d look = this.getRotationVec(1.0F);
                 Vec3d toAttacker = livingAttacker.getPos().subtract(this.getPos());
                 Vec3d horizToAttacker = new Vec3d(toAttacker.x, 0, toAttacker.z);

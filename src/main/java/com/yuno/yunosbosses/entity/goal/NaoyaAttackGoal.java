@@ -38,6 +38,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
     private final NaoyaFlankDashAbility flankDashAbility;
     private int evasionCooldown = 0;
     private boolean usedDomainExpansion = false;
+    private boolean isExecutingCounter = false;
 
     public NaoyaAttackGoal(NaoyaEntity naoya, double speed) {
         super(naoya, speed);
@@ -61,6 +62,10 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
 
         // 6. Close Quarters Melee Jab
         this.registerAbility(new NaoyaJabAbility());
+    }
+
+    public boolean isExecutingCounter() {
+        return this.isExecutingCounter;
     }
 
     @Override
@@ -145,7 +150,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
      * Standard lateral side-step evasion for frontal attacks.
      */
     public void tryEvasiveStep(DamageSource source) {
-        if (this.evasionCooldown > 0 || this.activeAbility != null) return;
+        if (this.isExecutingCounter || this.evasionCooldown > 0 || this.activeAbility != null) return;
         World world = this.naoya.getWorld();
         if (!(world instanceof ServerWorld sw)) return;
 
@@ -180,103 +185,113 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
      * Otherwise, he delivers an immediate evasive back strike.
      */
     public boolean tryFlankCounter(DamageSource source, LivingEntity rearAttacker) {
-        if (this.evasionCooldown > 0 || rearAttacker == this.naoya) return false;
+        if (this.isExecutingCounter || this.evasionCooldown > 0) return false;
+        if (rearAttacker == null || rearAttacker == this.naoya || rearAttacker instanceof NaoyaEntity) return false;
+        if (rearAttacker.isTeammate(this.naoya)) return false;
         World world = this.naoya.getWorld();
         if (!(world instanceof ServerWorld sw)) return false;
 
-        // 1. Interrupt active combo/ability cleanly
-        if (this.activeAbility != null) {
-            this.activeAbility.stop(this.naoya);
-            this.activeAbility = null;
-            this.attackTimer = 0;
-        }
+        this.isExecutingCounter = true;
+        try {
+            // Set cooldown immediately before any repositioning or damage to prevent recursive counter loops
+            this.evasionCooldown = DuoModeCheckHelper.isDuoMode(sw) ? 50 : 65;
 
-        // 2. Spawn 24-FPS afterimage decoy at current location
-        ProjectionSorcery.broadcastFrameImage(world, this.naoya, this.naoya.getPos(), 40);
-        sw.playSound(null, this.naoya.getX(), this.naoya.getY(), this.naoya.getZ(),
-                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.HOSTILE, 1.4F, 1.8F);
-        sw.playSound(null, this.naoya.getX(), this.naoya.getY(), this.naoya.getZ(),
-                SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.HOSTILE, 1.0F, 1.8F);
-        sw.spawnParticles(ParticleTypes.ELECTRIC_SPARK, this.naoya.getX(), this.naoya.getY() + 1.0, this.naoya.getZ(),
-                16, 0.3, 0.4, 0.3, 0.1);
-
-        // 3. Calculate position behind the rear attacker
-        Vec3d attLook = rearAttacker.getRotationVec(1.0F);
-        Vec3d behindDir = new Vec3d(-attLook.x, 0, -attLook.z);
-        if (behindDir.lengthSquared() < 1e-4) {
-            behindDir = new Vec3d(this.naoya.getX() - rearAttacker.getX(), 0, this.naoya.getZ() - rearAttacker.getZ());
-        }
-        if (behindDir.lengthSquared() > 1e-4) {
-            behindDir = behindDir.normalize();
-        } else {
-            behindDir = this.naoya.getRotationVec(1.0F).multiply(-1.0).normalize();
-        }
-
-        Vec3d behindPos = rearAttacker.getPos().add(behindDir.multiply(1.8));
-        BlockPos targetBlock = BlockPos.ofFloored(behindPos);
-        if (sw.getBlockState(targetBlock).isSolidBlock(sw, targetBlock)) {
-            behindPos = new Vec3d(behindPos.x, targetBlock.getY() + 1.0, behindPos.z);
-        } else if (sw.getBlockState(targetBlock.down()).isAir()) {
-            BlockPos down2 = targetBlock.down(2);
-            if (sw.getBlockState(down2).isSolidBlock(sw, down2)) {
-                behindPos = new Vec3d(behindPos.x, targetBlock.getY() - 1.0, behindPos.z);
-            }
-        }
-
-        // Reposition Naoya behind the attacker
-        this.naoya.refreshPositionAndAngles(behindPos.x, behindPos.y, behindPos.z, this.naoya.getYaw(), this.naoya.getPitch());
-        this.naoya.fallDistance = 0.0F;
-        snapLook(this.naoya, rearAttacker);
-        this.naoya.setTarget(rearAttacker);
-        this.target = rearAttacker;
-        this.naoya.addSpeedStacks(2);
-
-        sw.playSound(null, behindPos.x, behindPos.y, behindPos.z,
-                SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.HOSTILE, 1.2F, 1.6F);
-        sw.spawnParticles(ParticleTypes.ELECTRIC_SPARK, behindPos.x, behindPos.y + 1.0, behindPos.z,
-                12, 0.2, 0.4, 0.2, 0.1);
-
-        // 4. Direction towards rearAttacker from new position
-        Vec3d vRear = new Vec3d(rearAttacker.getX() - this.naoya.getX(), 0, rearAttacker.getZ() - this.naoya.getZ());
-        if (vRear.lengthSquared() > 1e-4) {
-            vRear = vRear.normalize();
-        } else {
-            vRear = this.naoya.getRotationVec(1.0F);
-        }
-
-        // 5. Check if another player is lined up in front of Naoya
-        List<PlayerEntity> otherPlayers = sw.getEntitiesByClass(
-                PlayerEntity.class,
-                this.naoya.getBoundingBox().expand(24.0),
-                p -> p.isAlive() && !p.isCreative() && !p.isSpectator() && !p.getUuid().equals(rearAttacker.getUuid())
-        );
-
-        PlayerEntity linedUpPlayer = null;
-        for (PlayerEntity other : otherPlayers) {
-            // Minimum distance check: the two players must be at least 2.5 blocks apart
-            if (rearAttacker.distanceTo(other) < 2.5) {
-                continue;
+            // 1. Interrupt active combo/ability cleanly
+            if (this.activeAbility != null) {
+                this.activeAbility.stop(this.naoya);
+                this.activeAbility = null;
+                this.attackTimer = 0;
             }
 
-            Vec3d vOther = new Vec3d(other.getX() - this.naoya.getX(), 0, other.getZ() - this.naoya.getZ());
-            if (vOther.lengthSquared() > 1e-4) {
-                vOther = vOther.normalize();
-                if (vRear.dotProduct(vOther) > 0.82) { // Angular alignment < ~34 degrees
-                    linedUpPlayer = other;
-                    break;
+            // 2. Spawn 24-FPS afterimage decoy at current location
+            ProjectionSorcery.broadcastFrameImage(world, this.naoya, this.naoya.getPos(), 40);
+            sw.playSound(null, this.naoya.getX(), this.naoya.getY(), this.naoya.getZ(),
+                    SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.HOSTILE, 1.4F, 1.8F);
+            sw.playSound(null, this.naoya.getX(), this.naoya.getY(), this.naoya.getZ(),
+                    SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.HOSTILE, 1.0F, 1.8F);
+            sw.spawnParticles(ParticleTypes.ELECTRIC_SPARK, this.naoya.getX(), this.naoya.getY() + 1.0, this.naoya.getZ(),
+                    16, 0.3, 0.4, 0.3, 0.1);
+
+            // 3. Calculate position behind the rear attacker
+            Vec3d attLook = rearAttacker.getRotationVec(1.0F);
+            Vec3d behindDir = new Vec3d(-attLook.x, 0, -attLook.z);
+            if (behindDir.lengthSquared() < 1e-4) {
+                behindDir = new Vec3d(this.naoya.getX() - rearAttacker.getX(), 0, this.naoya.getZ() - rearAttacker.getZ());
+            }
+            if (behindDir.lengthSquared() > 1e-4) {
+                behindDir = behindDir.normalize();
+            } else {
+                behindDir = this.naoya.getRotationVec(1.0F).multiply(-1.0).normalize();
+            }
+
+            Vec3d behindPos = rearAttacker.getPos().add(behindDir.multiply(1.8));
+            BlockPos targetBlock = BlockPos.ofFloored(behindPos);
+            if (sw.getBlockState(targetBlock).isSolidBlock(sw, targetBlock)) {
+                behindPos = new Vec3d(behindPos.x, targetBlock.getY() + 1.0, behindPos.z);
+            } else if (sw.getBlockState(targetBlock.down()).isAir()) {
+                BlockPos down2 = targetBlock.down(2);
+                if (sw.getBlockState(down2).isSolidBlock(sw, down2)) {
+                    behindPos = new Vec3d(behindPos.x, targetBlock.getY() - 1.0, behindPos.z);
                 }
             }
-        }
 
-        if (linedUpPlayer != null) {
-            // Both players are lined up along the same forward corridor: unleash penetrating Shockwave Punch!
-            executeShockwavePunch(sw, rearAttacker, linedUpPlayer, vRear);
-        } else {
-            // Not lined up: execute rapid evasive strike on rear attacker
-            executeRearEvasiveStrike(sw, rearAttacker, vRear);
-        }
+            // Reposition Naoya behind the attacker
+            this.naoya.refreshPositionAndAngles(behindPos.x, behindPos.y, behindPos.z, this.naoya.getYaw(), this.naoya.getPitch());
+            this.naoya.fallDistance = 0.0F;
+            snapLook(this.naoya, rearAttacker);
+            this.naoya.setTarget(rearAttacker);
+            this.target = rearAttacker;
+            this.naoya.addSpeedStacks(2);
 
-        return true;
+            sw.playSound(null, behindPos.x, behindPos.y, behindPos.z,
+                    SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.HOSTILE, 1.2F, 1.6F);
+            sw.spawnParticles(ParticleTypes.ELECTRIC_SPARK, behindPos.x, behindPos.y + 1.0, behindPos.z,
+                    12, 0.2, 0.4, 0.2, 0.1);
+
+            // 4. Direction towards rearAttacker from new position
+            Vec3d vRear = new Vec3d(rearAttacker.getX() - this.naoya.getX(), 0, rearAttacker.getZ() - this.naoya.getZ());
+            if (vRear.lengthSquared() > 1e-4) {
+                vRear = vRear.normalize();
+            } else {
+                vRear = this.naoya.getRotationVec(1.0F);
+            }
+
+            // 5. Check if another player is lined up in front of Naoya
+            List<PlayerEntity> otherPlayers = sw.getEntitiesByClass(
+                    PlayerEntity.class,
+                    this.naoya.getBoundingBox().expand(24.0),
+                    p -> p.isAlive() && !p.isCreative() && !p.isSpectator() && !p.getUuid().equals(rearAttacker.getUuid())
+            );
+
+            PlayerEntity linedUpPlayer = null;
+            for (PlayerEntity other : otherPlayers) {
+                // Minimum distance check: the two players must be at least 2.5 blocks apart
+                if (rearAttacker.distanceTo(other) < 2.5) {
+                    continue;
+                }
+
+                Vec3d vOther = new Vec3d(other.getX() - this.naoya.getX(), 0, other.getZ() - this.naoya.getZ());
+                if (vOther.lengthSquared() > 1e-4) {
+                    vOther = vOther.normalize();
+                    if (vRear.dotProduct(vOther) > 0.82) { // Angular alignment < ~34 degrees
+                        linedUpPlayer = other;
+                        break;
+                    }
+                }
+            }
+
+            if (linedUpPlayer != null) {
+                // Both players are lined up along the same forward corridor: unleash penetrating Shockwave Punch!
+                executeShockwavePunch(sw, rearAttacker, linedUpPlayer, vRear);
+            } else {
+                // Not lined up: execute rapid evasive strike on rear attacker
+                executeRearEvasiveStrike(sw, rearAttacker, vRear);
+            }
+
+            return true;
+        } finally {
+            this.isExecutingCounter = false;
+        }
     }
 
     private void executeShockwavePunch(ServerWorld sw, LivingEntity rearAttacker, PlayerEntity linedUpPlayer, Vec3d punchDir) {
@@ -301,7 +316,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
             List<LivingEntity> hitEntities = sw.getEntitiesByClass(
                     LivingEntity.class,
                     hitBox,
-                    e -> e != this.naoya && e.isAlive() && !e.isTeammate(this.naoya) && !hitUuids.contains(e.getUuid())
+                    e -> e != this.naoya && !(e instanceof NaoyaEntity) && e.isAlive() && !e.isTeammate(this.naoya) && !hitUuids.contains(e.getUuid())
             );
 
             for (LivingEntity hit : hitEntities) {
@@ -333,7 +348,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
             }
         }
 
-        this.evasionCooldown = DuoModeCheckHelper.isDuoMode(sw) ? 60 : 80;
+        this.evasionCooldown = Math.max(this.evasionCooldown, DuoModeCheckHelper.isDuoMode(sw) ? 60 : 80);
         this.globalCooldown = 12;
     }
 
@@ -372,7 +387,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
         sw.spawnParticles(ParticleTypes.ELECTRIC_SPARK, rearAttacker.getX(), rearAttacker.getY() + 1.0, rearAttacker.getZ(),
                 8, 0.2, 0.3, 0.2, 0.1);
 
-        this.evasionCooldown = DuoModeCheckHelper.isDuoMode(sw) ? 50 : 65;
+        this.evasionCooldown = Math.max(this.evasionCooldown, DuoModeCheckHelper.isDuoMode(sw) ? 50 : 65);
         this.globalCooldown = 8;
     }
 }
