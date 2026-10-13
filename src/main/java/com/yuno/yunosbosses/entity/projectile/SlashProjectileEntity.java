@@ -1,8 +1,10 @@
 package com.yuno.yunosbosses.entity.projectile;
 
+import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -176,9 +178,13 @@ public class SlashProjectileEntity extends ProjectileEntity {
             }
         }
 
-        // 3. Inflict cutting magic damage (bypasses armor)
-        DamageSource source = ModDamageTypes.of(serverWorld, ModDamageTypes.CUTTING_MAGIC, owner != null ? owner : this);
-        target.damage(serverWorld, source, damage);
+        // 3. Inflict cutting magic damage (50% armor piercing if cast by boss)
+        if (owner instanceof YunosBossEntity) {
+            BossCombatHelper.applySignatureDamage(serverWorld, target, owner, damage);
+        } else {
+            DamageSource source = ModDamageTypes.of(serverWorld, ModDamageTypes.CUTTING_MAGIC, owner != null ? owner : this);
+            target.damage(serverWorld, source, damage);
+        }
 
         // 4. Sound feedback
         float hitPitch = 1.05f + (this.random.nextFloat() * 0.25f);

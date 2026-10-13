@@ -4,9 +4,9 @@ import com.yuno.yunosbosses.entity.character.NaoyaEntity;
 import com.yuno.yunosbosses.entity.goal.ability.BossAbility;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.WallSlamData;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
@@ -131,17 +131,15 @@ public class NaoyaMachRamAbility implements BossAbility {
 
                 int speedStacks = (boss instanceof NaoyaEntity naoya) ? naoya.getSpeedStacks() : 0;
                 float ramDamage = 16.0F + (speedStacks * 1.5F);
-                DamageSource source = boss.getDamageSources().mobAttack(boss);
 
                 for (LivingEntity hitEntity : hitList) {
-                    if (hitEntity.damage(sw, source, ramDamage)) {
-                        if (hitEntity instanceof WallSlamData wsd) {
-                            wsd.yunos$setWallSlamTimer(35);
-                        }
-                        Vec3d ramPush = boss.getRotationVec(1.0F).normalize().multiply(1.3).add(0, 0.25, 0);
-                        hitEntity.setVelocity(hitEntity.getVelocity().add(ramPush));
-                        hitEntity.velocityModified = true;
+                    BossCombatHelper.applySignatureDamage(sw, hitEntity, boss, ramDamage);
+                    if (hitEntity instanceof WallSlamData wsd) {
+                        wsd.yunos$setWallSlamTimer(35);
                     }
+                    Vec3d ramPush = boss.getRotationVec(1.0F).normalize().multiply(1.3).add(0, 0.25, 0);
+                    hitEntity.setVelocity(hitEntity.getVelocity().add(ramPush));
+                    hitEntity.velocityModified = true;
                 }
             }
             this.waypointIndex++;

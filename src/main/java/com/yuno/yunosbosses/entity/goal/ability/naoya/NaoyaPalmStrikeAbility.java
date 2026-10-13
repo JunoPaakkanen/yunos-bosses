@@ -4,13 +4,10 @@ import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.character.NaoyaEntity;
 import com.yuno.yunosbosses.entity.goal.AbstractBossAttackGoal;
 import com.yuno.yunosbosses.entity.goal.ability.BossAbility;
-import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.ModSounds;
-import com.yuno.yunosbosses.util.HitstopData;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
@@ -60,8 +57,7 @@ public class NaoyaPalmStrikeAbility implements BossAbility {
     public void execute(MobEntity boss, LivingEntity target) {
         World world = boss.getWorld();
         if (world instanceof ServerWorld sw && target != null && target.isAlive()) {
-            DamageSource source = boss.getDamageSources().mobAttack(boss);
-            target.damage(sw, source, 6.0F);
+            BossCombatHelper.applySignatureDamage(sw, target, boss, 6.0F);
 
             // Inflict Frame Freeze
             target.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 30, 0, false, false, true));

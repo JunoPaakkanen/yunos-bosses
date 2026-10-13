@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.entity.ModEntities;
+import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
 import com.yuno.yunosbosses.entity.projectile.FlameArrowEntity;
@@ -19,6 +20,7 @@ import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansionShrine;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -517,7 +519,11 @@ public class Shrine extends Spell {
                         float multiplier = (hitObjects == 0) ? 1.0f : ((hitObjects == 1) ? 0.7f : 0.5f);
                         float finalDamage = trueDamage * multiplier;
 
-                        target.damage(serverWorld, ModDamageTypes.of(serverWorld, ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster), finalDamage);
+                        if (caster instanceof YunosBossEntity) {
+                            BossCombatHelper.applySignatureDamage(serverWorld, target, caster, finalDamage);
+                        } else {
+                            target.damage(serverWorld, ModDamageTypes.of(serverWorld, ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster), finalDamage);
+                        }
 
                         Vec3d targetCenter = target.getBoundingBox().getCenter();
                         serverWorld.spawnParticles(ModParticles.DISMANTLE_A_PARTICLE, targetCenter.x, targetCenter.y, targetCenter.z, 2, 0.2, 0.2, 0.2, 0);

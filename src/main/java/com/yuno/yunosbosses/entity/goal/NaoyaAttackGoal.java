@@ -12,6 +12,7 @@ import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaPunchBarrageAbility;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import com.yuno.yunosbosses.util.WallSlamData;
 import net.minecraft.entity.LivingEntity;
@@ -318,7 +319,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
                     ProjectionSorcery.shatterFrame(hit, attackSource, damage);
                 }
 
-                hit.damage(sw, attackSource, damage);
+                BossCombatHelper.applySignatureDamage(sw, hit, this.naoya, damage);
 
                 if (hit instanceof WallSlamData wsd) {
                     wsd.yunos$setWallSlamTimer(45);
@@ -344,7 +345,6 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
         sw.playSound(null, rearAttacker.getX(), rearAttacker.getY(), rearAttacker.getZ(),
                 ModSounds.FRAME_FREEZE, SoundCategory.HOSTILE, 1.1F, 1.2F);
 
-        DamageSource attackSource = this.naoya.getDamageSources().mobAttack(this.naoya);
         float strikeDamage = 12.0F + (this.naoya.getSpeedStacks() * 1.0F);
 
         if (rearAttacker.isBlocking() && rearAttacker instanceof PlayerEntity player) {
@@ -355,7 +355,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
                     SoundEvents.ITEM_SHIELD_BREAK, SoundCategory.PLAYERS, 1.2F, 1.0F);
         }
 
-        rearAttacker.damage(sw, attackSource, strikeDamage);
+        BossCombatHelper.applySignatureDamage(sw, rearAttacker, this.naoya, strikeDamage);
 
         // Inflict brief Frame Freeze and Wall Slam timer
         rearAttacker.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 20, 0, false, false, true));

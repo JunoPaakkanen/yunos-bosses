@@ -6,8 +6,8 @@ import com.yuno.yunosbosses.entity.goal.ability.DefensiveProjectileShieldAbility
 import com.yuno.yunosbosses.entity.goal.ability.MeleeAttackAbility;
 import com.yuno.yunosbosses.entity.goal.ability.SpellCastAbility;
 import com.yuno.yunosbosses.spell.ModSpells;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.DuoModeCheckHelper;
-import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
@@ -120,7 +120,6 @@ public class MethodeAttackGoal extends AbstractBossAttackGoal {
 
         // 3. Determine primary target vs secondary target(s)
         PlayerEntity primary = (this.target instanceof PlayerEntity pt && closePlayers.contains(pt)) ? pt : closePlayers.get(0);
-        DamageSource magicSource = this.methode.getDamageSources().magic();
 
         for (PlayerEntity p : closePlayers) {
             // Shield break for anyone blocking close to Methode
@@ -132,7 +131,7 @@ public class MethodeAttackGoal extends AbstractBossAttackGoal {
                         SoundEvents.ITEM_SHIELD_BREAK, SoundCategory.PLAYERS, 1.2F, 1.0F);
             }
 
-            p.damage(sw, magicSource, 10.0F);
+            BossCombatHelper.applySignatureDamage(sw, p, this.methode, 14.0F);
 
             if (p.equals(primary)) {
                 // Primary attacker: Repelled backwards with powerful magic wave

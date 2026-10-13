@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.entity.goal.ability.DefensiveProjectileShieldAbility
 import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import com.yuno.yunosbosses.world.ModGameRules;
 import net.minecraft.entity.*;
@@ -20,6 +21,7 @@ import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -45,6 +47,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
     public static final int DEFENSIVE_MAGIC_COOLDOWN = 100; // 5 seconds (100 ticks)
     private int defensiveMagicCooldown = 0;
     private boolean difficultyInitialized = false;
+    private int reinforcementBrokenTicks = 0;
     private MethodeAttackGoal attackGoal;
 
     public MethodeEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
@@ -196,6 +199,15 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
         // Sets the progress to health percentage (0.0 to 1.0)
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
 
+        if (this.reinforcementBrokenTicks > 0) {
+            this.reinforcementBrokenTicks--;
+            if (this.age % 4 == 0) {
+                world.spawnParticles(ParticleTypes.ELECTRIC_SPARK,
+                        this.getX(), this.getY() + 1.0, this.getZ(),
+                        2, 0.2, 0.4, 0.2, 0.05);
+            }
+        }
+
         // Always intercept incoming projectiles with Defensive Magic (works in Creative, Survival, Idle, etc.)
         handleDefensiveMagic(world);
     }
@@ -214,7 +226,23 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
             amount *= 0.3F;
         }
 
+        amount = BossCombatHelper.applyReinforcementAndCap(this, this, source, amount);
         return amount;
+    }
+
+    @Override
+    public int getReinforcementBrokenTicks() {
+        return this.reinforcementBrokenTicks;
+    }
+
+    @Override
+    public void setReinforcementBrokenTicks(int ticks) {
+        this.reinforcementBrokenTicks = ticks;
+    }
+
+    @Override
+    public void breakReinforcement(int ticks, DamageSource source) {
+        BossCombatHelper.executeReinforcementBreak(this, this, source, ticks);
     }
 
     /**
@@ -364,6 +392,12 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
                 this.attackGoal.checkAndExecuteRestraintRepulsion();
             }
         }
+
+        if (BossCombatHelper.isHeavySpell(source, amount)) {
+            int duration = DuoModeCheckHelper.isDuoMode(world) ? 60 : 100;
+            this.breakReinforcement(duration, source);
+        }
+
         return super.damage(world, source, amount);
     }
 

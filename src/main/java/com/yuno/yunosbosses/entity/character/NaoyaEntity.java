@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.entity.character;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.goal.NaoyaAttackGoal;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import com.yuno.yunosbosses.world.ModGameRules;
 import net.minecraft.entity.*;
@@ -42,6 +43,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBossEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private boolean difficultyInitialized = false;
+    private int reinforcementBrokenTicks = 0;
 
     private static final Identifier SPEED_STACK_MODIFIER_ID = Identifier.of("yunosbosses", "naoya_speed_stacks");
 
@@ -223,7 +225,23 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
             amount *= 0.3F;
         }
 
+        amount = BossCombatHelper.applyReinforcementAndCap(this, this, source, amount);
         return amount;
+    }
+
+    @Override
+    public int getReinforcementBrokenTicks() {
+        return this.reinforcementBrokenTicks;
+    }
+
+    @Override
+    public void setReinforcementBrokenTicks(int ticks) {
+        this.reinforcementBrokenTicks = ticks;
+    }
+
+    @Override
+    public void breakReinforcement(int ticks, DamageSource source) {
+        BossCombatHelper.executeReinforcementBreak(this, this, source, ticks);
     }
 
     public void triggerAttackAnim() {
@@ -272,6 +290,15 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
             applyDifficultyStats(DuoModeCheckHelper.isDuoMode(world));
         }
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+
+        if (this.reinforcementBrokenTicks > 0) {
+            this.reinforcementBrokenTicks--;
+            if (this.age % 4 == 0) {
+                world.spawnParticles(ParticleTypes.ELECTRIC_SPARK,
+                        this.getX(), this.getY() + 1.0, this.getZ(),
+                        2, 0.2, 0.4, 0.2, 0.05);
+            }
+        }
 
         // Passive speed decay when out of action
         if (this.speedDecayTimer > 0) {
@@ -325,6 +352,11 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
             if (this.getRandom().nextFloat() < 0.40F) {
                 this.attackGoal.tryEvasiveStep(source);
             }
+        }
+
+        if (BossCombatHelper.isHeavySpell(source, amount)) {
+            int duration = DuoModeCheckHelper.isDuoMode(world) ? 60 : 100;
+            this.breakReinforcement(duration, source);
         }
 
         boolean result = super.damage(world, source, amount);

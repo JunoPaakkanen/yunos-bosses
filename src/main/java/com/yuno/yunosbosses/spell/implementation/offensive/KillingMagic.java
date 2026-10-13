@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.spell.implementation.offensive;
 
+import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.character.MethodeEntity;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.network.BeamPayload;
@@ -7,6 +8,7 @@ import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -426,7 +428,12 @@ public class KillingMagic extends Spell {
 
                 hitEntities.add(entity);
                 Vec3d preVel = entity.getVelocity();
-                entity.damage(world, world.getDamageSources().indirectMagic(caster, caster), trueDamage);
+
+                if (caster instanceof YunosBossEntity && entity instanceof LivingEntity living) {
+                    BossCombatHelper.applySignatureDamage(world, living, caster, trueDamage);
+                } else {
+                    entity.damage(world, world.getDamageSources().indirectMagic(caster, caster), trueDamage);
+                }
 
                 // Controlled kinetic displacement
                 if (knockbackHoriz > 0.1F) {

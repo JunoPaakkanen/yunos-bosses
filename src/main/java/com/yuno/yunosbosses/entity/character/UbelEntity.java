@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.entity.character;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.goal.UbelAttackGoal;
 import com.yuno.yunosbosses.item.ModItems;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import com.yuno.yunosbosses.world.ModGameRules;
 import net.minecraft.entity.*;
@@ -16,6 +17,7 @@ import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -35,6 +37,7 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private boolean difficultyInitialized = false;
+    private int reinforcementBrokenTicks = 0;
     private UbelAttackGoal attackGoal;
 
     public UbelEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
@@ -184,6 +187,15 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
         }
         // Sets the progress to health percentage (0.0 to 1.0)
         this.bossBar.setPercent(this.getHealth() / this.getMaxHealth());
+
+        if (this.reinforcementBrokenTicks > 0) {
+            this.reinforcementBrokenTicks--;
+            if (this.age % 4 == 0) {
+                world.spawnParticles(ParticleTypes.ELECTRIC_SPARK,
+                        this.getX(), this.getY() + 1.0, this.getZ(),
+                        2, 0.2, 0.4, 0.2, 0.05);
+            }
+        }
     }
 
     @Override
@@ -200,7 +212,23 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
             amount *= 0.3F;
         }
 
+        amount = BossCombatHelper.applyReinforcementAndCap(this, this, source, amount);
         return amount;
+    }
+
+    @Override
+    public int getReinforcementBrokenTicks() {
+        return this.reinforcementBrokenTicks;
+    }
+
+    @Override
+    public void setReinforcementBrokenTicks(int ticks) {
+        this.reinforcementBrokenTicks = ticks;
+    }
+
+    @Override
+    public void breakReinforcement(int ticks, DamageSource source) {
+        BossCombatHelper.executeReinforcementBreak(this, this, source, ticks);
     }
 
     @Override
@@ -208,6 +236,12 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
         if (this.attackGoal != null) {
             this.attackGoal.tryShadowSplitFeint(source);
         }
+
+        if (BossCombatHelper.isHeavySpell(source, amount)) {
+            int duration = DuoModeCheckHelper.isDuoMode(world) ? 60 : 100;
+            this.breakReinforcement(duration, source);
+        }
+
         return super.damage(world, source, amount);
     }
 
