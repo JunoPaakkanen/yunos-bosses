@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.spell;
 
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.spell.implementation.defensive.DefensiveMagic;
+import com.yuno.yunosbosses.spell.implementation.defensive.SimpleDomain;
 import com.yuno.yunosbosses.spell.implementation.defensive.SphereBarrierSpell;
 import com.yuno.yunosbosses.spell.implementation.misc.AntiEscapeMagic;
 import com.yuno.yunosbosses.spell.implementation.misc.AntiTeleportMagic;
@@ -36,6 +37,7 @@ public class ModSpells {
     // Defensive spells
     public static final Spell DEFENSIVE_MAGIC = registerSpell(new DefensiveMagic(Identifier.of("yunosbosses", "defensivemagic"), SpellRarity.COMMON));
     public static final Spell SPHERE_BARRIER = registerSpell(new SphereBarrierSpell(Identifier.of("yunosbosses", "spherebarrier"), SpellRarity.UNCOMMON));
+    public static final Spell SIMPLE_DOMAIN = registerSpell(new SimpleDomain(Identifier.of("yunosbosses", "simpledomain"), SpellRarity.RARE));
 
     // Miscellaneous spells
     public static final Spell REVERSE_CURSED_TECHNIQUE = registerSpell(new ReverseCursedTechnique(Identifier.of("yunosbosses", "reversecursedtechnique"), SpellRarity.SPECIAL));

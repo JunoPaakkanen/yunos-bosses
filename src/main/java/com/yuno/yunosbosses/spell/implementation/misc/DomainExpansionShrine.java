@@ -19,6 +19,7 @@ import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
+import com.yuno.yunosbosses.util.SimpleDomainManager;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
@@ -340,7 +341,6 @@ public class DomainExpansionShrine extends DomainExpansion {
 
         DelayedServerEffects.delay(chargeDurationTicks, () -> {
             if (!caster.isAlive()) return;
-
             Vec3d eyePos = caster.getEyePos();
             Vec3d lookDir = caster.getRotationVec(1.0F).normalize();
 
@@ -386,19 +386,25 @@ public class DomainExpansionShrine extends DomainExpansion {
 
     @Override
     public void onDomainEffect(Entity affectedEntity, ActiveBarrier barrier) {
-        if (affectedEntity instanceof LivingEntity) {
+        if (affectedEntity instanceof LivingEntity living) {
             if (affectedEntity.age % 4 == 0) {
                 ServerWorld serverWorld = (ServerWorld) affectedEntity.getWorld();
                 Entity caster = serverWorld.getEntity(barrier.getOwnerUuid());
+
+                // Exclude caster from sure-hit
+                if (living.getUuid().equals(barrier.getOwnerUuid())) return;
 
                 Vec3d center = barrier.getPosition();
                 float radius = barrier.getRadius();
                 double distToCenter = affectedEntity.getPos().distanceTo(center);
 
+                // Lethal sure-hit tuned for ~10s survival with Prot 4 + Golden Apple:
+                // Closed barrier: 2.0F per 4 ticks (10.0 raw DPS, 3.6 post-Prot4 DPS)
+                // Open barrier: 2.6F at epicenter down to 1.8F at perimeter
                 float damage;
                 if (barrier.isOpenBarrier()) {
                     double distRatio = Math.max(0.0, Math.min(1.0, distToCenter / radius));
-                    damage = (float) (3.4f - (distRatio * 2.2f));
+                    damage = (float) (2.6F - (distRatio * 0.8F));
 
                     if (distToCenter > 2.0 && distToCenter < radius) {
                         Vec3d inward = center.subtract(affectedEntity.getPos()).normalize().multiply(0.018);
@@ -406,15 +412,22 @@ public class DomainExpansionShrine extends DomainExpansion {
                         affectedEntity.velocityModified = true;
                     }
                 } else {
-                    damage = 1.8f;
+                    damage = 2.0F;
+                }
+
+                // Simple Domain protection check!
+                if (SimpleDomainManager.isProtected(living)) {
+                    SimpleDomainManager.onSureHitBlocked(serverWorld, living, damage);
+                    return;
                 }
 
                 float pitch = 1.3f + (affectedEntity.getRandom().nextFloat() * 0.5f);
                 affectedEntity.getWorld().playSound(null, affectedEntity.getX(), affectedEntity.getY(), affectedEntity.getZ(),
                         ModSounds.REELSEIDEN_HIT, SoundCategory.NEUTRAL, 1.0f, pitch);
 
-                DamageSource source = ModDamageTypes.of(affectedEntity.getWorld(), ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster);
+                DamageSource source = ModDamageTypes.of(affectedEntity.getWorld(), ModDamageTypes.CUTTING_MAGIC, caster);
 
+                living.timeUntilRegen = 0;
                 affectedEntity.damage((ServerWorld) affectedEntity.getWorld(), source, damage);
 
                 // Domain slashes charge the caster's Flame Arrow meter

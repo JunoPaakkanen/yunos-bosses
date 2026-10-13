@@ -12,8 +12,23 @@ import net.minecraft.text.Text;
 
 public class AntiTeleportEffect extends StatusEffect implements MilkProof {
 
+    private static final ThreadLocal<Boolean> BYPASS = ThreadLocal.withInitial(() -> false);
+
     public AntiTeleportEffect(StatusEffectCategory category, int color) {
         super(category, color);
+    }
+
+    public static boolean isBypassing() {
+        return BYPASS.get();
+    }
+
+    public static void runWithBypass(Runnable action) {
+        BYPASS.set(true);
+        try {
+            action.run();
+        } finally {
+            BYPASS.set(false);
+        }
     }
 
     /**

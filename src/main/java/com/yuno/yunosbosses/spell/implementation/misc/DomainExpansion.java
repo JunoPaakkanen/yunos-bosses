@@ -125,9 +125,17 @@ public abstract class DomainExpansion extends Spell {
             onDomainCreated((ServerWorld) world, caster, pos);
 
             // Create the barrier
-            BarrierManager.ACTIVE_BARRIERS.add(
-                    new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, radius, texture, this::onDomainEffect, this, isOpenBarrier)
-            );
+            ActiveBarrier activeBarrier = new ActiveBarrier(caster.getUuid(), pos, Vec3d.ZERO, lifetime, radius, texture, this::onDomainEffect, this, isOpenBarrier);
+            if (!isOpenBarrier) {
+                // Record all entities currently inside the domain as captured
+                Box box = new Box(pos.subtract(radius + 2.0, radius + 2.0, radius + 2.0), pos.add(radius + 2.0, radius + 2.0, radius + 2.0));
+                for (Entity e : ((ServerWorld) world).getOtherEntities(caster, box)) {
+                    if (e.getPos().distanceTo(pos) <= (radius + 1.5)) {
+                        activeBarrier.capturePlayer(e.getUuid());
+                    }
+                }
+            }
+            BarrierManager.ACTIVE_BARRIERS.add(activeBarrier);
 
             // Broadcast to ALL nearby players so they can see the barrier and animation
             for (ServerPlayerEntity player : PlayerLookup.around((ServerWorld) world, pos, 64)) {

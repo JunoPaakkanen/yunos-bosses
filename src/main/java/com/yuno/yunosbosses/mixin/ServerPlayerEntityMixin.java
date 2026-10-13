@@ -20,7 +20,7 @@ public abstract class ServerPlayerEntityMixin {
     @Inject(method = "teleportTo", at = @At("HEAD"), cancellable = true)
     private void yunosbosses$cancelPlayerTeleportTo(TeleportTarget target, CallbackInfoReturnable<ServerPlayerEntity> cir) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        if (player.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+        if (!AntiTeleportEffect.isBypassing() && player.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
             AntiTeleportEffect.onTeleportBlocked(player);
             cir.setReturnValue(null);
         }
@@ -29,7 +29,7 @@ public abstract class ServerPlayerEntityMixin {
     @Inject(method = "teleport(Lnet/minecraft/server/world/ServerWorld;DDDLjava/util/Set;FFZ)Z", at = @At("HEAD"), cancellable = true)
     private void yunosbosses$cancelPlayerServerTeleport(ServerWorld world, double destX, double destY, double destZ, Set<PositionFlag> flags, float yaw, float pitch, boolean resetCamera, CallbackInfoReturnable<Boolean> cir) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        if (player.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+        if (!AntiTeleportEffect.isBypassing() && player.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
             AntiTeleportEffect.onTeleportBlocked(player);
             cir.setReturnValue(false);
         }
@@ -38,7 +38,7 @@ public abstract class ServerPlayerEntityMixin {
     @Inject(method = "requestTeleport", at = @At("HEAD"), cancellable = true)
     private void yunosbosses$cancelPlayerRequestTeleport(double destX, double destY, double destZ, CallbackInfo ci) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        if (player.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+        if (!AntiTeleportEffect.isBypassing() && player.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
             AntiTeleportEffect.onTeleportBlocked(player);
             ci.cancel();
         }
@@ -47,7 +47,7 @@ public abstract class ServerPlayerEntityMixin {
     @Inject(method = "requestTeleportOffset", at = @At("HEAD"), cancellable = true)
     private void yunosbosses$cancelPlayerRequestTeleportOffset(double destX, double destY, double destZ, CallbackInfo ci) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        if (player.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
+        if (!AntiTeleportEffect.isBypassing() && player.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
             AntiTeleportEffect.onTeleportBlocked(player);
             ci.cancel();
         }

@@ -5,6 +5,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -23,6 +25,7 @@ public class ActiveBarrier {
     private boolean furnaceCueSent = false;
     private int domainBlockCursor = 0;
     private boolean clashing = false;
+    private final Set<UUID> capturedPlayers = new HashSet<>();
 
     public ActiveBarrier(UUID ownerUuid, Vec3d position, Vec3d direction, int duration, float radius, Identifier texture, BiConsumer<Entity, ActiveBarrier> domainEffect, DomainExpansion domainExpansion, boolean openBarrier) {
         this.ownerUuid = ownerUuid;
@@ -84,4 +87,8 @@ public class ActiveBarrier {
 
     public boolean isClashing() { return this.clashing; }
     public void setClashing(boolean clashing) { this.clashing = clashing; }
+
+    public Set<UUID> getCapturedPlayers() { return this.capturedPlayers; }
+    public void capturePlayer(UUID uuid) { this.capturedPlayers.add(uuid); }
+    public boolean isPlayerCaptured(UUID uuid) { return this.capturedPlayers.contains(uuid); }
 }

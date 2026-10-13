@@ -11,6 +11,7 @@ import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.yuno.yunosbosses.util.SimpleDomainManager;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
@@ -36,11 +37,12 @@ import net.minecraft.world.World;
 import java.util.List;
 
 /**
- * Naoya Zenin's Domain Expansion: Time Cell Moon Palace (時胞月宮殿).
+ * Naoya Zenin's Domain Expansion: Time Cell Moon Palace.
  * Encloses the targets in a closed opaque black barrier where Projection Sorcery
  * is forced onto every single cell.
  * Moving while subjected to the sure-hit tears cellular tissue apart, dealing damage
- * that scales directly with the target's movement velocity (standing still deals no damage).
+ * that scales directly with the target's movement velocity. Standing still causes baseline
+ * cellular degradation unless protected by Simple Domain.
  * Cumulative damage per individual is capped at 240. If any target reaches this cap,
  * the domain instantly shatters and is destroyed.
  */
@@ -152,7 +154,7 @@ public class DomainExpansionTCMP extends DomainExpansion {
         float casterYaw = caster.getYaw();
         Vec3d forward = Vec3d.fromPolar(0.0f, casterYaw).normalize();
         Vec3d eyePos = caster.getPos().subtract(forward.multiply(2.0));
-        double eyeY = caster.getEyeY() - 0.9; // Center of eye (y + 1.25) hovers slightly above caster eye level
+        double eyeY = caster.getEyeY() - 0.9; // Center of eye hovers slightly above caster eye level
 
         DomainTcmpEyeEntity eye = new DomainTcmpEyeEntity(ModEntities.DOMAIN_TCMP_EYE, world);
         eye.refreshPositionAndAngles(eyePos.x, eyeY, eyePos.z, casterYaw, 0.0F);
@@ -211,16 +213,27 @@ public class DomainExpansionTCMP extends DomainExpansion {
             totalSpeed = Math.max(totalSpeed, 0.28);
         }
 
-        // Standing still == NO damage whatsoever
-        if (totalSpeed < 0.02) {
-            return;
-        }
-
-        // Target is moving: damage scales strictly with movement velocity
+        // Sure-hit calculation:
+        // Standing still: 1.0F per 4 ticks (5.0 raw DPS, 1.80 post-Prot4 DPS -> ~18-20s survival with Prot 4 + Golden Apples)
+        // Moving / Panicking: scales with velocity:
+        // Walking (~0.2 speed) -> 3.3F per 4 ticks (16.5 raw DPS, 5.94 post-Prot4 DPS -> ~5.5-6.0s survival)
+        // Sprinting (~0.28 speed) -> 5.2F per 4 ticks (26.0 raw DPS, 9.36 post-Prot4 DPS -> ~3.5-4.0s survival)
+        // Sprint-jumping / Wind-charging (>0.5 speed) -> 9.5F - 18.0F+ per 4 ticks (17 - 32+ post-Prot4 DPS -> 1-2s survival)
         if (target.age % 4 == 0) {
-            float rawDamage = (float) (totalSpeed * 10.0f + (totalSpeed * totalSpeed * 25.0f));
-            if (target.isSprinting()) {
-                rawDamage *= 1.25f;
+            float rawDamage;
+            if (totalSpeed < 0.04) {
+                rawDamage = 1.0F;
+            } else {
+                rawDamage = (float) (1.5F + totalSpeed * 6.0F + (totalSpeed * totalSpeed * 15.0F));
+                if (target.isSprinting()) {
+                    rawDamage *= 1.2F;
+                }
+            }
+
+            // Simple Domain protection check!
+            if (SimpleDomainManager.isProtected(target)) {
+                SimpleDomainManager.onSureHitBlocked(world, target, rawDamage);
+                return;
             }
 
             Box searchBox = Box.from(barrier.getPosition()).expand(barrier.getRadius() + 10.0);
@@ -248,7 +261,7 @@ public class DomainExpansionTCMP extends DomainExpansion {
                 return;
             }
 
-            DamageSource source = ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC_SHALLOW, caster);
+            DamageSource source = ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC, caster);
 
             target.timeUntilRegen = 0;
             target.damage(world, source, damage);
@@ -258,7 +271,7 @@ public class DomainExpansionTCMP extends DomainExpansion {
                 eye.recordDomainDamage(target, damage);
             }
 
-            // Subtle flesh cutting sound (NO frame shatter sound)
+            // Flesh cutting sound
             world.playSound(null, target.getX(), target.getY(), target.getZ(),
                     SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 0.7f, 1.8f);
 

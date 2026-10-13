@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.domain.clash;
 
+import com.yuno.yunosbosses.effect.AntiTeleportEffect;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.character.UbelEntity;
 import com.yuno.yunosbosses.item.custom.StaffItem;
@@ -32,13 +33,16 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -97,6 +101,7 @@ public class DomainClashManager {
         public final Vec3d castPos;
         public final ServerWorld world;
         public boolean inClash = false;
+        public final Set<UUID> capturedTargets = new HashSet<>();
 
         public PendingDomainCast(LivingEntity caster, DomainExpansion domainExpansion, ItemStack staff,
                                  float radius, boolean isOpenBarrier, String domainName, int chargeLevel,
@@ -113,6 +118,15 @@ public class DomainClashManager {
             this.finishAction = finishAction;
             this.castPos = caster.getPos().add(0, 2, 0);
             this.world = (ServerWorld) caster.getWorld();
+
+            // Lock all entities in range so they cannot run or glitch outside during domain manifestation
+            Box preCastBox = new Box(this.castPos.subtract(radius + 6.0, radius + 6.0, radius + 6.0),
+                    this.castPos.add(radius + 6.0, radius + 6.0, radius + 6.0));
+            for (Entity e : this.world.getOtherEntities(this.caster, preCastBox)) {
+                if (e.isAlive() && !e.isSpectator() && e.getPos().distanceTo(this.castPos) <= (radius + 2.0)) {
+                    this.capturedTargets.add(e.getUuid());
+                }
+            }
         }
     }
 
@@ -408,9 +422,9 @@ public class DomainClashManager {
 
             // Loser player feedback
             if (loser.entity instanceof ServerPlayerEntity loserPlayer) {
-                loserPlayer.networkHandler.sendPacket(new TitleS2CPacket(Text.literal("§c§lDOMAIN SHATTERED!§r")));
-                loserPlayer.networkHandler.sendPacket(new SubtitleS2CPacket(Text.literal("§7Cursed Technique Burnout (15s)")));
-                loserPlayer.sendMessage(Text.literal("§cYour domain barrier was violently overpowered and shattered!§r"), true);
+                loserPlayer.networkHandler.sendPacket(new TitleS2CPacket(Text.literal("Â§cÂ§lDOMAIN SHATTERED!Â§r")));
+                loserPlayer.networkHandler.sendPacket(new SubtitleS2CPacket(Text.literal("Â§7Cursed Technique Burnout (15s)")));
+                loserPlayer.sendMessage(Text.literal("Â§cYour domain barrier was violently overpowered and shattered!Â§r"), true);
             }
 
             // Loser mob boss stagger
@@ -431,9 +445,9 @@ public class DomainClashManager {
 
             // Winner player feedback
             if (winner.entity instanceof ServerPlayerEntity winnerPlayer) {
-                winnerPlayer.networkHandler.sendPacket(new TitleS2CPacket(Text.literal("§6§lDOMAIN EXPANDED!§r")));
-                winnerPlayer.networkHandler.sendPacket(new SubtitleS2CPacket(Text.literal("§eOverpowered Opponent's Barrier!")));
-                winnerPlayer.sendMessage(Text.literal("§6Your domain prevailed in the clash!§r"), true);
+                winnerPlayer.networkHandler.sendPacket(new TitleS2CPacket(Text.literal("Â§6Â§lDOMAIN EXPANDED!Â§r")));
+                winnerPlayer.networkHandler.sendPacket(new SubtitleS2CPacket(Text.literal("Â§eOverpowered Opponent's Barrier!")));
+                winnerPlayer.sendMessage(Text.literal("Â§6Your domain prevailed in the clash!Â§r"), true);
             }
 
             // If winner was a pending cast, complete domain expansion now!
@@ -472,7 +486,7 @@ public class DomainClashManager {
         if (hasBurnout(casterUuid)) {
             int remainingSec = getBurnoutSeconds(casterUuid);
             if (caster instanceof PlayerEntity player) {
-                player.sendMessage(Text.literal("§cCannot expand domain! Technique Burnout (" + remainingSec + "s remaining)§r"), true);
+                player.sendMessage(Text.literal("Â§cCannot expand domain! Technique Burnout (" + remainingSec + "s remaining)Â§r"), true);
                 world.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
                         SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.PLAYERS, 1.0f, 0.8f);
             }
@@ -734,6 +748,34 @@ public class DomainClashManager {
             if (pending.inClash) {
                 PENDING_CASTS.remove(i);
                 continue;
+            }
+
+            // Containment check during pre-cast delay: prevent captured entities from running / wind charging away
+            for (UUID targetUuid : pending.capturedTargets) {
+                Entity target = pending.world.getEntity(targetUuid);
+                if (target instanceof LivingEntity living && living.isAlive() && !living.isSpectator()) {
+                    double dist = living.getPos().distanceTo(pending.castPos);
+                    if (dist > (pending.radius - 1.5)) {
+                        // Drag back inside!
+                        Vec3d toCenter = pending.castPos.subtract(living.getPos());
+                        Vec3d dir = toCenter.lengthSquared() > 1e-4 ? toCenter.normalize() : new Vec3d(0, 0, 1);
+                        Vec3d snapPos = pending.castPos.subtract(dir.multiply(pending.radius - 3.0));
+                        living.setVelocity(Vec3d.ZERO);
+                        living.velocityModified = true;
+
+                        if (living instanceof ServerPlayerEntity sp) {
+                            AntiTeleportEffect.runWithBypass(() -> {
+                                sp.networkHandler.requestTeleport(snapPos.x, snapPos.y, snapPos.z, sp.getYaw(), sp.getPitch());
+                            });
+                            sp.sendMessage(Text.literal("Â§5Â§l[Domain Manifestation]Â§r Â§cThe expanding barrier drags you back inside!Â§r"), true);
+                            pending.world.playSound(null, snapPos.x, snapPos.y, snapPos.z,
+                                    SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE, SoundCategory.HOSTILE, 1.2F, 1.4F);
+                            pending.world.spawnParticles(ParticleTypes.PORTAL, snapPos.x, snapPos.y + 1.0, snapPos.z, 15, 0.3, 0.5, 0.3, 0.1);
+                        } else {
+                            living.setPosition(snapPos);
+                        }
+                    }
+                }
             }
 
             pending.remainingCastTicks--;

@@ -16,6 +16,7 @@ import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.unlock.UnlockManager;
 import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
+import com.yuno.yunosbosses.util.SimpleDomainManager;
 import com.yuno.yunosbosses.world.ModEntitySpawns;
 import com.yuno.yunosbosses.world.ModGameRules;
 import com.yuno.yunosbosses.world.ModLootTableModifiers;
@@ -77,6 +78,7 @@ public class YunosBosses implements ModInitializer {
 
 			for (ServerWorld world : server.getWorlds()) {
 				BarrierManager.tick(world);
+				SimpleDomainManager.tick(world);
 			}
 		});
 
