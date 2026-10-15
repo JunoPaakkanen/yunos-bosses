@@ -1,15 +1,15 @@
 package com.yuno.yunosbosses.spell.implementation.summon;
 
+import com.yuno.yunosbosses.entity.goal.VexDefendSummonerGoal;
+import com.yuno.yunosbosses.entity.goal.VexFollowSummonerGoal;
 import com.yuno.yunosbosses.item.custom.StaffItem;
+import com.yuno.yunosbosses.mixin.MobEntityAccessor;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.VexEntity;
-import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
@@ -20,12 +20,8 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-
-import java.util.List;
 
 public class SummonVexSpell extends Spell {
 
@@ -55,43 +51,7 @@ public class SummonVexSpell extends Spell {
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient && world instanceof ServerWorld serverWorld) {
-            Vec3d eyePos = caster.getCameraPosVec(1.0f);
             Vec3d look = caster.getRotationVec(1.0f);
-            Vec3d reach = eyePos.add(look.multiply(30.0D));
-
-            // Raycast safely without throwing NPE when casting into empty air
-            EntityHitResult hitResult = ProjectileUtil.raycast(
-                    caster,
-                    eyePos,
-                    reach,
-                    caster.getBoundingBox().stretch(look.multiply(30.0D)).expand(1.0D, 1.0D, 1.0D),
-                    entity -> !entity.isSpectator() && entity.canHit() && entity != caster && !entity.isTeammate(caster),
-                    900.0D
-            );
-
-            LivingEntity target = null;
-            if (hitResult != null && hitResult.getEntity() instanceof LivingEntity living) {
-                target = living;
-            } else {
-                // Fallback: search for hostile mobs within 16 blocks targeting the caster or closest hostile
-                Box searchBox = caster.getBoundingBox().expand(16.0);
-                List<HostileEntity> nearbyHostiles = serverWorld.getEntitiesByClass(
-                        HostileEntity.class,
-                        searchBox,
-                        e -> e.isAlive() && !e.isTeammate(caster)
-                );
-                if (!nearbyHostiles.isEmpty()) {
-                    // Prioritize hostile targeting caster, otherwise closest
-                    target = nearbyHostiles.stream()
-                            .min((a, b) -> {
-                                boolean aAggro = (a.getTarget() == caster);
-                                boolean bAggro = (b.getTarget() == caster);
-                                if (aAggro != bAggro) return aAggro ? -1 : 1;
-                                return Double.compare(a.squaredDistanceTo(caster), b.squaredDistanceTo(caster));
-                            })
-                            .orElse(null);
-                }
-            }
 
             // Power scaling: upgraded staves (power >= 1.2x) summon an extra vex
             float power = 1.0F;
@@ -100,9 +60,13 @@ public class SummonVexSpell extends Spell {
             }
             int summonCount = (power >= 1.2F) ? 2 : 1;
 
+            // Scoreboard team setup to prevent friendly fire between caster and vexes
             Scoreboard scoreboard = world.getScoreboard();
-            Team vexTeam = getOrCreateVexTeam(scoreboard);
-            scoreboard.addScoreHolderToTeam(caster.getNameForScoreboard(), vexTeam);
+            Team casterTeam = caster.getScoreboardTeam();
+            if (casterTeam == null) {
+                casterTeam = getOrCreateVexTeam(scoreboard);
+                scoreboard.addScoreHolderToTeam(caster.getNameForScoreboard(), casterTeam);
+            }
 
             // Perpendicular vector for spreading out multiple summons
             Vec3d right = look.crossProduct(new Vec3d(0, 1, 0)).normalize();
@@ -121,7 +85,14 @@ public class SummonVexSpell extends Spell {
                 vex.refreshPositionAndAngles(spawnPos.x, spawnPos.y, spawnPos.z, caster.getYaw(), caster.getPitch());
 
                 // Friendly team setup
-                scoreboard.addScoreHolderToTeam(vex.getUuidAsString(), vexTeam);
+                scoreboard.addScoreHolderToTeam(vex.getUuidAsString(), casterTeam);
+
+                // Identify as summoned minion and link to caster UUID
+                vex.addCommandTag("SummonedVex");
+                vex.addCommandTag("Caster_" + caster.getUuidAsString());
+
+                // Set initial patrol bounds around the caster so idle hovering stays centered on them
+                vex.setBounds(caster.getBlockPos());
 
                 // 60-second lifespan (1200 ticks)
                 vex.setLifeTicks(1200);
@@ -130,9 +101,16 @@ public class SummonVexSpell extends Spell {
                 vex.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
                 vex.setEquipmentDropChance(EquipmentSlot.MAINHAND, 0.0f);
 
-                if (target != null) {
-                    vex.setTarget(target);
-                }
+                // Clear vanilla hostile target goals so vexes do NOT attack random players or raiders
+                MobEntityAccessor accessor = (MobEntityAccessor) vex;
+                accessor.getTargetSelector().clear(goal -> true);
+
+                // The vexes have NO target by default.
+                // The first entity to attack the summoner becomes their target.
+                accessor.getTargetSelector().add(1, new VexDefendSummonerGoal(vex, caster));
+
+                // Follow the summoner while not engaged in combat so they don't wander off
+                accessor.getGoalSelector().add(5, new VexFollowSummonerGoal(vex, caster));
 
                 world.spawnEntity(vex);
 

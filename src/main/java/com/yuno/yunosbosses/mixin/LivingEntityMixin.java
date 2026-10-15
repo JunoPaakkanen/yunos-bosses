@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.mixin;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
+import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.util.BossContributionTracker;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
@@ -15,6 +16,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.VexEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
 import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
@@ -111,6 +113,23 @@ public abstract class LivingEntityMixin {
 
         LivingEntity target = (LivingEntity) (Object) this;
         Entity attacker = source.getAttacker();
+
+        // Alert summoned vexes to defend their summoner immediately
+        if (attacker instanceof LivingEntity livingAttacker && livingAttacker.isAlive() && livingAttacker != target && !livingAttacker.isTeammate(target)) {
+            String casterTag = "Caster_" + target.getUuidAsString();
+            Box vexSearchBox = target.getBoundingBox().expand(48.0);
+            List<VexEntity> summonedVexes = world.getEntitiesByClass(
+                    VexEntity.class,
+                    vexSearchBox,
+                    v -> v.isAlive() && v.getCommandTags().contains(casterTag)
+            );
+            for (VexEntity vex : summonedVexes) {
+                if (vex.getTarget() == null || !vex.getTarget().isAlive()) {
+                    vex.setTarget(livingAttacker);
+                    vex.setBounds(null);
+                }
+            }
+        }
 
         if (attacker instanceof PlayerEntity player) {
             var component = ModEntityComponents.SPELL_DATA.get(player);
