@@ -263,8 +263,17 @@ public class DomainExpansionTCMP extends DomainExpansion {
 
             DamageSource source = ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC, caster);
 
+            Vec3d prevVel = target.getVelocity();
+            boolean wasSprinting = target.isSprinting();
+
             target.timeUntilRegen = 0;
             target.damage(world, source, damage);
+            target.hurtTime = 0;
+
+            target.setVelocity(prevVel);
+            if (wasSprinting) {
+                target.setSprinting(true);
+            }
 
             float newTotal = currentCumulative + damage;
             if (eye != null) {
