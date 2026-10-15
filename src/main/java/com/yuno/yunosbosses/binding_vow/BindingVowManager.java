@@ -11,6 +11,9 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class BindingVowManager {
 
     public static final int BURNOUT_PENALTY_TICKS = 300; // 15 seconds of Technique Burnout
@@ -78,14 +81,20 @@ public class BindingVowManager {
 
     /**
      * Dissolves/severs an active Binding Vow on the server.
-     * @param penalized true if broken prematurely by choice (inflicts Technique Burnout), false if fulfilled naturally.
+     * @param penalized true if broken prematurely by choice (inflicts Technique Burnout), false if fulfilled naturally or by command.
+     * @param isCommand true if bypassed by admin command.
      */
-    public static boolean revokeVow(ServerPlayerEntity player, Identifier vowId, boolean penalized) {
+    public static boolean revokeVow(ServerPlayerEntity player, Identifier vowId, boolean penalized, boolean isCommand) {
         BindingVow vow = ModBindingVows.get(vowId);
         if (vow == null) return false;
 
         BindingVowComponent vowComponent = ModEntityComponents.BINDING_VOWS.get(player);
         if (!vowComponent.hasVow(vow.getId())) {
+            return false;
+        }
+
+        if (vow.isPermanent() && !isCommand) {
+            player.sendMessage(Text.literal("§c[Binding Vow] The vow §f" + vow.getName().getString() + "§c is permanent and cannot be deactivated!§r"), false);
             return false;
         }
 
@@ -103,9 +112,42 @@ public class BindingVowManager {
 
             player.sendMessage(Text.literal("§c[Binding Vow Broken] You severed your pact with §f" + vow.getName().getString() + "§c! Technique Burnout inflicted (15s)!§r"), false);
         } else {
-            player.sendMessage(Text.literal("§7[Binding Vow Fulfilled] Your pact with §f" + vow.getName().getString() + "§7 has concluded.§r"), false);
+            player.sendMessage(Text.literal("§7[Binding Vow Severed] Your pact with §f" + vow.getName().getString() + "§7 has been cleared.§r"), false);
         }
 
         return true;
+    }
+
+    public static boolean revokeVow(ServerPlayerEntity player, Identifier vowId, boolean penalized) {
+        return revokeVow(player, vowId, penalized, false);
+    }
+
+    /**
+     * Clears all active binding vows from a player (typically executed by commands).
+     * @return the number of vows cleared.
+     */
+    public static int clearAllVows(ServerPlayerEntity player, boolean penalized) {
+        BindingVowComponent vowComponent = ModEntityComponents.BINDING_VOWS.get(player);
+        if (vowComponent == null) return 0;
+
+        Set<Identifier> active = new HashSet<>(vowComponent.getActiveVows());
+        if (active.isEmpty()) return 0;
+
+        for (Identifier id : active) {
+            BindingVow vow = ModBindingVows.get(id);
+            if (vow != null) {
+                vow.onSevered(player, penalized);
+            }
+        }
+
+        vowComponent.clearVows();
+
+        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.BLOCK_BEACON_DEACTIVATE, SoundCategory.PLAYERS, 1.2f, 0.9f);
+        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 1.2f, 1.1f);
+
+        player.sendMessage(Text.literal("§6[Binding Vows] §eAll binding vows have been deactivated (" + active.size() + " cleared).§r"), false);
+        return active.size();
     }
 }

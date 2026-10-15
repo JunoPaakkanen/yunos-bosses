@@ -115,11 +115,23 @@ public class ModCommands {
                                 for (BindingVow vow : allVows) {
                                     boolean active = component != null && component.hasVow(vow.getId());
                                     String status = active ? "§a[ACTIVE]" : "§7[SEALED]";
-                                    player.sendMessage(Text.literal(status + " §f" + vow.getName().getString() + " §7(" + vow.getId().getPath() + ")"), false);
+                                    String perm = vow.isPermanent() ? " §c(Permanent)" : "";
+                                    player.sendMessage(Text.literal(status + " §f" + vow.getName().getString() + perm + " §7(" + vow.getId().getPath() + ")"), false);
                                     player.sendMessage(Text.literal("   §cSacrifice: §7").append(vow.getSacrifice()), false);
                                     player.sendMessage(Text.literal("   §aGain: §7").append(vow.getGain()), false);
                                 }
                                 return 1;
+                            }))
+                    // /bindingvow clearall
+                    .then(CommandManager.literal("clearall")
+                            .executes(context -> {
+                                ServerPlayerEntity player = context.getSource().getPlayer();
+                                if (player == null) return 0;
+                                int count = BindingVowManager.clearAllVows(player, false);
+                                if (count == 0) {
+                                    player.sendMessage(Text.literal("§7You have no active binding vows to clear.§r"), false);
+                                }
+                                return count;
                             }))
                     // /bindingvow info <vow>
                     .then(CommandManager.literal("info")
@@ -136,7 +148,10 @@ public class ModCommands {
                                             return 0;
                                         }
 
-                                        player.sendMessage(Text.literal("§6=== " + vow.getName().getString() + " ==="), false);
+                                        player.sendMessage(Text.literal("§6=== " + vow.getName().getString() + " ===§r"), false);
+                                        if (vow.isPermanent()) {
+                                            player.sendMessage(Text.literal("§c[PERMANENT] This vow cannot be deactivated once pledged!§r"), false);
+                                        }
                                         player.sendMessage(Text.literal("§7").append(vow.getDescription()), false);
                                         player.sendMessage(Text.literal("§cSacrifice: §f").append(vow.getSacrifice()), false);
                                         player.sendMessage(Text.literal("§aGain: §f").append(vow.getGain()), false);
@@ -174,7 +189,8 @@ public class ModCommands {
                                             player.sendMessage(Text.literal("§cUnknown binding vow: " + vowName), false);
                                             return 0;
                                         }
-                                        return BindingVowManager.revokeVow(player, vow.getId(), true) ? 1 : 0;
+                                        // Admin/cheat command allows breaking even permanent vows without burnout
+                                        return BindingVowManager.revokeVow(player, vow.getId(), false, true) ? 1 : 0;
                                     })))
                     // Fallback toggle: /bindingvow <vow>
                     .then(CommandManager.argument("vow", StringArgumentType.word())
@@ -192,7 +208,7 @@ public class ModCommands {
 
                                 BindingVowComponent comp = ModEntityComponents.BINDING_VOWS.get(player);
                                 if (comp != null && comp.hasVow(vow.getId())) {
-                                    return BindingVowManager.revokeVow(player, vow.getId(), true) ? 1 : 0;
+                                    return BindingVowManager.revokeVow(player, vow.getId(), false, true) ? 1 : 0;
                                 } else {
                                     return BindingVowManager.activateVow(player, vow.getId()) ? 1 : 0;
                                 }

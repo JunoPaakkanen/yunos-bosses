@@ -12,6 +12,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -34,6 +35,9 @@ public class SpellInventoryScreen extends Screen {
 
     // Selection state
     private Spell selectedSpell = null;
+
+    // Confirmation Modal for Permanent Binding Vows
+    private BindingVow pendingPermanentVow = null;
 
     public SpellInventoryScreen() {
         this(0);
@@ -81,6 +85,11 @@ public class SpellInventoryScreen extends Screen {
         } else {
             // Binding Vows Tab
             drawBindingVowsTab(context, mouseX, mouseY);
+        }
+
+        // Render Confirmation Dialog modal overlay if active
+        if (this.pendingPermanentVow != null) {
+            drawPermanentConfirmationModal(context, mouseX, mouseY);
         }
     }
 
@@ -146,10 +155,11 @@ public class SpellInventoryScreen extends Screen {
             int y = cardY + (i * (cardH + 6));
             boolean isActive = vowComponent != null && vowComponent.hasVow(vow.getId());
             boolean canAccept = vow.canAccept(player);
+            boolean isPermanent = vow.isPermanent();
 
             // Card background & border (tinted to complement background)
             int cardBg = isActive ? 0xD0182438 : 0xC0151825;
-            int cardBorder = isActive ? 0xFF89B4FA : 0xFF384358;
+            int cardBorder = isActive ? 0xFF89B4FA : (isPermanent ? 0xFF5C3338 : 0xFF384358);
             context.fill(cardX, y, cardX + cardW, y + cardH, cardBg);
             context.drawBorder(cardX, y, cardW, cardH, cardBorder);
 
@@ -158,7 +168,11 @@ public class SpellInventoryScreen extends Screen {
 
             // Status Badge
             if (isActive) {
-                context.drawText(this.textRenderer, "[ACTIVE]", cardX + cardW - 48, y + 5, 0xFFA6E3A1, false);
+                if (isPermanent) {
+                    context.drawText(this.textRenderer, "[BOUND]", cardX + cardW - 46, y + 5, 0xFFF38BA8, false);
+                } else {
+                    context.drawText(this.textRenderer, "[ACTIVE]", cardX + cardW - 48, y + 5, 0xFFA6E3A1, false);
+                }
             } else {
                 context.drawText(this.textRenderer, "[SEALED]", cardX + cardW - 50, y + 5, 0xFF94A3B8, false);
             }
@@ -179,19 +193,33 @@ public class SpellInventoryScreen extends Screen {
             int btnX = cardX + cardW - btnW - 4;
             int btnY = y + cardH - btnH - 4;
 
-            boolean hoveringBtn = isHovering(btnX, btnY, btnW, btnH, mouseX, mouseY);
+            boolean hoveringBtn = isHovering(btnX, btnY, btnW, btnH, mouseX, mouseY) && (pendingPermanentVow == null);
 
             if (isActive) {
-                int btnBg = hoveringBtn ? 0xFFE78284 : 0xFF582329;
-                context.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnBg);
-                context.drawBorder(btnX, btnY, btnW, btnH, 0xFFE78284);
-                context.drawText(this.textRenderer, "Sever Pact", btnX + 7, btnY + 3, 0xFFFFFFFF, false);
+                if (isPermanent) {
+                    // Permanent vow: Locked and cannot be severed
+                    context.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF281E24);
+                    context.drawBorder(btnX, btnY, btnW, btnH, 0xFF4E2C33);
+                    context.drawText(this.textRenderer, "Permanent", btnX + 7, btnY + 3, 0xFFE78284, false);
+                } else {
+                    int btnBg = hoveringBtn ? 0xFFE78284 : 0xFF582329;
+                    context.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnBg);
+                    context.drawBorder(btnX, btnY, btnW, btnH, 0xFFE78284);
+                    context.drawText(this.textRenderer, "Sever Pact", btnX + 7, btnY + 3, 0xFFFFFFFF, false);
+                }
             } else {
                 if (canAccept) {
-                    int btnBg = hoveringBtn ? 0xFF85C1DC : 0xFF1E3A4B;
-                    context.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnBg);
-                    context.drawBorder(btnX, btnY, btnW, btnH, 0xFF89DCEB);
-                    context.drawText(this.textRenderer, "Pledge Vow", btnX + 5, btnY + 3, 0xFFFFFFFF, false);
+                    if (isPermanent) {
+                        int btnBg = hoveringBtn ? 0xFFE78284 : 0xFF4A252D;
+                        context.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnBg);
+                        context.drawBorder(btnX, btnY, btnW, btnH, 0xFFE78284);
+                        context.drawText(this.textRenderer, "Bind (Perm)", btnX + 5, btnY + 3, 0xFFFFFFFF, false);
+                    } else {
+                        int btnBg = hoveringBtn ? 0xFF85C1DC : 0xFF1E3A4B;
+                        context.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnBg);
+                        context.drawBorder(btnX, btnY, btnW, btnH, 0xFF89DCEB);
+                        context.drawText(this.textRenderer, "Pledge Vow", btnX + 5, btnY + 3, 0xFFFFFFFF, false);
+                    }
                 } else {
                     context.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF222436);
                     context.drawBorder(btnX, btnY, btnW, btnH, 0xFF45475A);
@@ -199,44 +227,113 @@ public class SpellInventoryScreen extends Screen {
                 }
             }
 
-            // Mana cost label if not active and has cost
+            // Mana cost or permanent label if not active
             float manaCost = vow.getActivationManaCost(player);
-            if (!isActive && manaCost > 0) {
-                context.drawText(this.textRenderer, (int) manaCost + " Mana", cardX + 6, y + 42, 0xFF89B4FA, false);
+            if (!isActive) {
+                if (isPermanent) {
+                    context.drawText(this.textRenderer, "§cPERMANENT§r", cardX + 6, y + 42, 0xFFF38BA8, false);
+                } else if (manaCost > 0) {
+                    context.drawText(this.textRenderer, (int) manaCost + " Mana", cardX + 6, y + 42, 0xFF89B4FA, false);
+                }
             }
 
-            // Compact Tooltip handling
-            if (hoveringBtn) {
-                pendingTooltip = () -> {
-                    List<Text> btnTooltip = new ArrayList<>();
-                    if (isActive) {
-                        btnTooltip.add(Text.literal("Sever Pact").formatted(Formatting.RED, Formatting.BOLD));
-                        btnTooltip.add(Text.literal("Warning: Inflicts 15s Burnout").formatted(Formatting.GRAY));
-                    } else if (canAccept) {
-                        btnTooltip.add(Text.literal("Pledge Vow").formatted(Formatting.AQUA, Formatting.BOLD));
-                        if (manaCost > 0) {
-                            btnTooltip.add(Text.literal("Cost: " + (int) manaCost + " Mana").formatted(Formatting.GRAY));
+            // Tooltip handling (suppressed when confirmation modal is up)
+            if (pendingPermanentVow == null) {
+                if (hoveringBtn) {
+                    pendingTooltip = () -> {
+                        List<Text> btnTooltip = new ArrayList<>();
+                        if (isActive) {
+                            if (isPermanent) {
+                                btnTooltip.add(Text.literal("Permanent Vow").formatted(Formatting.RED, Formatting.BOLD));
+                                btnTooltip.add(Text.literal("Cannot be deactivated manually!").formatted(Formatting.GRAY));
+                            } else {
+                                btnTooltip.add(Text.literal("Sever Pact").formatted(Formatting.RED, Formatting.BOLD));
+                                btnTooltip.add(Text.literal("Warning: Inflicts 15s Burnout").formatted(Formatting.GRAY));
+                            }
+                        } else if (canAccept) {
+                            if (isPermanent) {
+                                btnTooltip.add(Text.literal("Pledge Permanent Vow").formatted(Formatting.RED, Formatting.BOLD));
+                                btnTooltip.add(Text.literal("Warning: Permanent! Cannot be undone.").formatted(Formatting.YELLOW));
+                            } else {
+                                btnTooltip.add(Text.literal("Pledge Vow").formatted(Formatting.AQUA, Formatting.BOLD));
+                                if (manaCost > 0) {
+                                    btnTooltip.add(Text.literal("Cost: " + (int) manaCost + " Mana").formatted(Formatting.GRAY));
+                                }
+                            }
+                        } else {
+                            btnTooltip.add(Text.literal("Unavailable").formatted(Formatting.RED, Formatting.BOLD));
+                            btnTooltip.add(vow.getCannotAcceptReason(player).copy().formatted(Formatting.GRAY));
                         }
-                    } else {
-                        btnTooltip.add(Text.literal("Unavailable").formatted(Formatting.RED, Formatting.BOLD));
-                        btnTooltip.add(vow.getCannotAcceptReason(player).copy().formatted(Formatting.GRAY));
-                    }
-                    context.drawTooltip(this.textRenderer, btnTooltip, mouseX, mouseY);
-                };
-            } else if (isHovering(cardX, y, cardW, cardH, mouseX, mouseY)) {
-                pendingTooltip = () -> {
-                    List<OrderedText> tooltipLines = new ArrayList<>();
-                    tooltipLines.add(vow.getName().copy().formatted(Formatting.GOLD, Formatting.BOLD).asOrderedText());
-                    // Neatly wrapped to a compact width of 165px
-                    tooltipLines.addAll(this.textRenderer.wrapLines(vow.getDescription(), 165));
-                    context.drawOrderedTooltip(this.textRenderer, tooltipLines, mouseX, mouseY);
-                };
+                        context.drawTooltip(this.textRenderer, btnTooltip, mouseX, mouseY);
+                    };
+                } else if (isHovering(cardX, y, cardW, cardH, mouseX, mouseY)) {
+                    pendingTooltip = () -> {
+                        List<OrderedText> tooltipLines = new ArrayList<>();
+                        tooltipLines.add(vow.getName().copy().formatted(Formatting.GOLD, Formatting.BOLD).asOrderedText());
+                        if (isPermanent) {
+                            tooltipLines.add(Text.literal("PERMANENT VOW - CANNOT BE UNDONE").formatted(Formatting.RED, Formatting.BOLD).asOrderedText());
+                        }
+                        // Neatly wrapped to a compact width of 165px
+                        tooltipLines.addAll(this.textRenderer.wrapLines(vow.getDescription(), 165));
+                        context.drawOrderedTooltip(this.textRenderer, tooltipLines, mouseX, mouseY);
+                    };
+                }
             }
         }
 
         if (pendingTooltip != null) {
             pendingTooltip.run();
         }
+    }
+
+    private void drawPermanentConfirmationModal(DrawContext context, int mouseX, int mouseY) {
+        // Dim the entire background behind modal
+        context.fill(0, 0, this.width, this.height, 0xB0000000);
+
+        int modalW = 190;
+        int modalH = 110;
+        int modalX = (this.width - modalW) / 2;
+        int modalY = (this.height - modalH) / 2;
+
+        // Modal window box
+        context.fill(modalX, modalY, modalX + modalW, modalY + modalH, 0xF0181A26);
+        context.drawBorder(modalX, modalY, modalW, modalH, 0xFFE78284);
+
+        // Header warning
+        context.drawCenteredTextWithShadow(this.textRenderer, "§c§lWARNING: PERMANENT VOW§r", modalX + modalW / 2, modalY + 10, 0xFFFFFFFF);
+
+        // Explanatory text
+        List<OrderedText> warningLines = this.textRenderer.wrapLines(
+                Text.literal("Pledging §6" + this.pendingPermanentVow.getName().getString() + "§r is §c§lPERMANENT§r!\n\nAre you sure you want to bind yourself to this vow?"),
+                modalW - 20
+        );
+        int textY = modalY + 26;
+        for (OrderedText line : warningLines) {
+            context.drawText(this.textRenderer, line, modalX + 12, textY, 0xFFCDD6F4, false);
+            textY += 10;
+        }
+
+        // Buttons: [ Confirm & Bind ] and [ Cancel ]
+        int btnW = 76;
+        int btnH = 16;
+        int btnY = modalY + modalH - btnH - 10;
+        int confirmX = modalX + 14;
+        int cancelX = modalX + modalW - btnW - 14;
+
+        boolean hoveringConfirm = isHovering(confirmX, btnY, btnW, btnH, mouseX, mouseY);
+        boolean hoveringCancel = isHovering(cancelX, btnY, btnW, btnH, mouseX, mouseY);
+
+        // Confirm Button
+        int confirmBg = hoveringConfirm ? 0xFFE78284 : 0xFF582329;
+        context.fill(confirmX, btnY, confirmX + btnW, btnY + btnH, confirmBg);
+        context.drawBorder(confirmX, btnY, btnW, btnH, 0xFFE78284);
+        context.drawCenteredTextWithShadow(this.textRenderer, "I am sure", confirmX + btnW / 2, btnY + 4, 0xFFFFFFFF);
+
+        // Cancel Button
+        int cancelBg = hoveringCancel ? 0xFF45475A : 0xFF2A2C3D;
+        context.fill(cancelX, btnY, cancelX + btnW, btnY + btnH, cancelBg);
+        context.drawBorder(cancelX, btnY, btnW, btnH, 0xFF585B70);
+        context.drawCenteredTextWithShadow(this.textRenderer, "Cancel", cancelX + btnW / 2, btnY + 4, 0xFFCDD6F4);
     }
 
     private void drawKnownSpellsGrid(DrawContext context, List<Spell> knownSpells, int mouseX, int mouseY) {
@@ -361,6 +458,36 @@ public class SpellInventoryScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.client != null && this.client.player != null) {
+            // If the permanent vow confirmation modal is open, consume all clicks inside/outside modal
+            if (this.pendingPermanentVow != null) {
+                if (button == 0) {
+                    int modalW = 190;
+                    int modalH = 110;
+                    int modalX = (this.width - modalW) / 2;
+                    int modalY = (this.height - modalH) / 2;
+
+                    int btnW = 76;
+                    int btnH = 16;
+                    int btnY = modalY + modalH - btnH - 10;
+                    int confirmX = modalX + 14;
+                    int cancelX = modalX + modalW - btnW - 14;
+
+                    // Confirm Click
+                    if (isHovering(confirmX, btnY, btnW, btnH, (int) mouseX, (int) mouseY)) {
+                        ClientPlayNetworking.send(new ToggleBindingVowPayload(this.pendingPermanentVow.getId().toString()));
+                        this.pendingPermanentVow = null;
+                        return true;
+                    }
+
+                    // Cancel Click
+                    if (isHovering(cancelX, btnY, btnW, btnH, (int) mouseX, (int) mouseY)) {
+                        this.pendingPermanentVow = null;
+                        return true;
+                    }
+                }
+                return true; // Block click through to background
+            }
+
             int tabY = guiTop - 16;
             int tabH = 16;
 
@@ -436,6 +563,7 @@ public class SpellInventoryScreen extends Screen {
             } else if (activeTab == 1) {
                 // Binding Vows Tab clicks
                 if (button == 0) {
+                    var vowComponent = ModEntityComponents.BINDING_VOWS.get(this.client.player);
                     List<BindingVow> vows = new ArrayList<>(ModBindingVows.getAll());
                     int cardX = guiLeft + 10;
                     int cardY = guiTop + 33;
@@ -452,8 +580,26 @@ public class SpellInventoryScreen extends Screen {
                         int btnY = y + cardH - btnH - 4;
 
                         if (isHovering(btnX, btnY, btnW, btnH, (int) mouseX, (int) mouseY)) {
-                            ClientPlayNetworking.send(new ToggleBindingVowPayload(vow.getId().toString()));
-                            return true;
+                            boolean isActive = vowComponent != null && vowComponent.hasVow(vow.getId());
+                            if (isActive) {
+                                if (vow.isPermanent()) {
+                                    // Permanent vows cannot be severed through UI
+                                    return true;
+                                }
+                                ClientPlayNetworking.send(new ToggleBindingVowPayload(vow.getId().toString()));
+                                return true;
+                            } else {
+                                if (!vow.canAccept(this.client.player)) {
+                                    return true;
+                                }
+                                if (vow.isPermanent()) {
+                                    // Trigger confirmation prompt
+                                    this.pendingPermanentVow = vow;
+                                    return true;
+                                }
+                                ClientPlayNetworking.send(new ToggleBindingVowPayload(vow.getId().toString()));
+                                return true;
+                            }
                         }
                     }
                 }
@@ -464,6 +610,14 @@ public class SpellInventoryScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.pendingPermanentVow != null) {
+            // Escape cancels confirmation modal
+            if (keyCode == 256) { // GLFW_KEY_ESCAPE
+                this.pendingPermanentVow = null;
+                return true;
+            }
+        }
+
         if (ModKeybindings.openSpellInventoryKey.matchesKey(keyCode, scanCode)
                 || (this.client != null && this.client.options.inventoryKey.matchesKey(keyCode, scanCode))) {
             this.close();

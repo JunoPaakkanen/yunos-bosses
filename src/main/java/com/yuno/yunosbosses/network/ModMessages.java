@@ -103,8 +103,8 @@ public class ModMessages {
                 if (vow != null) {
                     var vowComponent = ModEntityComponents.BINDING_VOWS.get(player);
                     if (vowComponent.hasVow(vow.getId())) {
-                        // Voluntarily severing the vow - penalize with Technique Burnout
-                        BindingVowManager.revokeVow(player, vow.getId(), true);
+                        // Voluntarily severing the vow (checks if permanent; if permanent, blocked)
+                        BindingVowManager.revokeVow(player, vow.getId(), true, false);
                     } else {
                         // Pledging the vow
                         BindingVowManager.activateVow(player, vow.getId());

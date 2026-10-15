@@ -36,6 +36,16 @@ public class FurnaceBindingVow implements BindingVow {
     }
 
     @Override
+    public boolean isPermanent() {
+        return true;
+    }
+
+    @Override
+    public Text getPermanentWarning() {
+        return Text.literal("Warning: Once bound, the Flame Arrow restriction cannot be undone!");
+    }
+
+    @Override
     public float getActivationManaCost(PlayerEntity player) {
         return 0.0F; // Purely strategic tactical vow
     }
