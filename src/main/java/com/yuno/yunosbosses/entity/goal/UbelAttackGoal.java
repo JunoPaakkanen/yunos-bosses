@@ -15,6 +15,8 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -528,6 +530,31 @@ public class UbelAttackGoal extends Goal {
         float knockbackStrength = 1.5F;
 
         if (this.target.isBlocking()) {
+            if (this.target instanceof PlayerEntity player) {
+                ItemStack activeItem = player.getActiveItem();
+                if (!activeItem.isEmpty()) {
+                    player.getItemCooldownManager().set(activeItem, 100);
+                } else {
+                    player.getItemCooldownManager().set(Items.SHIELD.getDefaultStack(), 100);
+                }
+                player.clearActiveItem();
+                if (this.ubel.getWorld() instanceof ServerWorld serverWorld) {
+                    serverWorld.sendEntityStatus(player, (byte) 30);
+                    serverWorld.playSound(null, player.getX(), player.getY(), player.getZ(),
+                            SoundEvents.ITEM_SHIELD_BREAK, SoundCategory.PLAYERS, 1.2F, 1.0F);
+                }
+            }
+
+            // Shield absorbs initial damage, but player is staggered with heavy knockback
+            double deltaX = this.target.getX() - this.ubel.getX();
+            double deltaZ = this.target.getZ() - this.ubel.getZ();
+            this.target.takeKnockback(knockbackStrength, -deltaX, -deltaZ);
+            this.target.velocityModified = true;
+
+            // Play hit sound
+            this.ubel.getWorld().playSound(null, this.ubel.getX(), this.ubel.getY(), this.ubel.getZ(),
+                    SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP,
+                    this.ubel.getSoundCategory(), 1.0F, 1.0F);
             return;
         }
 
