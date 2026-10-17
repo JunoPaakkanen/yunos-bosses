@@ -87,6 +87,15 @@ public class DomainExpansionTCMP extends DomainExpansion {
     }
 
     @Override
+    public int getLifetimeTicks(int chargeLevel) {
+        return switch (chargeLevel) {
+            case 2 -> 520; // 26 seconds
+            case 3 -> 800; // 40 seconds
+            default -> 320; // 16 seconds
+        };
+    }
+
+    @Override
     public float getRadius() {
         return 20.0F;
     }
@@ -144,7 +153,7 @@ public class DomainExpansionTCMP extends DomainExpansion {
                 "Time Cell Moon Palace",
                 chargeLevel,
                 80,
-                () -> finishDomainExpansionCast(world, caster, staff, dynamicRadius, false)
+                () -> finishDomainExpansionCast(world, caster, staff, dynamicRadius, false, chargeLevel)
         );
     }
 
@@ -216,15 +225,22 @@ public class DomainExpansionTCMP extends DomainExpansion {
         // Sure-hit calculation:
         // Standing still: 1.0F per 4 ticks (5.0 raw DPS, 1.80 post-Prot4 DPS -> ~18-20s survival with Prot 4 + Golden Apples)
         // Moving / Panicking: scales with velocity:
-        // Walking (~0.2 speed) -> 3.3F per 4 ticks (16.5 raw DPS, 5.94 post-Prot4 DPS -> ~5.5-6.0s survival)
-        // Sprinting (~0.28 speed) -> 5.2F per 4 ticks (26.0 raw DPS, 9.36 post-Prot4 DPS -> ~3.5-4.0s survival)
-        // Sprint-jumping / Wind-charging (>0.5 speed) -> 9.5F - 18.0F+ per 4 ticks (17 - 32+ post-Prot4 DPS -> 1-2s survival)
+        // Walking (~0.2 speed) -> 3.3F per 4 ticks (unchanged)
+        // Sprinting (~0.28 speed) -> 5.2F per 4 ticks (unchanged)
+        // High-speed (>0.35 speed, e.g., sprint-jumping, dashes, or being launched by Naoya's domain-boosted knockback):
+        //   Applies a balanced upper-velocity bonus (+10% to +15% at top velocities, capped at +3.5F bonus)
         if (target.age % 4 == 0) {
             float rawDamage;
             if (totalSpeed < 0.04) {
                 rawDamage = 1.0F;
             } else {
                 rawDamage = (float) (1.5F + totalSpeed * 6.0F + (totalSpeed * totalSpeed * 15.0F));
+                // Upper velocity tier bonus: only triggers above normal sprinting speed (> 0.35 blocks/tick)
+                if (totalSpeed > 0.35) {
+                    double excessSpeed = Math.min(totalSpeed - 0.35, 1.45);
+                    float highVelocityBonus = (float) (excessSpeed * 1.6 + (excessSpeed * excessSpeed * 0.6));
+                    rawDamage += Math.min(highVelocityBonus, 3.5F);
+                }
                 if (target.isSprinting()) {
                     rawDamage *= 1.2F;
                 }
@@ -261,7 +277,7 @@ public class DomainExpansionTCMP extends DomainExpansion {
                 return;
             }
 
-            DamageSource source = ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC, caster);
+            DamageSource source = ModDamageTypes.of(world, ModDamageTypes.DOMAIN_EXPANSION, caster);
 
             Vec3d prevVel = target.getVelocity();
             boolean wasSprinting = target.isSprinting();

@@ -1,8 +1,6 @@
 package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.animation.ModAnimations;
-import com.yuno.yunosbosses.binding_vow.BindingVowManager;
-import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
 import com.yuno.yunosbosses.domain.clash.DomainClashManager;
@@ -99,7 +97,7 @@ public class DomainExpansionShrine extends DomainExpansion {
         if (caster instanceof PlayerEntity player) {
             SpellComponent component = ModEntityComponents.SPELL_DATA.get(player);
             if (component.hasAltCastWindow(this)) {
-                altCast(world, player, staff, chargeLevel);
+                altCast(world, player, staff, 1);
                 return;
             }
         }
@@ -151,7 +149,7 @@ public class DomainExpansionShrine extends DomainExpansion {
                 "Malevolent Shrine",
                 chargeLevel,
                 80,
-                () -> finishDomainExpansionCast(world, caster, staff, dynamicRadius, isOpenBarrier)
+                () -> finishDomainExpansionCast(world, caster, staff, dynamicRadius, isOpenBarrier, chargeLevel)
         );
     }
 
@@ -376,7 +374,16 @@ public class DomainExpansionShrine extends DomainExpansion {
 
     @Override
     public int getLifetimeTicks() {
-        return 960;
+        return 400;
+    }
+
+    @Override
+    public int getLifetimeTicks(int chargeLevel) {
+        return switch (chargeLevel) {
+            case 2 -> 640; // 32 seconds
+            case 3 -> 960; // 48 seconds
+            default -> 400; // 20 seconds
+        };
     }
 
     @Override
@@ -425,7 +432,7 @@ public class DomainExpansionShrine extends DomainExpansion {
                 affectedEntity.getWorld().playSound(null, affectedEntity.getX(), affectedEntity.getY(), affectedEntity.getZ(),
                         ModSounds.REELSEIDEN_HIT, SoundCategory.NEUTRAL, 1.0f, pitch);
 
-                DamageSource source = ModDamageTypes.of(affectedEntity.getWorld(), ModDamageTypes.CUTTING_MAGIC, caster);
+                DamageSource source = ModDamageTypes.of(affectedEntity.getWorld(), ModDamageTypes.DOMAIN_EXPANSION, caster);
 
                 living.timeUntilRegen = 0;
                 affectedEntity.damage((ServerWorld) affectedEntity.getWorld(), source, damage);

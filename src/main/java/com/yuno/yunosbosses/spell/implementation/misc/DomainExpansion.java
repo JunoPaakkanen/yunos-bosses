@@ -44,6 +44,8 @@ public abstract class DomainExpansion extends Spell {
     }
 
     public abstract int getLifetimeTicks();
+    public abstract int getLifetimeTicks(int chargeLevel);
+
     public abstract float getRadius();
     public abstract void onDomainEffect(Entity affectedEntity, ActiveBarrier barrier);
 
@@ -108,15 +110,16 @@ public abstract class DomainExpansion extends Spell {
     }
 
     public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff, float radius) {
-        finishDomainExpansionCast(world, caster, staff, radius, isOpenBarrier());
+        finishDomainExpansionCast(world, caster, staff, radius, isOpenBarrier(), 1);
     }
 
-    public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff, float radius, boolean isOpenBarrier) {
+    public void finishDomainExpansionCast(World world, LivingEntity caster, ItemStack staff, float radius, boolean isOpenBarrier, int chargeLevel) {
         if (!world.isClient) {
             Vec3d pos = caster.getPos().add(0, 2, 0); // Center of the sphere
 
             Identifier texture = isOpenBarrier ? getBarrierTexture() : getClosedBarrierTexture();
-            int lifetime = getLifetimeTicks();
+            // Get dynamic lifetime
+            int lifetime = getLifetimeTicks(chargeLevel);
 
             // Create the floor
             createDomainFloor(world, caster, radius);
