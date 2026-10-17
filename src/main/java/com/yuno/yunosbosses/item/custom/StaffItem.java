@@ -62,7 +62,7 @@ public class StaffItem extends Item {
                     // Success!
                     return ActionResult.SUCCESS;
                 }
-                // Not enough mana
+                // Not enough mana/health
                 return ActionResult.FAIL;
             }
 
@@ -90,7 +90,12 @@ public class StaffItem extends Item {
                 // Drain a small amount of mana every tick (5% of base cost per tick)
                 float drainRate = active.getManaCost(user) * 0.05f;
 
-                if (!ModEntityComponents.MANA.get(user).useMana(drainRate)) {
+                if (user instanceof PlayerEntity player) {
+                    if (!SpellCastHelper.consumeManaOrHealth(player, drainRate)) {
+                        // Out of mana and health! Force release the spell early.
+                        user.stopUsingItem();
+                    }
+                } else if (!ModEntityComponents.MANA.get(user).useMana(drainRate)) {
                     // Out of mana! Force release the spell early.
                     user.stopUsingItem();
                 }

@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses.spell.implementation.summon;
 
+import com.yuno.yunosbosses.binding_vow.BindingVowManager;
+import com.yuno.yunosbosses.binding_vow.VexLifeLeechBindingVow;
 import com.yuno.yunosbosses.entity.goal.VexDefendSummonerGoal;
 import com.yuno.yunosbosses.entity.goal.VexFollowSummonerGoal;
 import com.yuno.yunosbosses.item.custom.StaffItem;
@@ -68,6 +70,9 @@ public class SummonVexSpell extends Spell {
                 scoreboard.addScoreHolderToTeam(caster.getNameForScoreboard(), casterTeam);
             }
 
+            // Check if caster currently has the Vex Life Leech binding vow active at the moment of summoning
+            boolean hasLifeLeechVow = BindingVowManager.hasVow(caster, VexLifeLeechBindingVow.ID);
+
             // Perpendicular vector for spreading out multiple summons
             Vec3d right = look.crossProduct(new Vec3d(0, 1, 0)).normalize();
             if (right.lengthSquared() < 0.001) {
@@ -90,6 +95,11 @@ public class SummonVexSpell extends Spell {
                 // Identify as summoned minion and link to caster UUID
                 vex.addCommandTag("SummonedVex");
                 vex.addCommandTag("Caster_" + caster.getUuidAsString());
+
+                // Tag whether this vex was summoned under the Life Leech binding vow
+                if (hasLifeLeechVow) {
+                    vex.addCommandTag("VexLifeLeech");
+                }
 
                 // Set initial patrol bounds around the caster so idle hovering stays centered on them
                 vex.setBounds(caster.getBlockPos());
@@ -119,6 +129,10 @@ public class SummonVexSpell extends Spell {
                 serverWorld.spawnParticles(ParticleTypes.ENCHANT, spawnPos.x, spawnPos.y, spawnPos.z, 15, 0.3, 0.3, 0.3, 0.5);
                 serverWorld.spawnParticles(ParticleTypes.SOUL, spawnPos.x, spawnPos.y, spawnPos.z, 8, 0.2, 0.2, 0.2, 0.02);
                 serverWorld.spawnParticles(ParticleTypes.POOF, spawnPos.x, spawnPos.y, spawnPos.z, 6, 0.15, 0.15, 0.15, 0.02);
+
+                if (hasLifeLeechVow) {
+                    serverWorld.spawnParticles(ParticleTypes.HEART, spawnPos.x, spawnPos.y + 0.5, spawnPos.z, 4, 0.2, 0.2, 0.2, 0.02);
+                }
             }
 
             world.playSound(null, caster.getX(), caster.getY(), caster.getZ(),

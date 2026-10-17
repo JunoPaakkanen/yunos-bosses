@@ -7,6 +7,8 @@ import java.util.*;
 public class ModBindingVows {
     public static final BindingVow GOJO = new GojoBindingVow();
     public static final BindingVow FURNACE = new FurnaceBindingVow();
+    public static final BindingVow VEX_LIFE_LEECH = new VexLifeLeechBindingVow();
+    public static final BindingVow BLOOD_FOR_MANA = new BloodForManaBindingVow();
 
     private static final Map<Identifier, BindingVow> VOWS_BY_ID = new LinkedHashMap<>();
     private static final Map<String, BindingVow> VOWS_BY_NAME = new LinkedHashMap<>();
@@ -14,6 +16,8 @@ public class ModBindingVows {
     static {
         register(GOJO);
         register(FURNACE);
+        register(VEX_LIFE_LEECH);
+        register(BLOOD_FOR_MANA);
     }
 
     public static void register(BindingVow vow) {

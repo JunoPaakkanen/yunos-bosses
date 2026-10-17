@@ -8,6 +8,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.world.ServerWorld;
@@ -25,7 +26,8 @@ public class BossCombatHelper {
         if (source == null) return false;
         if (source.isOf(ModDamageTypes.CUTTING_MAGIC)
                 || source.isOf(ModDamageTypes.CUTTING_MAGIC_SHALLOW)
-                || source.isOf(ModDamageTypes.FIRE_MAGIC)) {
+                || source.isOf(ModDamageTypes.FIRE_MAGIC)
+                || source.isOf(ModDamageTypes.DOMAIN_EXPANSION)) {
             return true;
         }
         if (source.isIn(DamageTypeTags.BYPASSES_ARMOR)) {
@@ -141,5 +143,46 @@ public class BossCombatHelper {
 
         DamageSource piercingSource = ModDamageTypes.of(world, ModDamageTypes.CUTTING_MAGIC, baseSource.getAttacker());
         target.damage(world, piercingSource, half);
+    }
+
+    /**
+     * Determines whether incoming damage should cap the victim's Resistance effect to Resistance II (amplifier 1, 40% reduction).
+     * Applies to:
+     * 1. All domain expansion sure-hit damage (DomainExpansionShrine, DomainExpansionTCMP).
+     * 2. All attacks originating directly from a boss (YunosBossEntity) or boss projectiles/minions.
+     */
+    public static boolean shouldCapResistance(DamageSource source) {
+        if (source == null) return false;
+
+        // 1. Domain expansion sure-hit damage
+        if (source.isOf(ModDamageTypes.DOMAIN_EXPANSION)) {
+            return true;
+        }
+
+        // 2. Boss attacker (melee, direct spell, projectile owner)
+        Entity attacker = source.getAttacker();
+        if (attacker instanceof YunosBossEntity) {
+            return true;
+        }
+
+        // 3. Direct damage source is a boss or projectile owned by a boss
+        Entity directSource = source.getSource();
+        if (directSource instanceof YunosBossEntity) {
+            return true;
+        }
+        if (directSource instanceof ProjectileEntity proj && proj.getOwner() instanceof YunosBossEntity) {
+            return true;
+        }
+
+        // 4. Boss summoned minion (e.g. Methode's summoned vexes)
+        if (attacker instanceof LivingEntity living) {
+            for (String tag : living.getCommandTags()) {
+                if (tag.startsWith("Caster_")) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

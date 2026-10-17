@@ -1,5 +1,7 @@
 package com.yuno.yunosbosses.mixin;
 
+import com.yuno.yunosbosses.binding_vow.BindingVowManager;
+import com.yuno.yunosbosses.binding_vow.VexLifeLeechBindingVow;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
@@ -20,21 +22,27 @@ import net.minecraft.entity.mob.VexEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.EntityStatusEffectS2CPacket;
 import net.minecraft.network.packet.s2c.play.RemoveEntityStatusEffectS2CPacket;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import com.yuno.yunosbosses.util.BossCombatHelper;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
@@ -262,11 +270,36 @@ public abstract class LivingEntityMixin {
     }
 
     @Inject(method = "onDeath", at = @At("HEAD"))
-    private void yunosbosses$onBossDeath(DamageSource damageSource, CallbackInfo ci) {
+    private void yunosbosses$onEntityDeath(DamageSource damageSource, CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;
         if (entity instanceof YunosBossEntity) {
             BossContributionTracker.onBossDeath(entity, damageSource);
         }
+
+        // Vex Life Leech Binding Vow death trigger
+        if (entity instanceof VexEntity vex && !vex.getWorld().isClient() && vex.getWorld() instanceof ServerWorld serverWorld) {
+            // Only triggers if this vex was spawned under the vow
+            if (vex.getCommandTags().contains("VexLifeLeech")) {
+                for (String tag : vex.getCommandTags()) {
+                    if (tag.startsWith("Caster_")) {
+                        try {
+                            UUID casterUuid = UUID.fromString(tag.substring(7));
+                            PlayerEntity caster = serverWorld.getPlayerByUuid(casterUuid);
+                            // Caster must be alive and still possess the binding vow
+                            if (caster != null && caster.isAlive() && BindingVowManager.hasVow(caster, VexLifeLeechBindingVow.ID)) {
+                                caster.heal(VexLifeLeechBindingVow.HEAL_AMOUNT);
+                                serverWorld.spawnParticles(ParticleTypes.HEART, caster.getX(), caster.getY() + 1.0, caster.getZ(), 8, 0.3, 0.4, 0.3, 0.05);
+                                serverWorld.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                                        SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8F, 1.3F);
+                            }
+                        } catch (IllegalArgumentException ignored) {
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
         if (entity instanceof PlayerEntity player) {
             if (entity.getWorld() instanceof ServerWorld serverWorld) {
                 // Clear target and attacker on any boss currently engaged with this player
@@ -281,4 +314,20 @@ public abstract class LivingEntityMixin {
             }
         }
     }
+
+    @Redirect(
+        method = "modifyAppliedDamage",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/entity/effect/StatusEffectInstance;getAmplifier()I"
+        )
+    )
+    private int yunosbosses$capResistanceAmplifier(StatusEffectInstance instance, DamageSource source, float amount) {
+        int amplifier = instance.getAmplifier();
+        if (BossCombatHelper.shouldCapResistance(source)) {
+            return Math.min(amplifier, 1); // Cap to Resistance II (amplifier 1 = 40% reduction)
+        }
+        return amplifier;
+    }
+
 }
