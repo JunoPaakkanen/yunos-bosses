@@ -130,14 +130,17 @@ public class NaoyaMachRamAbility implements BossAbility {
                 );
 
                 int speedStacks = (boss instanceof NaoyaEntity naoya) ? naoya.getSpeedStacks() : 0;
+                boolean inDomain = (boss instanceof NaoyaEntity naoya) && naoya.isInOwnDomain();
                 float ramDamage = 16.0F + (speedStacks * 1.5F);
 
                 for (LivingEntity hitEntity : hitList) {
                     BossCombatHelper.applySignatureDamage(sw, hitEntity, boss, ramDamage);
                     if (hitEntity instanceof WallSlamData wsd) {
-                        wsd.yunos$setWallSlamTimer(35);
+                        wsd.yunos$setWallSlamTimer(inDomain ? 55 : 35);
                     }
-                    Vec3d ramPush = boss.getRotationVec(1.0F).normalize().multiply(1.3).add(0, 0.25, 0);
+                    double horizPush = inDomain ? 2.5 : 1.3;
+                    double vertPush = inDomain ? 0.45 : 0.25;
+                    Vec3d ramPush = boss.getRotationVec(1.0F).normalize().multiply(horizPush).add(0, vertPush, 0);
                     hitEntity.setVelocity(hitEntity.getVelocity().add(ramPush));
                     hitEntity.velocityModified = true;
                 }

@@ -15,6 +15,8 @@ public class ModDamageTypes {
             RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Identifier.of("yunosbosses", "cutting_magic_shallow"));
     public static final RegistryKey<DamageType> FIRE_MAGIC =
             RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Identifier.of("yunosbosses", "fire_magic"));
+    public static final RegistryKey<DamageType> DOMAIN_EXPANSION =
+            RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Identifier.of("yunosbosses", "domain_expansion"));
 
     public static DamageSource of(World world, RegistryKey<DamageType> key, Entity attacker) {
         return new DamageSource(world.getRegistryManager()

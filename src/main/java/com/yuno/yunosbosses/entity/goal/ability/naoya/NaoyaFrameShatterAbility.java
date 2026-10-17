@@ -83,6 +83,7 @@ public class NaoyaFrameShatterAbility implements BossAbility {
 
         World world = boss.getWorld();
         if (world instanceof ServerWorld sw && target != null && target.isAlive()) {
+            boolean inDomain = (boss instanceof NaoyaEntity naoya) && naoya.isInOwnDomain();
             DamageSource source = boss.getDamageSources().mobAttack(boss);
             // LivingEntityMixin intercepts this because target has FRAME_FREEZE:
             // Boosts damage by 1.5x, calls ProjectionSorcery.shatterFrame, plays sound and particles, and cleanses the freeze!
@@ -90,11 +91,13 @@ public class NaoyaFrameShatterAbility implements BossAbility {
 
             // Enable Wall Slam detonation if knocked into a wall
             if (target instanceof WallSlamData wsd) {
-                wsd.yunos$setWallSlamTimer(40);
+                wsd.yunos$setWallSlamTimer(inDomain ? 60 : 40);
             }
 
-            // Explosive launch knockback
-            Vec3d launch = boss.getRotationVec(1.0F).normalize().multiply(1.8).add(0, 0.35, 0);
+            // Explosive launch knockback (massively amplified inside Time Cell Moon Palace)
+            double horizLaunch = inDomain ? 3.2 : 1.8;
+            double vertLaunch = inDomain ? 0.55 : 0.35;
+            Vec3d launch = boss.getRotationVec(1.0F).normalize().multiply(horizLaunch).add(0, vertLaunch, 0);
             target.setVelocity(launch);
             target.velocityModified = true;
         }

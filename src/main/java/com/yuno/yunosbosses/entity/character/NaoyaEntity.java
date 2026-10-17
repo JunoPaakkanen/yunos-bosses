@@ -3,6 +3,8 @@ package com.yuno.yunosbosses.entity.character;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.goal.NaoyaAttackGoal;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import com.yuno.yunosbosses.util.ActiveBarrier;
+import com.yuno.yunosbosses.util.BarrierManager;
 import com.yuno.yunosbosses.util.BossCombatHelper;
 import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import com.yuno.yunosbosses.world.ModGameRules;
@@ -59,7 +61,7 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
     );
 
     private NaoyaAttackGoal attackGoal;
-    private int speedDecayTimer = 100;
+    private int speedDecayTimer = 140;
 
     public NaoyaEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
@@ -126,7 +128,7 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
     public void setSpeedStacks(int stacks) {
         int clamped = Math.max(0, Math.min(15, stacks));
         this.dataTracker.set(SPEED_STACKS, clamped);
-        this.speedDecayTimer = 80;
+        this.speedDecayTimer = 140;
         updateSpeedAttribute();
     }
 
@@ -140,6 +142,17 @@ public class NaoyaEntity extends PathAwareEntity implements GeoEntity, YunosBoss
 
     public void setDashing(boolean dashing) {
         this.dataTracker.set(IS_DASHING, dashing);
+    }
+
+    /**
+     * Checks whether Naoya is currently fighting inside his own active Domain Expansion (Time Cell Moon Palace).
+     */
+    public boolean isInOwnDomain() {
+        ActiveBarrier domain = BarrierManager.getActiveDomainBarrier(this.getUuid());
+        if (domain == null || domain.isExpired()) {
+            return false;
+        }
+        return this.getPos().distanceTo(domain.getPosition()) <= domain.getRadius() + 1.5;
     }
 
     private void updateSpeedAttribute() {

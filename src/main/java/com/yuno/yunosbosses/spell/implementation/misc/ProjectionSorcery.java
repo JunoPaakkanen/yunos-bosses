@@ -302,6 +302,7 @@ public class ProjectionSorcery extends Spell {
 
         if (caster.getWorld() instanceof ServerWorld serverWorld) {
             long currentTick = serverWorld.getTime();
+            boolean inDomain = (caster instanceof NaoyaEntity naoya) && naoya.isInOwnDomain();
 
             // Periodic cleanup of expired cooldown entries
             if (currentTick % 100 == 0) {
@@ -352,14 +353,20 @@ public class ProjectionSorcery extends Spell {
 
                     // Enable wall slam damage if knocked into a wall
                     if (target instanceof WallSlamData data) {
-                        data.yunos$setWallSlamTimer(30);
+                        data.yunos$setWallSlamTimer(inDomain ? 45 : 30);
                     }
 
                     // Apply push in sprint direction
                     Vec3d velocity = caster.getVelocity();
-                    if (velocity.lengthSquared() > 0.01) {
-                        Vec3d push = new Vec3d(velocity.x, 0, velocity.z).normalize().multiply(0.6);
-                        target.setVelocity(target.getVelocity().add(push.x, 0.25, push.z));
+                    Vec3d horizDir = new Vec3d(velocity.x, 0, velocity.z);
+                    if (horizDir.lengthSquared() <= 0.01) {
+                        horizDir = new Vec3d(caster.getRotationVec(1.0F).x, 0, caster.getRotationVec(1.0F).z);
+                    }
+                    if (horizDir.lengthSquared() > 1e-4) {
+                        double horizMult = inDomain ? 1.35 : 0.6;
+                        double vertLift = inDomain ? 0.38 : 0.25;
+                        Vec3d push = horizDir.normalize().multiply(horizMult);
+                        target.setVelocity(target.getVelocity().add(push.x, vertLift, push.z));
                         target.velocityModified = true;
                     }
                 }

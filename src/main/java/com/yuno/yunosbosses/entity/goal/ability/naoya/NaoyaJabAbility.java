@@ -3,6 +3,7 @@ package com.yuno.yunosbosses.entity.goal.ability.naoya;
 import com.yuno.yunosbosses.entity.character.NaoyaEntity;
 import com.yuno.yunosbosses.entity.goal.AbstractBossAttackGoal;
 import com.yuno.yunosbosses.entity.goal.ability.BossAbility;
+import com.yuno.yunosbosses.util.WallSlamData;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
@@ -59,10 +60,19 @@ public class NaoyaJabAbility implements BossAbility {
         if (world instanceof ServerWorld sw && target != null && target.isAlive()) {
             DamageSource source = boss.getDamageSources().mobAttack(boss);
             int speedStacks = (boss instanceof NaoyaEntity naoya) ? naoya.getSpeedStacks() : 0;
+            boolean inDomain = (boss instanceof NaoyaEntity naoya) && naoya.isInOwnDomain();
             float damage = 8.0F + (speedStacks * 0.4F);
 
             if (target.damage(sw, source, damage)) {
-                target.takeKnockback(0.4F, boss.getX() - target.getX(), boss.getZ() - target.getZ());
+                float kbStrength = inDomain ? 1.15F : 0.4F;
+                target.takeKnockback(kbStrength, boss.getX() - target.getX(), boss.getZ() - target.getZ());
+                if (inDomain) {
+                    target.addVelocity(0, 0.16, 0);
+                    target.velocityModified = true;
+                    if (target instanceof WallSlamData wsd) {
+                        wsd.yunos$setWallSlamTimer(35);
+                    }
+                }
             }
 
             // Punch impact audio-visual feedback at moment of impact

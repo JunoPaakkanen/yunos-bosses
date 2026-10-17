@@ -10,6 +10,7 @@ import com.yuno.yunosbosses.util.WallSlamData;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -119,6 +120,7 @@ public class NaoyaPunchBarrageAbility implements BossAbility {
         }
 
         int speedStacks = naoya.getSpeedStacks();
+        boolean inDomain = naoya.isInOwnDomain();
         double rushSpeed = 0.38 + (speedStacks * 0.02);
 
         if (horizDist > 1.2) {
@@ -159,13 +161,15 @@ public class NaoyaPunchBarrageAbility implements BossAbility {
                     sw.spawnParticles(ParticleTypes.CRIT, impactPos.x, impactPos.y, impactPos.z, 4, 0.15, 0.15, 0.15, 0.1);
 
                     // Relentlessly push target backwards along rush direction
-                    Vec3d push = forward.multiply(0.24).add(0, 0.04, 0);
+                    double pushStrength = inDomain ? 0.45 : 0.24;
+                    double vertLift = inDomain ? 0.08 : 0.04;
+                    Vec3d push = forward.multiply(pushStrength).add(0, vertLift, 0);
                     target.setVelocity(target.getVelocity().add(push));
                     target.velocityModified = true;
 
                     // Arm Wall Slam: If the target is driven into a wall during the rush, wall slam triggers!
                     if (target instanceof WallSlamData wsd) {
-                        wsd.yunos$setWallSlamTimer(30);
+                        wsd.yunos$setWallSlamTimer(inDomain ? 40 : 30);
                     }
                 }
             } else {
@@ -180,11 +184,35 @@ public class NaoyaPunchBarrageAbility implements BossAbility {
                 if (horizDist <= 3.4) {
                     float finisherDamage = 7.0F + (speedStacks * 0.6F);
                     DamageSource source = boss.getDamageSources().mobAttack(boss);
-                    if (target.damage(sw, source, finisherDamage)) {
+                    boolean wasBlocking = target.isBlocking();
+
+                    // If blocking the heavy finisher punch, shatter shield and apply heavy guard-crush knockback!
+                    if (wasBlocking && target instanceof PlayerEntity player) {
+                        player.getItemCooldownManager().set(player.getActiveItem(), 80);
+                        player.clearActiveItem();
+                        sw.sendEntityStatus(player, (byte) 30);
+                        sw.playSound(null, player.getX(), player.getY(), player.getZ(),
+                                SoundEvents.ITEM_SHIELD_BREAK, SoundCategory.PLAYERS, 1.3F, 0.95F);
+                    }
+
+                    boolean damaged = target.damage(sw, source, finisherDamage);
+                    if (damaged || wasBlocking) {
                         this.hitAny = true;
-                        target.takeKnockback(0.9F, boss.getX() - target.getX(), boss.getZ() - target.getZ());
+
+                        float kbStrength;
+                        if (wasBlocking) {
+                            kbStrength = inDomain ? 2.4F : 1.65F;
+                        } else {
+                            kbStrength = inDomain ? 1.85F : 0.9F;
+                        }
+                        target.takeKnockback(kbStrength, boss.getX() - target.getX(), boss.getZ() - target.getZ());
+                        if (inDomain || wasBlocking) {
+                            target.addVelocity(0, inDomain ? 0.28 : 0.22, 0);
+                        }
+                        target.velocityModified = true;
+
                         if (target instanceof WallSlamData wsd) {
-                            wsd.yunos$setWallSlamTimer(45);
+                            wsd.yunos$setWallSlamTimer(inDomain ? 60 : 45);
                         }
                     }
 

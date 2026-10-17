@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.entity.goal.AbstractBossAttackGoal;
 import com.yuno.yunosbosses.entity.goal.ability.BossAbility;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import com.yuno.yunosbosses.util.WallSlamData;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.MobEntity;
@@ -114,12 +115,18 @@ public class NaoyaFlankDashAbility implements BossAbility {
                 naoya.triggerAttackAnim();
 
                 if (world instanceof ServerWorld sw && target != null && target.isAlive()) {
+                    boolean inDomain = naoya.isInOwnDomain();
                     float damage = 12.0F + (naoya.getSpeedStacks() * 0.8F);
                     DamageSource source = naoya.getDamageSources().mobAttack(naoya);
                     if (target.damage(sw, source, damage)) {
-                        Vec3d push = naoya.getRotationVec(1.0F).normalize().multiply(0.8).add(0, 0.2, 0);
+                        double horizPush = inDomain ? 1.75 : 0.8;
+                        double vertPush = inDomain ? 0.35 : 0.2;
+                        Vec3d push = naoya.getRotationVec(1.0F).normalize().multiply(horizPush).add(0, vertPush, 0);
                         target.setVelocity(target.getVelocity().add(push));
                         target.velocityModified = true;
+                        if (inDomain && target instanceof WallSlamData wsd) {
+                            wsd.yunos$setWallSlamTimer(45);
+                        }
                     }
                 }
 

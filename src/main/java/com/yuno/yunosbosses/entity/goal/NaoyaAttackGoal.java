@@ -9,6 +9,7 @@ import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaJabAbility;
 import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaMachRamAbility;
 import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaPalmStrikeAbility;
 import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaPunchBarrageAbility;
+import com.yuno.yunosbosses.entity.goal.ability.naoya.NaoyaSonicUppercutAbility;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
@@ -47,20 +48,23 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
         // 1. COMBO FINISHER: Frame Shatter (when target has FRAME_FREEZE)
         this.registerAbility(new NaoyaFrameShatterAbility());
 
-        // 2. Mach Supersonic Ram (Charge attack at high speed or long range)
+        // 2. Sonic Uppercut (Vertical 24-FPS intercept when target is elevated / pillaring / jumping high)
+        this.registerAbility(new NaoyaSonicUppercutAbility());
+
+        // 3. Mach Supersonic Ram (Charge attack at high speed or long range)
         this.registerAbility(new NaoyaMachRamAbility());
 
-        // 3. Advancing Sprint Punch Barrage (Flurry rush scaling with speed stacks)
+        // 4. Advancing Sprint Punch Barrage (Flurry rush scaling with speed stacks)
         this.registerAbility(new NaoyaPunchBarrageAbility());
 
-        // 4. 24-FPS Flanking Dash (Curved afterimages & surprise back strike)
+        // 5. 24-FPS Flanking Dash (Curved afterimages & surprise back strike)
         this.flankDashAbility = new NaoyaFlankDashAbility();
         this.registerAbility(this.flankDashAbility);
 
-        // 5. Palm Strike (Freeze target with the 24-FPS Rule)
+        // 6. Palm Strike (Freeze target with the 24-FPS Rule)
         this.registerAbility(new NaoyaPalmStrikeAbility());
 
-        // 6. Close Quarters Melee Jab
+        // 7. Close Quarters Melee Jab
         this.registerAbility(new NaoyaJabAbility());
     }
 
@@ -303,6 +307,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
                 SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 1.6F, 1.4F);
 
         Set<UUID> hitUuids = new HashSet<>();
+        boolean inDomain = this.naoya.isInOwnDomain();
         float damage = 20.0F + (this.naoya.getSpeedStacks() * 1.5F);
         DamageSource attackSource = this.naoya.getDamageSources().mobAttack(this.naoya);
 
@@ -337,10 +342,12 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
                 BossCombatHelper.applySignatureDamage(sw, hit, this.naoya, damage);
 
                 if (hit instanceof WallSlamData wsd) {
-                    wsd.yunos$setWallSlamTimer(45);
+                    wsd.yunos$setWallSlamTimer(inDomain ? 65 : 45);
                 }
 
-                Vec3d launch = punchDir.multiply(2.0).add(0, 0.35, 0);
+                double horizLaunch = inDomain ? 3.5 : 2.0;
+                double vertLaunch = inDomain ? 0.55 : 0.35;
+                Vec3d launch = punchDir.multiply(horizLaunch).add(0, vertLaunch, 0);
                 hit.setVelocity(launch);
                 hit.velocityModified = true;
 
@@ -360,6 +367,7 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
         sw.playSound(null, rearAttacker.getX(), rearAttacker.getY(), rearAttacker.getZ(),
                 ModSounds.FRAME_FREEZE, SoundCategory.HOSTILE, 1.1F, 1.2F);
 
+        boolean inDomain = this.naoya.isInOwnDomain();
         float strikeDamage = 12.0F + (this.naoya.getSpeedStacks() * 1.0F);
 
         if (rearAttacker.isBlocking() && rearAttacker instanceof PlayerEntity player) {
@@ -375,10 +383,12 @@ public class NaoyaAttackGoal extends AbstractBossAttackGoal {
         // Inflict brief Frame Freeze and Wall Slam timer
         rearAttacker.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 20, 0, false, false, true));
         if (rearAttacker instanceof WallSlamData wsd) {
-            wsd.yunos$setWallSlamTimer(35);
+            wsd.yunos$setWallSlamTimer(inDomain ? 55 : 35);
         }
 
-        Vec3d push = punchDir.multiply(1.4).add(0, 0.25, 0);
+        double horizPush = inDomain ? 2.6 : 1.4;
+        double vertPush = inDomain ? 0.45 : 0.25;
+        Vec3d push = punchDir.multiply(horizPush).add(0, vertPush, 0);
         rearAttacker.setVelocity(rearAttacker.getVelocity().add(push));
         rearAttacker.velocityModified = true;
 

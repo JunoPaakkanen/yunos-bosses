@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.entity.goal.AbstractBossAttackGoal;
 import com.yuno.yunosbosses.entity.goal.ability.BossAbility;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.util.BossCombatHelper;
+import com.yuno.yunosbosses.util.WallSlamData;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.mob.MobEntity;
@@ -57,11 +58,22 @@ public class NaoyaPalmStrikeAbility implements BossAbility {
     public void execute(MobEntity boss, LivingEntity target) {
         World world = boss.getWorld();
         if (world instanceof ServerWorld sw && target != null && target.isAlive()) {
+            boolean inDomain = (boss instanceof NaoyaEntity naoya) && naoya.isInOwnDomain();
             BossCombatHelper.applySignatureDamage(sw, target, boss, 6.0F);
 
             // Inflict Frame Freeze
             target.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 30, 0, false, false, true));
-            target.setVelocity(Vec3d.ZERO);
+
+            if (inDomain) {
+                // Inside Time Cell Moon Palace, even the freezing palm strike imparts a concussive knockback jolt!
+                Vec3d push = boss.getRotationVec(1.0F).normalize().multiply(0.85).add(0, 0.15, 0);
+                target.setVelocity(push);
+                if (target instanceof WallSlamData wsd) {
+                    wsd.yunos$setWallSlamTimer(35);
+                }
+            } else {
+                target.setVelocity(Vec3d.ZERO);
+            }
             target.velocityModified = true;
 
             sw.playSound(null, target.getX(), target.getY(), target.getZ(),
