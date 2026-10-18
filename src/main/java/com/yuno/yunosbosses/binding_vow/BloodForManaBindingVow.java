@@ -18,7 +18,7 @@ public class BloodForManaBindingVow implements BindingVow {
 
     @Override
     public Text getName() {
-        return Text.literal("Zero-Sum Exchange: Blood for Mana");
+        return Text.literal("Blood for Mana");
     }
 
     @Override
