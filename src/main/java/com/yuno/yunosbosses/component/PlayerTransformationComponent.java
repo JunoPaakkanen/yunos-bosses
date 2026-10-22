@@ -31,6 +31,9 @@ public class PlayerTransformationComponent implements TransformationComponent {
     private boolean inTheZone = false;
     private int zoneTimer = 0;
 
+    private int brainDamageLevel = 0;
+    private int brainDamageTimer = 0;
+
     public PlayerTransformationComponent(PlayerEntity player) {
         this.player = player;
     }
@@ -100,6 +103,26 @@ public class PlayerTransformationComponent implements TransformationComponent {
                 this.blackFlashChain = 0;
             }
         }
+        // Count down Brain Damage timer
+        if (this.brainDamageLevel > 0) {
+            this.brainDamageTimer--;
+            if (this.brainDamageTimer <= 0) {
+                this.brainDamageLevel -= 1;
+                this.brainDamageTimer = 6000; // 5 minutes
+            }
+        }
+    }
+
+    @Override
+    public int getBrainDamage() {
+        return this.brainDamageLevel;
+    }
+
+    @Override
+    public void setBrainDamage(int damageLevel) {
+        // Brain damage maxes out at level 5
+        this.brainDamageLevel = Math.min(damageLevel, 5);
+        this.brainDamageTimer = 6000; // 5 minutes
     }
 
     @Override

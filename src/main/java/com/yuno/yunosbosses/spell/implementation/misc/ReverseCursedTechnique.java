@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.spell.implementation.misc;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
+import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
@@ -20,34 +21,23 @@ public class ReverseCursedTechnique extends Spell {
 
     @Override
     public float getManaCost(LivingEntity caster) {
-        return ModEntityComponents.MANA.get(caster).getMaxMana();
+        boolean isTransformed = ModEntityComponents.TRANSFORMATION_DATA.get(caster).isTransformed();
+        if (isTransformed) {
+            return ModEntityComponents.MANA.get(caster).getMaxMana();
+        }
+        return 50.0F;
     }
 
     @Override
     public void cast(World world, LivingEntity caster, ItemStack staff) {
         if (!world.isClient) {
-            // Heal the caster to full health
-            caster.heal(caster.getMaxHealth());
-
-            if (world instanceof ServerWorld serverWorld) {
-                // Spawn particles
-                serverWorld.spawnParticles(
-                        ParticleTypes.HAPPY_VILLAGER,
-                        caster.getX(), caster.getY() + 1.0, caster.getZ(),
-                        20, 0.5, 0.5, 0.5, 0.1
-                );
-
-                // Play sound
-                serverWorld.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
-                        SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS,
-                        1.0f, 1.0f);
-            }
-
-            // If transformed, reverse transformation
+            // If transformed
             var transformationComponent = ModEntityComponents.TRANSFORMATION_DATA.get(caster);
             if (transformationComponent.isTransformed()) {
+                // Heal the caster to full health
+                caster.heal(caster.getMaxHealth());
 
-                // Reset transformation
+                // Reverse transformation
                 transformationComponent.setTransformed(false);
 
                 // Allow changing spells
@@ -63,6 +53,34 @@ public class ReverseCursedTechnique extends Spell {
                 var manaComponent = ModEntityComponents.MANA.get(caster);
                 manaComponent.setManaRegen(0.25F);
                 ModEntityComponents.MANA.sync(caster);
+
+                if (world instanceof ServerWorld serverWorld) {
+                    // Spawn particles
+                    serverWorld.spawnParticles(
+                            ParticleTypes.HAPPY_VILLAGER,
+                            caster.getX(), caster.getY() + 1.0, caster.getZ(),
+                            20, 0.5, 0.5, 0.5, 0.1
+                    );
+
+                    // Play sound
+                    serverWorld.playSound(null, caster.getX(), caster.getY(), caster.getZ(),
+                            SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS,
+                            1.0f, 1.0f);
+                }
+            } else if (DomainClashManager.hasBurnout(caster.getUuid()) && caster.isSneaking()) {
+                // Sneak cast while in technique burnout
+
+                // Destroy and then heal the brain to refresh technique burnout
+                DomainClashManager.removeBurnout(caster.getUuid());
+
+                // Consequently, the caster suffers long-lasting brain damage
+                int currentBrainDamage = transformationComponent.getBrainDamage();
+                transformationComponent.setBrainDamage(currentBrainDamage + 1);
+                ModEntityComponents.TRANSFORMATION_DATA.sync(caster);
+
+            } else {
+                // Normal cast
+                caster.heal(3.0F);
             }
         }
     }

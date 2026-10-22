@@ -21,6 +21,10 @@ public interface TransformationComponent extends Component, AutoSyncedComponent,
 
     void resetBlackFlashChain();
 
+    int getBrainDamage();
+
+    void setBrainDamage(int damageLevel);
+
     @Override
     default void serverTick() {}
 }

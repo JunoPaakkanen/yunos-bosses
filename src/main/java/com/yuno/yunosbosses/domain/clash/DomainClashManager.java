@@ -85,6 +85,10 @@ public class DomainClashManager {
         BURNOUT_MAP.put(uuid, ticks);
     }
 
+    public static void removeBurnout(UUID uuid) {
+        BURNOUT_MAP.remove(uuid);
+    }
+
     // --- PENDING CAST CLASS ---
 
     public static class PendingDomainCast {
