@@ -2,9 +2,12 @@ package com.yuno.yunosbosses.entity.projectile;
 
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.entity.other.DomainShrineEntity;
+import com.yuno.yunosbosses.network.FlameShockwavePayload;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -16,6 +19,7 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -544,6 +548,12 @@ public class FlameArrowEntity extends ProjectileEntity {
         float maxShockwaveRadius = this.isThermobaricFinisher
                 ? Math.max(this.domainRadius, 25.0f)
                 : (7.0f + (potency * 4.0f));
+
+        // Send expanding glowing orange shockwave circle waves packet to nearby clients
+        FlameShockwavePayload shockwavePayload = new FlameShockwavePayload(hitPos, maxShockwaveRadius + 2.5f, this.isThermobaricFinisher);
+        for (ServerPlayerEntity player : PlayerLookup.around(serverWorld, hitPos, 256.0)) {
+            ServerPlayNetworking.send(player, shockwavePayload);
+        }
 
         double ringStep = this.isThermobaricFinisher ? 2.5 : 1.5;
         for (double r = 1.5; r <= maxShockwaveRadius; r += ringStep) {

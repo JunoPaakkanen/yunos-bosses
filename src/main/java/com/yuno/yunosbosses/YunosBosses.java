@@ -64,6 +64,8 @@ public class YunosBosses implements ModInitializer {
 		BeamPayload.register();
 		BarrierPayload.register();
 		RemoveBarrierPayload.register();
+		SimpleDomainPayload.register();
+		FlameShockwavePayload.register();
 		PlayerAnimationPayload.register();
 		DomainCutscenePayload.register();
 		SpawnImagePayload.register();

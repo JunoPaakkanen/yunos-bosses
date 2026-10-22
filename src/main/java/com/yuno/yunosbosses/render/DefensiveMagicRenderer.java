@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.yuno.yunosbosses.spell.implementation.defensive.SphereBarrierSpell;
 import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.yuno.yunosbosses.util.SimpleDomainManager;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
@@ -56,7 +57,84 @@ public class DefensiveMagicRenderer {
                     renderBarrier(matrices, consumers, cameraPos, barrier, context);
                 }
             }
+
+            // Render active Simple Domain subtle blue spinning outer edge circles
+            for (SimpleDomainManager.ClientSimpleDomain simpleDomain : SimpleDomainManager.ACTIVE_SIMPLE_DOMAINS_CLIENT) {
+                renderSimpleDomainEdgeCircle(matrices, consumers, cameraPos, simpleDomain, context);
+            }
         });
+    }
+
+    // --- SIMPLE DOMAIN SUBTLE SPINNING OUTER EDGE CIRCLE ---
+    private static void renderSimpleDomainEdgeCircle(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d camera, SimpleDomainManager.ClientSimpleDomain simpleDomain, WorldRenderContext context) {
+        matrices.push();
+
+        Vec3d pos = simpleDomain.getCenter();
+        matrices.translate(pos.x - camera.x, pos.y - camera.y, pos.z - camera.z);
+
+        long time = context.world().getTime();
+        float tickDelta = context.tickCounter().getTickProgress(false);
+        float currentTicks = simpleDomain.getCurrentTicks() + tickDelta;
+        int remainingTicks = simpleDomain.getMaxTicks() - simpleDomain.getCurrentTicks();
+
+        // Smooth initial expansion over 8 ticks
+        float expansionProgress = Math.min(1.0F, currentTicks / 8.0F);
+        float scaleMultiplier = (float) Math.sin(expansionProgress * Math.PI * 0.5F);
+
+        // Smooth fade-out over the final 20 ticks
+        float fadeMultiplier = 1.0F;
+        if (remainingTicks < 20) {
+            fadeMultiplier = Math.max(0.0F, (remainingTicks - tickDelta) / 20.0F);
+        }
+
+        float radius = simpleDomain.getRadius() * scaleMultiplier;
+        if (radius <= 0.05F) {
+            matrices.pop();
+            return;
+        }
+
+        Matrix4f modelMatrix = matrices.peek().getPositionMatrix();
+        VertexConsumer bandBuffer = consumers.getBuffer(RenderLayer.getEntityTranslucentEmissive(BARRIER_TEXTURE));
+
+        float pulse = (float) Math.sin((time + tickDelta) * 0.12F);
+        // Subtle blue spinning outer edge circle matching Sphere Barrier's edge band
+        int bandAlpha = (int) (Math.max(10, Math.min(130, 82 + pulse * 22)) * fadeMultiplier);
+        float bandWidth = 0.35F + (radius * 0.02F);
+        float uOffset = (time + tickDelta) * 0.03F;
+
+        renderEdgeCircleBand(bandBuffer, modelMatrix, radius, 0.18F, bandWidth, uOffset, 140, 230, 255, bandAlpha, 44);
+
+        matrices.pop();
+    }
+
+    private static void renderEdgeCircleBand(VertexConsumer buffer, Matrix4f modelMatrix, float ringRadius, float yCenter, float bandWidth, float uOffset, int r, int g, int b, int alpha, int segs) {
+        float y0 = yCenter - bandWidth * 0.5F;
+        float y1 = yCenter + bandWidth * 0.5F;
+
+        for (int i = 0; i < segs; i++) {
+            float a0 = (float) (2.0 * Math.PI * i / segs);
+            float a1 = (float) (2.0 * Math.PI * (i + 1) / segs);
+
+            float x0 = (float) Math.cos(a0) * ringRadius;
+            float z0 = (float) Math.sin(a0) * ringRadius;
+            float x1 = (float) Math.cos(a1) * ringRadius;
+            float z1 = (float) Math.sin(a1) * ringRadius;
+
+            float u0 = ((float) i / segs) * 2.0F + uOffset;
+            float u1 = ((float) (i + 1) / segs) * 2.0F + uOffset;
+
+            // Outward face
+            buffer.vertex(modelMatrix, x0, y0, z0).color(r, g, b, alpha).texture(u0, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x1, y0, z1).color(r, g, b, alpha).texture(u1, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x1, y1, z1).color(r, g, b, alpha).texture(u1, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x0, y1, z0).color(r, g, b, alpha).texture(u0, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+
+            // Inward face (double-sided)
+            buffer.vertex(modelMatrix, x0, y1, z0).color(r, g, b, alpha).texture(u0, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x1, y1, z1).color(r, g, b, alpha).texture(u1, 0.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x1, y0, z1).color(r, g, b, alpha).texture(u1, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+            buffer.vertex(modelMatrix, x0, y0, z0).color(r, g, b, alpha).texture(u0, 1.0f).overlay(OverlayTexture.DEFAULT_UV).light(15728880).normal(0, 1, 0);
+        }
     }
 
     // --- MALEVOLENT SHRINE RENDERER (SHARED FOR BOTH OPEN AND CLOSED BARRIERS) ---

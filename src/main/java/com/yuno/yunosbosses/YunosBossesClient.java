@@ -13,9 +13,9 @@ import com.yuno.yunosbosses.render.gui.DomainClashOverlay;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneManager;
 import com.yuno.yunosbosses.render.gui.DomainCutsceneOverlay;
 import com.yuno.yunosbosses.render.gui.SpellChargeHudOverlay;
-import com.yuno.yunosbosses.util.ActiveBarrier;
 import com.yuno.yunosbosses.util.BeamManager;
 import com.yuno.yunosbosses.util.BarrierManager;
+import com.yuno.yunosbosses.util.SimpleDomainManager;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationAccess;
 import net.fabricmc.api.ClientModInitializer;
@@ -25,7 +25,6 @@ import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -44,6 +43,7 @@ public class YunosBossesClient implements ClientModInitializer {
         ProjectionSorceryRenderer.register();
         BlackFlashRenderer.register();
         DomainClashRenderer.register();
+        FlameArrowClientHelper.registerRenderer();
 
         // Register Entity Renderers
         EntityRendererRegistry.register(ModEntities.UBEL, UbelRenderer::new);
@@ -87,6 +87,8 @@ public class YunosBossesClient implements ClientModInitializer {
                 if (!isFrozen && !isPaused) {
                     BeamManager.tick();
                     BarrierManager.tick(client.world);
+                    SimpleDomainManager.tickClient();
+                    FlameArrowClientHelper.tick(client.world);
                     DomainCutsceneManager.tick();
                     DomainClashClient.tick();
                     DomainAtmosphereRenderer.tick(client);
@@ -132,6 +134,24 @@ public class YunosBossesClient implements ClientModInitializer {
                 }
 
                 ShaderManager.clearDomainShaders(context.client());
+            });
+        });
+
+        // Receiver for Simple Domain outer edge circle
+        ClientPlayNetworking.registerGlobalReceiver(SimpleDomainPayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                if (payload.active()) {
+                    SimpleDomainManager.addClientSimpleDomain(payload.casterUuid(), payload.center(), payload.radius(), payload.durationTicks());
+                } else {
+                    SimpleDomainManager.removeClientSimpleDomain(payload.casterUuid());
+                }
+            });
+        });
+
+        // Receiver for Flame Arrow expanding glowing orange edge circles
+        ClientPlayNetworking.registerGlobalReceiver(FlameShockwavePayload.ID, (payload, context) -> {
+            context.client().execute(() -> {
+                FlameArrowClientHelper.addShockwaveWaves(payload.center(), payload.maxRadius(), payload.isThermobaric());
             });
         });
 
