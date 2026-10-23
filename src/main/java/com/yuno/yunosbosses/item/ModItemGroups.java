@@ -22,6 +22,8 @@ public class ModItemGroups {
                         entries.add(ModItems.UBEL_STAFF);
                         entries.add(ModItems.METHODE_STAFF);
                         entries.add(ModItems.STRANGE_FRUIT);
+                        // Add armor
+                        entries.add(ModItems.KIMONO);
                         // Add spawn eggs
                         entries.add(ModItems.UBEL_SPAWN_EGG);
                         entries.add(ModItems.METHODE_SPAWN_EGG);

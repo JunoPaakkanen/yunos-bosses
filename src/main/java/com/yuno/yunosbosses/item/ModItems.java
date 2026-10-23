@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.item;
 
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.entity.ModEntities;
+import com.yuno.yunosbosses.item.custom.ModArmorMaterials;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.item.custom.StrangeFruitItem;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -9,6 +10,7 @@ import net.minecraft.component.type.FoodComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.SpawnEggItem;
+import net.minecraft.item.equipment.EquipmentType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -28,6 +30,9 @@ public class ModItems {
     public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", settings -> new StaffItem(settings, 1, 1), new Item.Settings().maxCount(1));
     public static final Item UBEL_STAFF = registerItem("ubel_staff", settings -> new StaffItem(settings, 1.4F, 1), new Item.Settings().maxCount(1));
     public static final Item METHODE_STAFF = registerItem("methode_staff", settings -> new StaffItem(settings, 1.2F, 1.2F), new Item.Settings().maxCount(1));
+
+    // Armor Items
+    public static final Item KIMONO = registerItem("kimono", settings -> new Item(settings.armor(ModArmorMaterials.KIMONO_ARMOR_MATERIAL, EquipmentType.CHESTPLATE)), new Item.Settings());
 
     // Spawn Eggs
     public static final Item UBEL_SPAWN_EGG = registerItem("ubel_spawn_egg", settings -> new SpawnEggItem(ModEntities.UBEL, settings), new Item.Settings());
@@ -50,6 +55,7 @@ public class ModItems {
             entries.add(BASIC_MAGICAL_STAFF);
             entries.add(UBEL_STAFF);
             entries.add(METHODE_STAFF);
+            entries.add(KIMONO);
         });
 
         // SPAWN EGGS
