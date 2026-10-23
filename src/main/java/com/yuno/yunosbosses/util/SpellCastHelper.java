@@ -7,6 +7,7 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.domain.clash.DomainClashManager;
 import com.yuno.yunosbosses.effect.AntiTeleportEffect;
 import com.yuno.yunosbosses.effect.ModEffects;
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.implementation.misc.DomainExpansion;
@@ -28,6 +29,16 @@ public class SpellCastHelper {
      * @return true if consumption (mana, health, or combined) succeeded.
      */
     public static boolean consumeManaOrHealth(PlayerEntity player, float manaCost) {
+        return consumeManaOrHealth(player, manaCost, false);
+    }
+
+    /**
+     * Attempts to consume mana, or if the Blood for Mana binding vow is active,
+     * drains available mana and converts any remaining mana deficit directly into player HP damage.
+     * @param isContinuousDrain whether this is continuous charging drain, which tones down particles so sightline stays clear
+     * @return true if consumption (mana, health, or combined) succeeded.
+     */
+    public static boolean consumeManaOrHealth(PlayerEntity player, float manaCost, boolean isContinuousDrain) {
         if (manaCost <= 0.0F) return true;
 
         var manaComponent = ModEntityComponents.MANA.get(player);
@@ -50,13 +61,23 @@ public class SpellCastHelper {
             }
 
             // Damage player using outOfWorld/generic damage so it bypasses armor and resistances
-            if (player.getWorld() instanceof ServerWorld serverWorld) {
+            if (!player.isCreative() && player.getWorld() instanceof ServerWorld serverWorld) {
+                player.timeUntilRegen = 0;
                 player.damage(serverWorld, player.getDamageSources().outOfWorld(), hpCost);
 
-                // Blood particles and hurt sound
-                serverWorld.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, player.getX(), player.getY() + 1.0, player.getZ(), 6, 0.2, 0.2, 0.2, 0.1);
-                serverWorld.playSound(null, player.getX(), player.getY(), player.getZ(),
-                        SoundEvents.ENTITY_PLAYER_HURT_SWEET_BERRY_BUSH, SoundCategory.PLAYERS, 0.8F, 0.8F);
+                boolean continuous = isContinuousDrain || (player.isUsingItem() && player.getActiveItem().getItem() instanceof StaffItem);
+
+                if (continuous) {
+                    // Spawn 2 subtle particles around waist level
+                    serverWorld.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, player.getX(), player.getY() + 0.4, player.getZ(), 2, 0.2, 0.1, 0.2, 0.05);
+                    serverWorld.playSound(null, player.getX(), player.getY(), player.getZ(),
+                            SoundEvents.ENTITY_PLAYER_HURT_SWEET_BERRY_BUSH, SoundCategory.PLAYERS, 0.6F, 0.8F);
+                } else {
+                    // One-off burst for instant casts
+                    serverWorld.spawnParticles(ParticleTypes.DAMAGE_INDICATOR, player.getX(), player.getY() + 0.7, player.getZ(), 4, 0.2, 0.2, 0.2, 0.1);
+                    serverWorld.playSound(null, player.getX(), player.getY(), player.getZ(),
+                            SoundEvents.ENTITY_PLAYER_HURT_SWEET_BERRY_BUSH, SoundCategory.PLAYERS, 0.8F, 0.8F);
+                }
             }
 
             return player.isAlive();
@@ -82,14 +103,14 @@ public class SpellCastHelper {
         // Vex Binding Vow check: If player has VexLifeLeechBindingVow active, cannot cast Summon Vex above 50% HP
         if (spell == ModSpells.SUMMON_VEX_SPELL && BindingVowManager.hasVow(player, VexLifeLeechBindingVow.ID)) {
             if (player.getHealth() > (player.getMaxHealth() * 0.5F)) {
-                player.sendMessage(Text.literal("§c[Binding Vow] You cannot cast Summon Vex while above 50% HP!§r"), true);
+                player.sendMessage(Text.literal("\u00a7c[Binding Vow] You cannot cast Summon Vex while above 50% HP!\u00a7r"), true);
                 return false;
             }
         }
 
         if (spell instanceof DomainExpansion && DomainClashManager.hasBurnout(player.getUuid())) {
             int sec = DomainClashManager.getBurnoutSeconds(player.getUuid());
-            player.sendMessage(Text.literal("§cCannot expand domain! Technique Burnout (" + sec + "s remaining)§r"), true);
+            player.sendMessage(Text.literal("\u00a7cCannot expand domain! Technique Burnout (" + sec + "s remaining)\u00a7r"), true);
             return false;
         }
 
@@ -103,6 +124,11 @@ public class SpellCastHelper {
         }
 
         float baseManaCost = spell.getManaCost(player);
+
+        // Reverse Cursed Technique cannot be cast using health via Blood for Mana
+        if (spell == ModSpells.REVERSE_CURSED_TECHNIQUE) {
+            return ModEntityComponents.MANA.get(player).useMana(baseManaCost);
+        }
 
         return consumeManaOrHealth(player, baseManaCost);
     }

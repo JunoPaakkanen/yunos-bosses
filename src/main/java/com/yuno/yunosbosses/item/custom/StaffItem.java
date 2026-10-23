@@ -87,17 +87,27 @@ public class StaffItem extends Item {
         if (active != null) {
             // After 1 second, start draining additional mana for "Overcharging"
             if (ticksUsed > 20) {
-                // Drain a small amount of mana every tick (5% of base cost per tick)
-                float drainRate = active.getManaCost(user) * 0.05f;
-
                 if (user instanceof PlayerEntity player) {
-                    if (!SpellCastHelper.consumeManaOrHealth(player, drainRate)) {
-                        // Out of mana and health! Force release the spell early.
+                    var mana = ModEntityComponents.MANA.get(player);
+                    if (mana.getMana() > 0) {
+                        // Drain mana smoothly every tick (5% of base cost per tick) while mana remains
+                        float drainRate = active.getManaCost(user) * 0.05f;
+                        if (!SpellCastHelper.consumeManaOrHealth(player, drainRate, true)) {
+                            user.stopUsingItem();
+                        }
+                    } else if (ticksUsed % 5 == 0) {
+                        // Once mana is empty, apply health drain in discrete pulses every 5 ticks (0.25s)
+                        float pulseCost = active.getManaCost(user) * 0.25f;
+                        if (!SpellCastHelper.consumeManaOrHealth(player, pulseCost, true)) {
+                            user.stopUsingItem();
+                        }
+                    }
+                } else {
+                    float drainRate = active.getManaCost(user) * 0.05f;
+                    if (!ModEntityComponents.MANA.get(user).useMana(drainRate)) {
+                        // Out of mana! Force release the spell early.
                         user.stopUsingItem();
                     }
-                } else if (!ModEntityComponents.MANA.get(user).useMana(drainRate)) {
-                    // Out of mana! Force release the spell early.
-                    user.stopUsingItem();
                 }
             }
 

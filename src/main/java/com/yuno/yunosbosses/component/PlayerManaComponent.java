@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.component;
 
 import com.mojang.serialization.Codec;
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.storage.ReadView;
@@ -33,6 +34,11 @@ public class PlayerManaComponent implements ManaComponent, AutoSyncedComponent, 
 
     @Override
     public void serverTick() {
+        // Pause mana regeneration while actively charging a spell with a staff
+        if (player.isUsingItem() && player.getActiveItem().getItem() instanceof StaffItem) {
+            return;
+        }
+
         if (this.manaRegen > 0.0f && mana < maxMana) {
             mana = Math.min(mana + this.manaRegen, maxMana);
             if (mana >= maxMana) {
