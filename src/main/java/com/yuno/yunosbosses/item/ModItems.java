@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.item;
 
 import com.yuno.yunosbosses.YunosBosses;
 import com.yuno.yunosbosses.entity.ModEntities;
+import com.yuno.yunosbosses.item.custom.KimonoItem;
 import com.yuno.yunosbosses.item.custom.ModArmorMaterials;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.item.custom.StrangeFruitItem;
@@ -32,7 +33,7 @@ public class ModItems {
     public static final Item METHODE_STAFF = registerItem("methode_staff", settings -> new StaffItem(settings, 1.2F, 1.2F), new Item.Settings().maxCount(1));
 
     // Armor Items
-    public static final Item KIMONO = registerItem("kimono", settings -> new Item(settings.armor(ModArmorMaterials.KIMONO_ARMOR_MATERIAL, EquipmentType.CHESTPLATE)), new Item.Settings());
+    public static final Item KIMONO = registerItem("kimono", settings -> new KimonoItem(settings.armor(ModArmorMaterials.KIMONO_ARMOR_MATERIAL, EquipmentType.CHESTPLATE)), new Item.Settings());
 
     // Spawn Eggs
     public static final Item UBEL_SPAWN_EGG = registerItem("ubel_spawn_egg", settings -> new SpawnEggItem(ModEntities.UBEL, settings), new Item.Settings());

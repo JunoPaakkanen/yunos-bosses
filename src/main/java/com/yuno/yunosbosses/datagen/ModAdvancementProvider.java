@@ -84,7 +84,7 @@ public class ModAdvancementProvider extends FabricAdvancementProvider {
         AdvancementEntry naoyaAdvancement = Advancement.Builder.create()
                 .parent(rootAdvancement)
                 .display(
-                        ModItems.METHODE_STAFF.getDefaultStack(),
+                        ModItems.KIMONO.getDefaultStack(),
                         Text.translatable("advancements.yunosbosses.naoya.title"),
                         Text.translatable("advancements.yunosbosses.naoya.description"),
                         null,

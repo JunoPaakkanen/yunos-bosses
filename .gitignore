@@ -42,3 +42,5 @@ replay_*.log
 /src/main/generated/data/yunosbosses/advancement/root.json
 /src/main/generated/data/yunosbosses/advancement/recipes/combat/basic_magical_staff.json
 /src/main/generated/data/yunosbosses/recipe/basic_magical_staff.json
+/src/main/generated/data/yunosbosses/advancement/defeat_methode.json
+/src/main/generated/data/yunosbosses/advancement/defeat_naoya.json

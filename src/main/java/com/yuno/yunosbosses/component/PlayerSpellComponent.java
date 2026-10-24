@@ -2,9 +2,11 @@ package com.yuno.yunosbosses.component;
 
 import com.mojang.serialization.Codec;
 import com.yuno.yunosbosses.effect.ModEffects;
+import com.yuno.yunosbosses.item.ModItems;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -325,6 +327,17 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
     }
 
     @Override
+    public boolean isSpellEquipped(Spell spell) {
+        for (int i = 0; i < this.maxSpellSlots; i++) {
+            Spell equippedSpell = this.equippedSpells[i];
+            if (equippedSpell != null && equippedSpell.getId().equals(spell.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public boolean unlockedOpenDomain() {
         return this.openDomainUnlocked;
     }
@@ -372,6 +385,18 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
         this.projectionIndex = index;
     }
 
+    private boolean isKimonoFloorActive() {
+        return this.player.getEquippedStack(EquipmentSlot.CHEST).isOf(ModItems.KIMONO)
+                && isSpellEquipped(ModSpells.PROJECTION_SORCERY);
+    }
+
+    private int getDecayFloor() {
+        if (isKimonoFloorActive() && this.projectionSpeedStacks >= 2) {
+            return 2;
+        }
+        return 0;
+    }
+
     @Override
     public void addSpeedStack() {
         // Cap speed stacks at 15
@@ -410,7 +435,8 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
 
     @Override
     public void setSpeedStacks(int stacks) {
-        this.projectionSpeedStacks = Math.min(Math.max(stacks, 0), 15);
+        int floor = getDecayFloor();
+        this.projectionSpeedStacks = Math.min(Math.max(stacks, floor), 15);
         this.speedStackDecayTimer = 0;
         updateSpeedAttribute();
         ModEntityComponents.SPELL_DATA.sync(this.player);
@@ -477,8 +503,8 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
                     if (this.projectionIndex < ProjectionSorcery.IMAGE_COUNT) {
                         // Get the player and apply the penalty
                         this.player.addStatusEffect(new StatusEffectInstance(ModEffects.FRAME_FREEZE, 40, 0, false, false, true));
-                        // Delete speed stacks
-                        this.projectionSpeedStacks = 0;
+                        // Set speed stacks to decay floor (retains 2 if kimono + projection sorcery active and earned >= 2, otherwise 0)
+                        this.projectionSpeedStacks = getDecayFloor();
                         updateSpeedAttribute();
                     }
                     // Clean up the projection images
@@ -501,22 +527,27 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             }
         }
 
-        // If a timer expired naturally, sync the component to the client
-        if (needsSync[0]) ModEntityComponents.SPELL_DATA.sync(this.player);
+        int targetFloor = getDecayFloor();
 
         if (this.speedStackDecayTimer > 0) {
             this.speedStackDecayTimer--;
-            if (this.speedStackDecayTimer <= 0 && this.projectionSpeedStacks > 0) {
+            if (this.speedStackDecayTimer <= 0 && this.projectionSpeedStacks > targetFloor) {
                 this.projectionSpeedStacks--; // Lose one stack
                 // Update the speed attribute
                 updateSpeedAttribute();
 
-                if (this.projectionSpeedStacks > 0) {
+                if (this.projectionSpeedStacks > targetFloor) {
                     this.speedStackDecayTimer = 30; // The next stack decays in 1.5 seconds
                 }
-                ModEntityComponents.SPELL_DATA.sync(this.player);
+                needsSync[0] = true;
             }
+        } else if (this.projectionSpeedStacks > targetFloor) {
+            // When Kimono is unequipped, spell is removed, or stacks are above floor without a decay timer running
+            this.speedStackDecayTimer = 60;
         }
+
+        // If a timer expired naturally or stacks updated, sync the component to the client
+        if (needsSync[0]) ModEntityComponents.SPELL_DATA.sync(this.player);
 
         // Delegate high-speed pass-by ramming to ProjectionSorcery
         if (this.player instanceof PlayerEntity playerEntity) {

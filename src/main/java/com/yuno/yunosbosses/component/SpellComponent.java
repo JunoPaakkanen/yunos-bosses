@@ -37,6 +37,8 @@ public interface SpellComponent extends Component, AutoSyncedComponent, ServerTi
 
     boolean canChangeSpell();
 
+    boolean isSpellEquipped(Spell spell);
+
     // Unlocks
     boolean unlockedOpenDomain();
     void unlockOpenDomain();
