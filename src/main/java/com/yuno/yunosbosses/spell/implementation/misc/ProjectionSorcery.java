@@ -11,10 +11,12 @@ import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.InnateHudData;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
+import com.yuno.yunosbosses.util.BlackFlash;
 import com.yuno.yunosbosses.util.DelayedServerEffects;
 import com.yuno.yunosbosses.util.WallSlamData;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
@@ -381,9 +383,20 @@ public class ProjectionSorcery extends Spell {
             double y = entity.getY() + (entity.getHeight() / 2.0); // Center at torso height
             double z = entity.getZ();
 
+            // Get the attacker
+            LivingEntity attacker = null;
+            if (source != null) {
+                attacker = (LivingEntity) source.getAttacker();
+            }
+
+            // Additional Black Flash chance (2%) upon shattering a frame
+            if (attacker != null) {
+                BlackFlash.blackFlashChance(attacker, entity, 0.02F);
+            }
+
             // Play Frame Shatter sound effect (variation depends on damage)
-            if (damage > entity.getHealth() * 0.5) { // Trigger Finisher
-                serverWorld.playSound(null, x, y, z, ModSounds.FRAME_SHATTER_FINISHER, SoundCategory.PLAYERS, 1.25F, 1.0F);
+            if (damage > entity.getMaxHealth() * 0.5F) {
+                serverWorld.playSound(null, x, y, z, ModSounds.FRAME_SHATTER_FINISHER, SoundCategory.PLAYERS, 1.0F, 1.0F);
             }
             else if (damage > 0.0) {
                 serverWorld.playSound(null, x, y, z, ModSounds.FRAME_SHATTER_FROM_DAMAGE, SoundCategory.PLAYERS, 1.0F, 1.0F);

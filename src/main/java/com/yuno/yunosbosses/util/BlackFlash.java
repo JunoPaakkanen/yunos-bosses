@@ -2,7 +2,6 @@ package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.TransformationComponent;
-import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.network.BlackFlashPayload;
 import com.yuno.yunosbosses.particle.ModParticles;
 import com.yuno.yunosbosses.sound.BlackFlashSoundManager;
@@ -12,6 +11,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -20,11 +20,21 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Vec3d;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BlackFlash {
 
     private static final UUID NIL_UUID = new UUID(0L, 0L);
+    private static final Map<UUID, Long> LAST_BLACK_FLASH_TICK = new ConcurrentHashMap<>();
+
+    // Prevent multiple Black Flashes from being triggered in the same tick
+    public static boolean hasTriggeredThisTick(LivingEntity user) {
+        if (user == null || user.getWorld().isClient()) return false;
+        Long lastTick = LAST_BLACK_FLASH_TICK.get(user.getUuid());
+        return lastTick != null && lastTick == user.getWorld().getTime();
+    }
 
     public static void blackFlash(LivingEntity user, LivingEntity target) {
         triggerBlackFlash(user, target, false, 1);
@@ -38,6 +48,18 @@ public class BlackFlash {
         triggerBlackFlash(user, target, true, 4);
     }
 
+    // Non-chaining Black Flash chance for Mob Entities, as they do not have a transformation component for tracking chains.
+    public static boolean blackFlashChanceNonChaining(MobEntity user, LivingEntity target, float baseChance) {
+        if (hasTriggeredThisTick(user)) {
+            return false;
+        }
+        if (user.getWorld().random.nextFloat() < baseChance) {
+            triggerBlackFlash(user, target, false, 0);
+            return true;
+        }
+        return false;
+    }
+
     public static boolean blackFlashChance(LivingEntity user, LivingEntity target) {
         return blackFlashChance(user, target, 0.03f);
     }
@@ -48,6 +70,14 @@ public class BlackFlash {
 
     public static boolean blackFlashChance(LivingEntity user, LivingEntity target, float baseChance) {
         if (user.getWorld().isClient) return false;
+
+        if (hasTriggeredThisTick(user)) {
+            return false;
+        }
+        if (user instanceof MobEntity mobUser) {
+            blackFlashChanceNonChaining(mobUser, target, baseChance);
+            return false;
+        }
 
         TransformationComponent component = ModEntityComponents.TRANSFORMATION_DATA.getNullable(user);
         float effectiveChance = baseChance;
@@ -93,6 +123,10 @@ public class BlackFlash {
     private static void triggerBlackFlash(LivingEntity user, LivingEntity target, boolean isFinisher, int chainCount) {
         if (user.getWorld().isClient) return;
         if (!(user.getWorld() instanceof ServerWorld serverWorld)) return;
+
+        if (user != null) {
+            LAST_BLACK_FLASH_TICK.put(user.getUuid(), serverWorld.getTime());
+        }
 
         Vec3d impactPos = target.getBoundingBox().getCenter();
         UUID attackerUuid = user != null ? user.getUuid() : NIL_UUID;
