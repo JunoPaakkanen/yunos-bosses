@@ -53,7 +53,7 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
                 .add(EntityAttributes.MOVEMENT_SPEED, 0.25f)
                 .add(EntityAttributes.FOLLOW_RANGE, 48.0D)
                 .add(EntityAttributes.ARMOR, 10.0D)
-                .add(EntityAttributes.ATTACK_DAMAGE, 10.0D)
+                .add(EntityAttributes.ATTACK_DAMAGE, 14.0D)
                 .add(EntityAttributes.WATER_MOVEMENT_EFFICIENCY, 0.4);
     }
 
@@ -105,6 +105,10 @@ public class UbelEntity extends PathAwareEntity implements GeoEntity, YunosBossE
         var movementSpeedAttr = this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED);
         if (movementSpeedAttr != null) {
             movementSpeedAttr.setBaseValue(isDuo ? 0.27D : 0.25D);
+        }
+        var attackDamageAttr = this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE);
+        if (attackDamageAttr != null) {
+            attackDamageAttr.setBaseValue(isDuo ? 16.0D : 14.0D);
         }
         this.difficultyInitialized = true;
     }
