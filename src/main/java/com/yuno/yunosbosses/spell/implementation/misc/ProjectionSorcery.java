@@ -26,6 +26,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -50,8 +51,6 @@ public class ProjectionSorcery extends Spell {
     Recasting the spell will instantly teleport the caster to the next image. Failing to teleport through all images within the time limit
     will result in the caster being frozen for 2 seconds.
     After teleporting through all the images, you will receive a speed boost.
-    Hitting an entity within 0.5 seconds of casting the spell will instead turn the trajectory of the images from a line to a circle, surrounding the hit entity.
-    Each time you teleport through these images, you will re-hit that entity (dealing reduced damage per hit).
      */
 
     public static final int IMAGE_COUNT = 5;
@@ -463,6 +462,21 @@ public class ProjectionSorcery extends Spell {
             }
         }
         return 20.0F; // Cost for default cast
+    }
+
+    @Override
+    public Text getManaCostTooltip(PlayerEntity player) {
+        return Text.literal("Mana Cost: 20 (+3 per frame step)").formatted(Formatting.AQUA);
+    }
+
+    @Override
+    public void appendVariantTooltips(PlayerEntity player, List<Text> tooltip) {
+        tooltip.add(Text.literal("• Recast (Alt-Cast): ").formatted(Formatting.GOLD)
+                .append(Text.literal("Teleport through 5 projected frames within 5s (+1 Speed Stack; freezing penalty on fail)").formatted(Formatting.GRAY)));
+        tooltip.add(Text.literal("• Passive (Frame Meter): ").formatted(Formatting.GOLD)
+                .append(Text.literal("Melee hits build meter (+25%); at 100%, freezes hit entities").formatted(Formatting.GRAY)));
+        tooltip.add(Text.literal("• Passive (10+ Speed): ").formatted(Formatting.GOLD)
+                .append(Text.literal("Sprinting rams into enemies").formatted(Formatting.GRAY)));
     }
 
     @Override

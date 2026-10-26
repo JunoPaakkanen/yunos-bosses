@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.BindingVowComponent;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.event.ModKeybindings;
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.network.EquipSpellPayload;
 import com.yuno.yunosbosses.network.ToggleBindingVowPayload;
 import com.yuno.yunosbosses.spell.Spell;
@@ -12,6 +13,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -408,6 +410,64 @@ public class SpellInventoryScreen extends Screen {
         context.drawCenteredTextWithShadow(this.textRenderer, "Cancel", cancelX + btnW / 2, btnY + 4, 0xFFCDD6F4);
     }
 
+    private boolean hasStaffInInventory(PlayerEntity player) {
+        if (player == null) return false;
+        if (player.getMainHandStack().getItem() instanceof StaffItem
+                || player.getOffHandStack().getItem() instanceof StaffItem) {
+            return true;
+        }
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.size(); i++) {
+            if (inventory.getStack(i).getItem() instanceof StaffItem) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void appendSpellStatsAndVariants(List<OrderedText> tooltipLines, Spell spell) {
+        PlayerEntity player = this.client != null ? this.client.player : null;
+
+        // 1. Mana Cost (Dynamic per spell)
+        tooltipLines.add(spell.getManaCostTooltip(player).asOrderedText());
+
+        // 2. Cast Requirement & Missing Staff Warning
+        if (spell.canCastWithoutStaff()) {
+            tooltipLines.add(Text.literal("Cast: Hand or Staff").formatted(Formatting.GREEN).asOrderedText());
+        } else {
+            if (hasStaffInInventory(player)) {
+                tooltipLines.add(Text.literal("Cast: Requires Staff").formatted(Formatting.YELLOW).asOrderedText());
+            } else {
+                tooltipLines.add(Text.literal("Cast: Requires Staff (Missing!)").formatted(Formatting.RED).asOrderedText());
+            }
+        }
+
+        // 3. Cast Type & Chargeable Note
+        if (spell.canBeCharged()) {
+            if (spell.canCastWithoutStaff()) {
+                tooltipLines.add(Text.literal("Type: Chargeable (via Staff)").formatted(Formatting.LIGHT_PURPLE).asOrderedText());
+            } else {
+                tooltipLines.add(Text.literal("Type: Chargeable (I-III)").formatted(Formatting.LIGHT_PURPLE).asOrderedText());
+            }
+        } else {
+            tooltipLines.add(Text.literal("Type: Instant Cast").formatted(Formatting.GRAY).asOrderedText());
+        }
+
+        // 4. [Shift] Expanded Special Cast Variants
+        List<Text> variants = new ArrayList<>();
+        spell.appendVariantTooltips(player, variants);
+        if (!variants.isEmpty()) {
+            if (Screen.hasShiftDown()) {
+                tooltipLines.add(Text.literal("Variants & Passives:").formatted(Formatting.YELLOW).asOrderedText());
+                for (Text variant : variants) {
+                    tooltipLines.addAll(this.textRenderer.wrapLines(variant, 185));
+                }
+            } else {
+                tooltipLines.add(Text.literal("[Hold Shift for Variants]").formatted(Formatting.DARK_GRAY, Formatting.ITALIC).asOrderedText());
+            }
+        }
+    }
+
     private void drawKnownSpellsGrid(DrawContext context, List<Spell> knownSpells, int mouseX, int mouseY) {
         int startX = guiLeft + 45;
         int startY = guiTop + 30;
@@ -440,17 +500,19 @@ public class SpellInventoryScreen extends Screen {
             if (isHovering(x, y, slotSize, slotSize, mouseX, mouseY)) {
                 context.fill(x, y, x + slotSize, y + slotSize, 0x40FFFFFF);
 
-                List<Text> tooltip = new ArrayList<>();
-                tooltip.add(spell.getName().copy().formatted(spell.getRarity().getFormatting()));
+                List<OrderedText> tooltipLines = new ArrayList<>();
+                tooltipLines.add(spell.getName().copy().formatted(spell.getRarity().getFormatting()).asOrderedText());
 
                 if (spell.isInnateTechnique()) {
-                    tooltip.add(Text.literal("\u2726 Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC));
+                    tooltipLines.add(Text.literal("\u2726 Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC).asOrderedText());
                 }
 
-                tooltip.add(Text.literal(spell.getRarity().getName() + " Spell")
-                        .formatted(Formatting.DARK_GRAY));
+                tooltipLines.add(Text.literal(spell.getRarity().getName() + " Spell")
+                        .formatted(Formatting.DARK_GRAY).asOrderedText());
 
-                context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
+                appendSpellStatsAndVariants(tooltipLines, spell);
+
+                context.drawOrderedTooltip(this.textRenderer, tooltipLines, mouseX, mouseY);
             }
         }
     }
@@ -496,33 +558,35 @@ public class SpellInventoryScreen extends Screen {
                     context.fill(sidebarX, y, sidebarX + slotSize, y + slotSize, 0x40FFFFFF);
                 }
 
-                List<Text> tooltip = new ArrayList<>();
+                List<OrderedText> tooltipLines = new ArrayList<>();
                 if (isInnateSlot) {
                     if (equipped != null) {
-                        tooltip.add(Text.literal("Innate Slot: ").append(equipped.getName().copy().formatted(equipped.getRarity().getFormatting())));
+                        tooltipLines.add(Text.literal("Innate Slot: ").append(equipped.getName().copy().formatted(equipped.getRarity().getFormatting())).asOrderedText());
                         if (equipped.isInnateTechnique()) {
-                            tooltip.add(Text.literal("\u2726 Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC));
+                            tooltipLines.add(Text.literal("\u2726 Innate Technique").formatted(Formatting.GOLD, Formatting.ITALIC).asOrderedText());
                         }
-                        tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell").formatted(Formatting.GRAY));
-                        tooltip.add(Text.literal("Right-click to unequip").formatted(Formatting.DARK_GRAY));
+                        tooltipLines.add(Text.literal(equipped.getRarity().getName() + " Spell").formatted(Formatting.DARK_GRAY).asOrderedText());
+                        appendSpellStatsAndVariants(tooltipLines, equipped);
+                        tooltipLines.add(Text.literal("Right-click to unequip").formatted(Formatting.DARK_GRAY).asOrderedText());
                     } else {
-                        tooltip.add(Text.literal("Innate Technique Slot: Empty").formatted(Formatting.GOLD));
-                        tooltip.add(Text.literal("Can hold any spell (Required for Innate Techniques)").formatted(Formatting.DARK_GRAY));
+                        tooltipLines.add(Text.literal("Innate Technique Slot: Empty").formatted(Formatting.GOLD).asOrderedText());
+                        tooltipLines.add(Text.literal("Can hold any spell (Required for Innate Techniques)").formatted(Formatting.DARK_GRAY).asOrderedText());
                     }
                 } else {
                     if (equipped != null) {
-                        tooltip.add(Text.literal("Slot " + (i + 1) + ": ").append(equipped.getName().copy().formatted(equipped.getRarity().getFormatting())));
-                        tooltip.add(Text.literal(equipped.getRarity().getName() + " Spell").formatted(Formatting.GRAY));
-                        tooltip.add(Text.literal("Right-click to unequip").formatted(Formatting.DARK_GRAY));
+                        tooltipLines.add(Text.literal("Slot " + (i + 1) + ": ").append(equipped.getName().copy().formatted(equipped.getRarity().getFormatting())).asOrderedText());
+                        tooltipLines.add(Text.literal(equipped.getRarity().getName() + " Spell").formatted(Formatting.DARK_GRAY).asOrderedText());
+                        appendSpellStatsAndVariants(tooltipLines, equipped);
+                        tooltipLines.add(Text.literal("Right-click to unequip").formatted(Formatting.DARK_GRAY).asOrderedText());
                     } else {
-                        tooltip.add(Text.literal("Slot " + (i + 1) + ": Empty").formatted(Formatting.DARK_GRAY));
+                        tooltipLines.add(Text.literal("Slot " + (i + 1) + ": Empty").formatted(Formatting.DARK_GRAY).asOrderedText());
                     }
 
                     if (this.selectedSpell != null && this.selectedSpell.isInnateTechnique()) {
-                        tooltip.add(Text.literal("Cannot equip Innate Technique in this slot!").formatted(Formatting.RED));
+                        tooltipLines.add(Text.literal("Cannot equip Innate Technique in this slot!").formatted(Formatting.RED).asOrderedText());
                     }
                 }
-                context.drawTooltip(this.textRenderer, tooltip, mouseX, mouseY);
+                context.drawOrderedTooltip(this.textRenderer, tooltipLines, mouseX, mouseY);
             }
         }
     }

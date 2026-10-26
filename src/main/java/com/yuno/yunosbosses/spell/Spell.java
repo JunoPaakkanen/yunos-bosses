@@ -6,8 +6,11 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.world.World;
 import net.minecraft.util.Identifier;
+
+import java.util.List;
 
 public abstract class Spell {
     private final Identifier id;
@@ -50,6 +53,22 @@ public abstract class Spell {
 
     public float getManaCost(LivingEntity caster) {
         return 10.0F;
+    }
+
+    public Text getManaCostTooltip(PlayerEntity player) {
+        float cost = getManaCost(player);
+        return Text.literal("Mana Cost: " + formatManaValue(cost)).formatted(Formatting.AQUA);
+    }
+
+    public void appendVariantTooltips(PlayerEntity player, List<Text> tooltip) {
+        // Override in subclasses with special cast variants or passives
+    }
+
+    protected static String formatManaValue(float value) {
+        if (value == (int) value) {
+            return String.valueOf((int) value);
+        }
+        return String.format("%.1f", value);
     }
 
     public Identifier getId() {

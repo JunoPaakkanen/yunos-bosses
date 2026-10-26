@@ -39,6 +39,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -370,6 +371,21 @@ public class DomainExpansionShrine extends DomainExpansion {
     @Override
     public boolean canBeCharged() {
         return true;
+    }
+
+    @Override
+    public void appendVariantTooltips(PlayerEntity player, List<Text> tooltip) {
+        boolean unlockedOpen = player != null && ModEntityComponents.SPELL_DATA.get(player).unlockedOpenDomain();
+        if (unlockedOpen) {
+            tooltip.add(Text.literal("• Sneak Cast: ").formatted(Formatting.GOLD)
+                    .append(Text.literal("Expands an Open-Barrier Domain").formatted(Formatting.GRAY)));
+        } else {
+            tooltip.add(Text.literal("• Sneak Cast: ").formatted(Formatting.GOLD)
+                    .append(Text.literal("Expands an Open-Barrier Domain ").formatted(Formatting.GRAY))
+                    .append(Text.literal("(Locked)").formatted(Formatting.DARK_GRAY)));
+        }
+        tooltip.add(Text.literal("• Recast (Alt-Cast): ").formatted(Formatting.GOLD)
+                .append(Text.literal("Teleports atop the central Shrine within 5s").formatted(Formatting.GRAY)));
     }
 
     @Override

@@ -20,6 +20,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -227,5 +228,13 @@ public class CuttingMagicReelseiden extends Spell {
     @Override
     public boolean canBeCharged() {
         return false;
+    }
+
+    @Override
+    public void appendVariantTooltips(PlayerEntity player, List<Text> tooltip) {
+        tooltip.add(Text.literal("• Combo Cast: ").formatted(Formatting.GOLD)
+                .append(Text.literal("Chain 3 casts rapidly for a Cross-Cleave finisher").formatted(Formatting.GRAY)));
+        tooltip.add(Text.literal("• Sneak Cast: ").formatted(Formatting.GOLD)
+                .append(Text.literal("Tactical Dust Screen").formatted(Formatting.GRAY)));
     }
 }

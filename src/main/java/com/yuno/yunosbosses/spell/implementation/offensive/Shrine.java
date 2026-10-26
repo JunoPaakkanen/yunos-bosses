@@ -38,6 +38,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -586,6 +587,14 @@ public class Shrine extends Spell {
     @Override
     public float getManaCost(LivingEntity caster) {
         return 80.0F;
+    }
+
+    @Override
+    public void appendVariantTooltips(PlayerEntity player, List<Text> tooltip) {
+        tooltip.add(Text.literal("• Normal Cast: ").formatted(Formatting.GOLD)
+                .append(Text.literal("Fires Dismantle slashes (+10% Open meter)").formatted(Formatting.GRAY)));
+        tooltip.add(Text.literal("• Sneak Cast: ").formatted(Formatting.GOLD)
+                .append(Text.literal("Fires Divine Flame Arrow (Requires 100% Open meter)").formatted(Formatting.GRAY)));
     }
 
     @Override

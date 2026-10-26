@@ -12,6 +12,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.VexEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
@@ -21,9 +22,12 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public class SummonVexSpell extends Spell {
 
@@ -48,6 +52,21 @@ public class SummonVexSpell extends Spell {
             return staffItem.getPowerMultiplier() >= 1.2F ? 70.0F : 50.0F;
         }
         return 50.0F;
+    }
+
+    @Override
+    public Text getManaCostTooltip(PlayerEntity player) {
+        float cost = player != null ? getManaCost(player) : 50.0F;
+        if (cost > 50.0F) {
+            return Text.literal("Mana Cost: 70 (Upgraded Staff)").formatted(Formatting.AQUA);
+        }
+        return Text.literal("Mana Cost: 50").formatted(Formatting.AQUA);
+    }
+
+    @Override
+    public void appendVariantTooltips(PlayerEntity player, List<Text> tooltip) {
+        tooltip.add(Text.literal("• Upgraded Staff (1.2x+): ").formatted(Formatting.GOLD)
+                .append(Text.literal("Summons 2 Vexes instead of 1 (70 Mana)").formatted(Formatting.GRAY)));
     }
 
     @Override

@@ -6,14 +6,18 @@ import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.spell.SpellRarity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public class ReverseCursedTechnique extends Spell {
 
@@ -26,6 +30,19 @@ public class ReverseCursedTechnique extends Spell {
             return ModEntityComponents.MANA.get(caster).getMaxMana();
         }
         return 50.0F;
+    }
+
+    @Override
+    public Text getManaCostTooltip(PlayerEntity player) {
+        return Text.literal("Mana Cost: 50").formatted(Formatting.AQUA);
+    }
+
+    @Override
+    public void appendVariantTooltips(PlayerEntity player, List<Text> tooltip) {
+        tooltip.add(Text.literal("• Normal Cast: ").formatted(Formatting.GOLD)
+                .append(Text.literal("Restores health").formatted(Formatting.GRAY)));
+        tooltip.add(Text.literal("• Sneak Cast (in Burnout): ").formatted(Formatting.GOLD)
+                .append(Text.literal("Resets Technique Burnout, inflicts Brain Damage").formatted(Formatting.GRAY)));
     }
 
     @Override
