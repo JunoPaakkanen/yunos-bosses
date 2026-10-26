@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.entity.goal.ability;
 
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.Spell;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
@@ -27,6 +28,7 @@ public class SpellCastAbility implements BossAbility {
 
     @Override
     public boolean canUse(MobEntity boss, LivingEntity target, double distanceSq) {
+        if (boss.hasStatusEffect(ModEffects.FRAME_FREEZE)) return false;
         return distanceSq >= minDistanceSq && distanceSq <= maxDistanceSq;
     }
 
@@ -42,6 +44,7 @@ public class SpellCastAbility implements BossAbility {
 
     @Override
     public void execute(MobEntity boss, LivingEntity target) {
+        if (boss.hasStatusEffect(ModEffects.FRAME_FREEZE)) return;
         if (target != null && target.isAlive()) {
             boss.setTarget(target);
             boss.setAttacking(true);

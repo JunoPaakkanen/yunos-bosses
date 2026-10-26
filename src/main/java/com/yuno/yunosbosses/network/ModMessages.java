@@ -5,6 +5,7 @@ import com.yuno.yunosbosses.binding_vow.BindingVowManager;
 import com.yuno.yunosbosses.binding_vow.ModBindingVows;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.domain.clash.DomainClashManager;
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.Spell;
@@ -72,6 +73,8 @@ public class ModMessages {
         ServerPlayNetworking.registerGlobalReceiver(CastSpellPayload.ID, (payload, context) -> {
             context.server().execute(() -> {
                 var player = context.player();
+                if (player.hasStatusEffect(ModEffects.FRAME_FREEZE)) return;
+
                 Spell spell = ModSpells.getSpell(payload.spellId());
 
                 if (spell != null && spell.canCastWithoutStaff()) {

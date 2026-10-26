@@ -6,6 +6,7 @@ import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
+import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.util.BossContributionTracker;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
@@ -189,8 +190,15 @@ public abstract class LivingEntityMixin {
             }
         }
 
-        // Play the Frame Freeze sound when the Frame Freeze effect is applied
+        // Play the Frame Freeze sound and forcefully release any charging staff spell when Frame Freeze is applied
         if (effect.getEffectType().value() == ModEffects.FRAME_FREEZE.value()) {
+            if (entity.isUsingItem()) {
+                if (entity.getActiveItem().getItem() instanceof StaffItem) {
+                    entity.stopUsingItem();
+                } else {
+                    entity.clearActiveItem();
+                }
+            }
             if (!entity.getWorld().isClient() && entity.getWorld() instanceof ServerWorld serverWorld) {
                 serverWorld.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
                         ModSounds.FRAME_FREEZE, SoundCategory.PLAYERS, 1.0F, 1.0F);
@@ -221,6 +229,14 @@ public abstract class LivingEntityMixin {
         LivingEntity entity = (LivingEntity) (Object) this;
 
         if (entity.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
+            if (entity.isUsingItem()) {
+                if (entity.getActiveItem().getItem() instanceof StaffItem) {
+                    entity.stopUsingItem();
+                } else {
+                    entity.clearActiveItem();
+                }
+            }
+
             // Lock velocity
             entity.setVelocity(Vec3d.ZERO);
             entity.velocityDirty = true;

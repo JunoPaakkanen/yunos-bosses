@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.item.custom;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.spell.Spell;
 import com.yuno.yunosbosses.util.SpellCastHelper;
 import net.minecraft.component.type.TooltipDisplayComponent;
@@ -49,6 +50,10 @@ public class StaffItem extends Item {
 
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
+        if (user.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
+            return ActionResult.FAIL;
+        }
+
         ItemStack staff = user.getStackInHand(hand);
         if (world.isClient) return ActionResult.PASS;
 
@@ -79,6 +84,10 @@ public class StaffItem extends Item {
 
     @Override
     public void usageTick(World world, LivingEntity user, ItemStack stack, int remainingUseTicks) {
+        if (user.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
+            user.stopUsingItem();
+            return;
+        }
         if (world.isClient) return;
 
         int ticksUsed = this.getMaxUseTime(stack, user) - remainingUseTicks;
@@ -125,7 +134,7 @@ public class StaffItem extends Item {
             int ticksUsed = this.getMaxUseTime(stack, user) - remainingUseTicks;
             int chargeLevel = calculateChargeLevel(ticksUsed);
 
-            // Execute the final cast
+            // Execute the final cast (even if forcefully stopped by Frame Freeze)
             SpellCastHelper.castChargedSpell(active, world, user, stack, chargeLevel);
             return true;
         }

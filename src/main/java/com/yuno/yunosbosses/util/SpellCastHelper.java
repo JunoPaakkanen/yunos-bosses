@@ -88,6 +88,10 @@ public class SpellCastHelper {
 
     // Check if the player has enough mana to start casting the spell
     public static boolean canStartCasting(Spell spell, LivingEntity caster) {
+        if (caster == null || caster.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
+            return false;
+        }
+
         if (spell == ModSpells.PROJECTION_SORCERY && caster.hasStatusEffect(ModEffects.ANTI_TELEPORT)) {
             AntiTeleportEffect.onTeleportBlocked(caster);
             return false;
@@ -135,14 +139,14 @@ public class SpellCastHelper {
 
     // Execute the spell with the given charge level
     public static void castChargedSpell(Spell spell, World world, LivingEntity caster, ItemStack staff, int chargeLevel) {
-        if (world.isClient) return;
+        if (world.isClient || caster == null) return;
 
         spell.cast(world, caster, staff, chargeLevel);
     }
 
     // Used for immediate casting of spells
     public static boolean tryCastSpell(Spell spell, World world, LivingEntity caster, ItemStack staff) {
-        if (world.isClient) return false;
+        if (world.isClient || caster == null || caster.hasStatusEffect(ModEffects.FRAME_FREEZE)) return false;
 
         if (canStartCasting(spell, caster)) {
             // Force a Level 1 cast instantly

@@ -2,6 +2,7 @@ package com.yuno.yunosbosses.event;
 
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.component.SpellComponent;
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.network.CastSpellPayload;
 import com.yuno.yunosbosses.network.DomainClashInputPayload;
 import com.yuno.yunosbosses.network.SpellCyclePayload;
@@ -79,6 +80,7 @@ public class ModKeybindings {
             }
             while (castSpellKey.wasPressed()) {
                 if (client.player == null || client.world == null) return;
+                if (client.player.hasStatusEffect(ModEffects.FRAME_FREEZE)) continue;
 
                 SpellComponent component = ModEntityComponents.SPELL_DATA.get(client.player);
                 Spell activeSpell = component.getActiveSpell();

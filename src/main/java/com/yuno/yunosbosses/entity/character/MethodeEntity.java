@@ -1,5 +1,6 @@
 package com.yuno.yunosbosses.entity.character;
 
+import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
 import com.yuno.yunosbosses.entity.goal.MethodeAttackGoal;
 import com.yuno.yunosbosses.entity.goal.ability.DefensiveProjectileShieldAbility;
@@ -250,7 +251,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
      * Shares the exact same cooldown with directional Defensive Magic.
      */
     public boolean deploySphereBarrier() {
-        if (this.defensiveMagicCooldown > 0 || this.isDead() || !this.isAlive()) {
+        if (this.defensiveMagicCooldown > 0 || this.isDead() || !this.isAlive() || this.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
             return false;
         }
 
@@ -287,10 +288,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
      * Returns true if a defensive barrier was successfully deployed.
      */
     public boolean tryDefendAgainst(Vec3d threatOrigin) {
-        if (this.defensiveMagicCooldown > 0) {
-            return false;
-        }
-        if (this.isDead() || !this.isAlive()) {
+        if (this.defensiveMagicCooldown > 0 || this.isDead() || !this.isAlive() || this.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
             return false;
         }
 
@@ -340,6 +338,10 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
     }
 
     private void handleDefensiveMagic(ServerWorld world) {
+        if (this.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
+            return;
+        }
+
         // Enforce shield cooldown: decrement and return early if on practical cooldown
         if (this.defensiveMagicCooldown > 0) {
             this.defensiveMagicCooldown--;
@@ -387,7 +389,7 @@ public class MethodeEntity extends PathAwareEntity implements GeoEntity, YunosBo
 
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) {
-        if (this.attackGoal != null && this.attackGoal.getRestraintCooldown() <= 0) {
+        if (!this.hasStatusEffect(ModEffects.FRAME_FREEZE) && this.attackGoal != null && this.attackGoal.getRestraintCooldown() <= 0) {
             if (source.getAttacker() instanceof LivingEntity attacker && this.distanceTo(attacker) <= 4.5) {
                 this.attackGoal.checkAndExecuteRestraintRepulsion();
             }
