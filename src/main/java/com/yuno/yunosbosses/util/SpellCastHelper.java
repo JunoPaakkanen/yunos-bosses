@@ -127,6 +127,14 @@ public class SpellCastHelper {
             return false;
         }
 
+        // Do not consume mana if Projection Sorcery is in its alt-cast window but the next frame hasn't spawned yet
+        if (spell == ModSpells.PROJECTION_SORCERY && spellComponent.hasAltCastWindow(spell)) {
+            if (spellComponent.getProjectionImages().isEmpty()
+                    || spellComponent.getProjectionIndex() >= spellComponent.getProjectionImages().size()) {
+                return false;
+            }
+        }
+
         float baseManaCost = spell.getManaCost(player);
 
         // Reverse Cursed Technique cannot be cast using health via Blood for Mana
