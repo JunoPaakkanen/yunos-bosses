@@ -21,6 +21,7 @@
   ],
   "client": [
     "AbstractClientPlayerEntityMixin",
+    "ArmorFeatureRendererMixin",
     "ClientInputMixin",
     "EntityRenderStateMixin",
     "GameRendererAccessor",
