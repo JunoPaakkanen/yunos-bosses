@@ -41,9 +41,7 @@ public class NaoyaFrameShatterAbility implements BossAbility {
             double dashDist = Math.max(0.0, dist - 2.0);
             List<Vec3d> dashWaypoints = ProjectionSorcery.createStraightTrajectory(world, boss, boss.getPos(), dir, 3, dashDist / 3.0);
 
-            for (Vec3d pt : dashWaypoints) {
-                ProjectionSorcery.broadcastFrameImage(world, boss, pt, 30);
-            }
+            ProjectionSorcery.broadcastTrajectoryImages(world, boss, dashWaypoints, 30);
 
             if (!dashWaypoints.isEmpty()) {
                 Vec3d finalPos = dashWaypoints.getLast();

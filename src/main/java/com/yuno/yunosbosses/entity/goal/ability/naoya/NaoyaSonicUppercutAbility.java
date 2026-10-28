@@ -116,8 +116,9 @@ public class NaoyaSonicUppercutAbility implements BossAbility {
 
             Vec3d framePos = new Vec3d(wx, wy, wz);
             this.ascentWaypoints.add(framePos);
-            ProjectionSorcery.broadcastFrameImage(world, boss, framePos, 35);
         }
+
+        ProjectionSorcery.broadcastTrajectoryImages(world, boss, this.ascentWaypoints, 35);
 
         if (world instanceof ServerWorld sw) {
             // Explosive ground launch shockwave
@@ -129,7 +130,7 @@ public class NaoyaSonicUppercutAbility implements BossAbility {
                     SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.HOSTILE, 1.1F, 1.6F);
 
             sw.spawnParticles(ParticleTypes.GUST_EMITTER_SMALL, startPos.x, startPos.y + 0.2, startPos.z, 1, 0, 0, 0, 0);
-            for (int deg = 0; deg < 360; deg += 20) {
+            for (int deg = 0; deg < 360; deg += 15) {
                 double rad = Math.toRadians(deg);
                 double rx = startPos.x + Math.cos(rad) * 1.5;
                 double rz = startPos.z + Math.sin(rad) * 1.5;

@@ -64,10 +64,8 @@ public class NaoyaFlankDashAbility implements BossAbility {
             return;
         }
 
-        // Spawn blue afterimage ghosts at all waypoints
-        for (Vec3d pt : this.dashWaypoints) {
-            ProjectionSorcery.broadcastFrameImage(world, boss, pt, 40);
-        }
+        // Spawn blue afterimage ghosts at all waypoints with trajectory orientation & staggered animation phase
+        ProjectionSorcery.broadcastTrajectoryImages(world, boss, this.dashWaypoints, 40);
 
         if (world instanceof ServerWorld sw) {
             sw.playSound(null, boss.getX(), boss.getY(), boss.getZ(),

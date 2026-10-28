@@ -210,7 +210,15 @@ public class YunosBossesClient implements ClientModInitializer {
                     Entity entity = context.client().world.getEntityById(payload.entityId());
 
                     if (entity instanceof LivingEntity livingCaster) {
-                        ProjectionSorceryRenderer.addImage(livingCaster, payload.position(), payload.ticks());
+                        ProjectionSorceryRenderer.addImage(
+                                livingCaster,
+                                payload.position(),
+                                payload.ticks(),
+                                payload.hasCustomOrientation(),
+                                payload.yaw(),
+                                payload.pitch(),
+                                payload.animOffsetTicks()
+                        );
                     }
                 }
             });

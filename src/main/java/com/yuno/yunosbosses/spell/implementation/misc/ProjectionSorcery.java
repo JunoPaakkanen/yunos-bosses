@@ -33,6 +33,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
@@ -147,6 +148,31 @@ public class ProjectionSorcery extends Spell {
             for (ServerPlayerEntity player : PlayerLookup.around(serverWorld, pos, 64.0)) {
                 ServerPlayNetworking.send(player, payload);
             }
+        }
+    }
+
+    public static void broadcastFrameImage(World world, LivingEntity caster, Vec3d pos, int lifetimeTicks, float yaw, float pitch, float animOffsetTicks) {
+        if (!world.isClient && world instanceof ServerWorld serverWorld) {
+            SpawnImagePayload payload = new SpawnImagePayload(caster.getId(), pos, lifetimeTicks, true, yaw, pitch, animOffsetTicks);
+            for (ServerPlayerEntity player : PlayerLookup.around(serverWorld, pos, 64.0)) {
+                ServerPlayNetworking.send(player, payload);
+            }
+        }
+    }
+
+    public static void broadcastTrajectoryImages(World world, LivingEntity caster, List<Vec3d> trajectory, int lifetimeTicks) {
+        if (world.isClient || trajectory.isEmpty()) return;
+        Vec3d prevPos = caster.getPos();
+        for (int i = 0; i < trajectory.size(); i++) {
+            Vec3d pos = trajectory.get(i);
+            Vec3d dir = pos.subtract(prevPos);
+            float yaw = caster.getYaw();
+            if (dir.x * dir.x + dir.z * dir.z > 1.0e-4) {
+                yaw = (float) (MathHelper.atan2(dir.z, dir.x) * (180.0 / Math.PI)) - 90.0F;
+            }
+            float animOffsetTicks = i * 2.5F;
+            broadcastFrameImage(world, caster, pos, lifetimeTicks, yaw, caster.getPitch(), animOffsetTicks);
+            prevPos = pos;
         }
     }
 
@@ -471,11 +497,11 @@ public class ProjectionSorcery extends Spell {
 
     @Override
     public void appendVariantTooltips(PlayerEntity player, List<Text> tooltip) {
-        tooltip.add(Text.literal("• Recast (Alt-Cast): ").formatted(Formatting.GOLD)
+        tooltip.add(Text.literal("\u2022 Recast (Alt-Cast): ").formatted(Formatting.GOLD)
                 .append(Text.literal("Teleport through 5 projected frames within 5s (+1 Speed Stack; freezing penalty on fail)").formatted(Formatting.GRAY)));
-        tooltip.add(Text.literal("• Passive (Frame Meter): ").formatted(Formatting.GOLD)
+        tooltip.add(Text.literal("\u2022 Passive (Frame Meter): ").formatted(Formatting.GOLD)
                 .append(Text.literal("Melee hits build meter (+25%); at 100%, freezes hit entities").formatted(Formatting.GRAY)));
-        tooltip.add(Text.literal("• Passive (10+ Speed): ").formatted(Formatting.GOLD)
+        tooltip.add(Text.literal("\u2022 Passive (10+ Speed): ").formatted(Formatting.GOLD)
                 .append(Text.literal("Sprinting rams into enemies").formatted(Formatting.GRAY)));
     }
 

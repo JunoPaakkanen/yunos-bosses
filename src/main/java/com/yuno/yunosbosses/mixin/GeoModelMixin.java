@@ -35,7 +35,7 @@ public abstract class GeoModelMixin<T extends GeoAnimatable> {
 
     @Inject(method = "prepareForRenderPass", at = @At("HEAD"), cancellable = true)
     private void yunosbosses$freezeRenderPass(T animatable, GeoRenderState renderState, CallbackInfo ci) {
-        if (renderState instanceof FrameFreezeStateAccess access && access.yunosbosses$isFrameFrozen()) {
+        if (renderState instanceof FrameFreezeStateAccess access && (access.yunosbosses$isFrameFrozen() || access.yunosbosses$getCapturedGeoBones() != null)) {
             AnimatableManager<T> animatableManager = renderState.getGeckolibData(DataTickets.ANIMATABLE_MANAGER);
             if (animatableManager != null) {
                 this.lastGameTickTime = animatableManager.getLastUpdateTime();
@@ -48,29 +48,42 @@ public abstract class GeoModelMixin<T extends GeoAnimatable> {
 
     @Inject(method = "handleAnimations", at = @At("HEAD"), cancellable = true)
     private void yunosbosses$freezeAnimations(AnimationState<T> animationState, CallbackInfo ci) {
-        if (animationState.renderState() instanceof FrameFreezeStateAccess access && access.yunosbosses$isFrameFrozen()) {
-            AnimatableManager<T> animatableManager = animationState.manager();
-            Map<String, BoneSnapshot> boneSnapshots = animatableManager != null ? animatableManager.getBoneSnapshotCollection() : null;
-            if (boneSnapshots != null && !boneSnapshots.isEmpty()) {
-                AnimationProcessor<T> processor = getAnimationProcessor();
-                if (processor != null) {
-                    for (Map.Entry<String, BoneSnapshot> entry : boneSnapshots.entrySet()) {
-                        GeoBone bone = processor.getBone(entry.getKey());
-                        if (bone != null) {
-                            BoneSnapshot snapshot = entry.getValue();
-                            bone.setRotX(snapshot.getRotX());
-                            bone.setRotY(snapshot.getRotY());
-                            bone.setRotZ(snapshot.getRotZ());
-                            bone.setPosX(snapshot.getOffsetX());
-                            bone.setPosY(snapshot.getOffsetY());
-                            bone.setPosZ(snapshot.getOffsetZ());
-                            bone.setScaleX(snapshot.getScaleX());
-                            bone.setScaleY(snapshot.getScaleY());
-                            bone.setScaleZ(snapshot.getScaleZ());
-                        }
-                    }
-                }
+        if (animationState.renderState() instanceof FrameFreezeStateAccess access) {
+            Map<String, BoneSnapshot> capturedBones = access.yunosbosses$getCapturedGeoBones();
+            if (capturedBones != null && !capturedBones.isEmpty()) {
+                applyBoneSnapshots(capturedBones);
                 ci.cancel();
+                return;
+            }
+
+            if (access.yunosbosses$isFrameFrozen()) {
+                AnimatableManager<T> animatableManager = animationState.manager();
+                Map<String, BoneSnapshot> boneSnapshots = animatableManager != null ? animatableManager.getBoneSnapshotCollection() : null;
+                if (boneSnapshots != null && !boneSnapshots.isEmpty()) {
+                    applyBoneSnapshots(boneSnapshots);
+                    ci.cancel();
+                }
+            }
+        }
+    }
+
+    private void applyBoneSnapshots(Map<String, BoneSnapshot> boneSnapshots) {
+        AnimationProcessor<T> processor = getAnimationProcessor();
+        if (processor != null) {
+            for (Map.Entry<String, BoneSnapshot> entry : boneSnapshots.entrySet()) {
+                GeoBone bone = processor.getBone(entry.getKey());
+                if (bone != null) {
+                    BoneSnapshot snapshot = entry.getValue();
+                    bone.setRotX(snapshot.getRotX());
+                    bone.setRotY(snapshot.getRotY());
+                    bone.setRotZ(snapshot.getRotZ());
+                    bone.setPosX(snapshot.getOffsetX());
+                    bone.setPosY(snapshot.getOffsetY());
+                    bone.setPosZ(snapshot.getOffsetZ());
+                    bone.setScaleX(snapshot.getScaleX());
+                    bone.setScaleY(snapshot.getScaleY());
+                    bone.setScaleZ(snapshot.getScaleZ());
+                }
             }
         }
     }

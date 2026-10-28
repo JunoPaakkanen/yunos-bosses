@@ -78,10 +78,8 @@ public class NaoyaMachRamAbility implements BossAbility {
             return;
         }
 
-        // Spawn blue afterimages along the entire charge path
-        for (Vec3d pt : this.dashWaypoints) {
-            ProjectionSorcery.broadcastFrameImage(world, boss, pt, 50);
-        }
+        // Spawn blue afterimages along the entire charge path with trajectory orientation & staggered animation phase
+        ProjectionSorcery.broadcastTrajectoryImages(world, boss, this.dashWaypoints, 50);
 
         if (world instanceof ServerWorld sw) {
             sw.playSound(null, boss.getX(), boss.getY(), boss.getZ(),
