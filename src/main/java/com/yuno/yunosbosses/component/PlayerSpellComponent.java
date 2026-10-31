@@ -92,18 +92,25 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
             Spell oldSpell = this.equippedSpells[slot];
             this.equippedSpells[slot] = spell;
 
-            // Set as the active spell if the player has none selected
-            if (this.activeSpell == null && spell != null) {
-                this.activeSpell = spell;
-            } else if (spell == null && this.activeSpell == oldSpell) {
-                // If the unequipped spell was active, cycle to the next equipped spell (or null)
-                this.activeSpell = null;
-                for (int i = 0; i < this.maxSpellSlots; i++) {
-                    if (this.equippedSpells[i] != null) {
-                        this.activeSpell = this.equippedSpells[i];
-                        break;
+            boolean wasActive = (oldSpell != null && this.activeSpell != null && (oldSpell == this.activeSpell || oldSpell.getId().equals(this.activeSpell.getId())));
+
+            // If the swapped out spell was active, make the newly swapped spell active
+            if (wasActive) {
+                if (spell != null) {
+                    this.activeSpell = spell;
+                } else {
+                    // If the active spell was unequipped, cycle to the next equipped spell (or null)
+                    this.activeSpell = null;
+                    for (int i = 0; i < this.maxSpellSlots; i++) {
+                        if (this.equippedSpells[i] != null) {
+                            this.activeSpell = this.equippedSpells[i];
+                            break;
+                        }
                     }
                 }
+            } else if (this.activeSpell == null && spell != null) {
+                // Set as the active spell if the player has none selected
+                this.activeSpell = spell;
             }
             ModEntityComponents.SPELL_DATA.sync(this.player);
         }
@@ -116,8 +123,9 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
 
     @Override
     public Spell getActiveSpell() {
-        // If the active spell is null, return the first equipped spell
-        if (this.activeSpell == null) {
+        // If the active spell is null or no longer equipped (and spell change is allowed), fallback to the first equipped spell
+        if (this.activeSpell == null || (this.canChangeSpell && !isSpellEquipped(this.activeSpell))) {
+            this.activeSpell = null;
             for (int i = 0; i < this.maxSpellSlots; i++) {
                 if (this.equippedSpells[i] != null) {
                     this.activeSpell = this.equippedSpells[i];
@@ -328,6 +336,7 @@ public class PlayerSpellComponent implements SpellComponent, ServerTickingCompon
 
     @Override
     public boolean isSpellEquipped(Spell spell) {
+        if (spell == null) return false;
         for (int i = 0; i < this.maxSpellSlots; i++) {
             Spell equippedSpell = this.equippedSpells[i];
             if (equippedSpell != null && equippedSpell.getId().equals(spell.getId())) {
