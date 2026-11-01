@@ -1,6 +1,7 @@
 package com.yuno.yunosbosses.util;
 
 import com.yuno.yunosbosses.entity.YunosBossEntity;
+import com.yuno.yunosbosses.entity.YunosMiniBossEntity;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.particle.ModParticles;
 import net.minecraft.entity.Entity;
@@ -82,25 +83,64 @@ public class BossCombatHelper {
     }
 
     /**
+     * Applies Mini-Boss Cursed Energy Reinforcement (70% physical damage reduction)
+     * and caps single-hit vanilla damage (25 Single / 18 Duo).
+     */
+    public static float applyMiniBossReinforcementAndCap(YunosMiniBossEntity miniBoss, LivingEntity entity, DamageSource source, float amount) {
+        if (!isMagicDamage(source)) {
+            boolean isDuo = DuoModeCheckHelper.isDuoMode(entity.getWorld());
+            float hardCap = isDuo ? 18.0F : 25.0F;
+
+            // Cap non-magic attack damage per hit
+            amount = Math.min(amount, hardCap);
+
+            // Apply 70% cursed energy reinforcement damage reduction if intact
+            if (!miniBoss.yunos$isReinforcementBroken()) {
+                amount *= 0.30F;
+
+                if (entity.getWorld() instanceof ServerWorld sw) {
+                    sw.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
+                            SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.HOSTILE, 0.7F, 1.6F);
+                    sw.spawnParticles(ParticleTypes.ENCHANTED_HIT,
+                            entity.getX(), entity.getY() + (entity.getHeight() * 0.5), entity.getZ(),
+                            5, 0.25, 0.35, 0.25, 0.05);
+                }
+            }
+        }
+        return amount;
+    }
+
+    /**
      * Executes boss reinforcement guard break.
      */
     public static void executeReinforcementBreak(YunosBossEntity boss, LivingEntity bossEntity, DamageSource source, int durationTicks) {
         boss.setReinforcementBrokenTicks(durationTicks);
+        playReinforcementBreakEffects(bossEntity, source, durationTicks);
+    }
 
-        World world = bossEntity.getWorld();
+    /**
+     * Executes mini-boss reinforcement guard break.
+     */
+    public static void executeMiniBossReinforcementBreak(YunosMiniBossEntity miniBoss, LivingEntity entity, DamageSource source, int durationTicks) {
+        miniBoss.yunos$setReinforcementBrokenTicks(durationTicks);
+        playReinforcementBreakEffects(entity, source, durationTicks);
+    }
+
+    private static void playReinforcementBreakEffects(LivingEntity entity, DamageSource source, int durationTicks) {
+        World world = entity.getWorld();
         if (world instanceof ServerWorld sw) {
-            sw.playSound(null, bossEntity.getX(), bossEntity.getY(), bossEntity.getZ(),
+            sw.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
                     SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.HOSTILE, 2.0F, 0.9F);
-            sw.playSound(null, bossEntity.getX(), bossEntity.getY(), bossEntity.getZ(),
+            sw.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
                     SoundEvents.ITEM_SHIELD_BREAK, SoundCategory.HOSTILE, 1.8F, 1.1F);
-            sw.playSound(null, bossEntity.getX(), bossEntity.getY(), bossEntity.getZ(),
+            sw.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
                     SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE, SoundCategory.HOSTILE, 1.5F, 1.4F);
 
             sw.spawnParticles(ParticleTypes.CRIT,
-                    bossEntity.getX(), bossEntity.getY() + 1.2, bossEntity.getZ(),
+                    entity.getX(), entity.getY() + (entity.getHeight() * 0.6), entity.getZ(),
                     16, 0.3, 0.4, 0.3, 0.1);
 
-            if (source.getAttacker() instanceof PlayerEntity player) {
+            if (source != null && source.getAttacker() instanceof PlayerEntity player) {
                 player.sendMessage(Text.literal("§6§l[GUARD BREAK]§r §eReinforcement broken! (" + (durationTicks / 20) + "s)§r"), true);
             }
         }
@@ -149,7 +189,7 @@ public class BossCombatHelper {
      * Determines whether incoming damage should cap the victim's Resistance effect to Resistance II (amplifier 1, 40% reduction).
      * Applies to:
      * 1. All domain expansion sure-hit damage (DomainExpansionShrine, DomainExpansionTCMP).
-     * 2. All attacks originating directly from a boss (YunosBossEntity) or boss projectiles/minions.
+     * 2. All attacks originating directly from a boss (YunosBossEntity), mini-boss (YunosMiniBossEntity), or boss projectiles/minions.
      */
     public static boolean shouldCapResistance(DamageSource source) {
         if (source == null) return false;
@@ -159,19 +199,31 @@ public class BossCombatHelper {
             return true;
         }
 
-        // 2. Boss attacker (melee, direct spell, projectile owner)
+        // 2. Boss or Mini-Boss attacker (melee, direct spell, projectile owner)
         Entity attacker = source.getAttacker();
         if (attacker instanceof YunosBossEntity) {
             return true;
         }
+        if (attacker instanceof YunosMiniBossEntity miniBoss && miniBoss.yunos$isMiniBoss()) {
+            return true;
+        }
 
-        // 3. Direct damage source is a boss or projectile owned by a boss
+        // 3. Direct damage source is a boss/mini-boss or projectile owned by a boss/mini-boss
         Entity directSource = source.getSource();
         if (directSource instanceof YunosBossEntity) {
             return true;
         }
-        if (directSource instanceof ProjectileEntity proj && proj.getOwner() instanceof YunosBossEntity) {
+        if (directSource instanceof YunosMiniBossEntity miniBoss && miniBoss.yunos$isMiniBoss()) {
             return true;
+        }
+        if (directSource instanceof ProjectileEntity proj) {
+            Entity owner = proj.getOwner();
+            if (owner instanceof YunosBossEntity) {
+                return true;
+            }
+            if (owner instanceof YunosMiniBossEntity miniBoss && miniBoss.yunos$isMiniBoss()) {
+                return true;
+            }
         }
 
         // 4. Boss summoned minion (e.g. Methode's summoned vexes)

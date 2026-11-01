@@ -5,12 +5,14 @@ import com.yuno.yunosbosses.binding_vow.VexLifeLeechBindingVow;
 import com.yuno.yunosbosses.component.ModEntityComponents;
 import com.yuno.yunosbosses.effect.ModEffects;
 import com.yuno.yunosbosses.entity.YunosBossEntity;
+import com.yuno.yunosbosses.entity.YunosMiniBossEntity;
 import com.yuno.yunosbosses.entity.damage.ModDamageTypes;
 import com.yuno.yunosbosses.item.custom.StaffItem;
 import com.yuno.yunosbosses.util.BossContributionTracker;
 import com.yuno.yunosbosses.sound.ModSounds;
 import com.yuno.yunosbosses.spell.ModSpells;
 import com.yuno.yunosbosses.spell.implementation.misc.ProjectionSorcery;
+import com.yuno.yunosbosses.util.DuoModeCheckHelper;
 import com.yuno.yunosbosses.util.EffectRemovalContext;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.entity.Entity;
@@ -97,7 +99,7 @@ public abstract class LivingEntityMixin {
 
         if (entity.hasStatusEffect(ModEffects.FRAME_FREEZE)) {
             // Amplify damage and shatter frame
-            float damage = ProjectionSorcery.shatterFrame(entity, source, amount);
+            amount = ProjectionSorcery.shatterFrame(entity, source, amount);
 
             // Remove effect manually (bypass onStatusEffectRemoved)
             try {
@@ -106,11 +108,26 @@ public abstract class LivingEntityMixin {
             } finally {
                 EffectRemovalContext.setManualRemoval(false);
             }
-
-            return damage;
         }
 
-        return amount; // Return original damage if they aren't frozen
+        // Trigger Mini-Boss guard break if hit by a heavy spell
+        if (entity instanceof YunosMiniBossEntity miniBoss && miniBoss.yunos$isMiniBoss()) {
+            if (BossCombatHelper.isHeavySpell(source, amount)) {
+                int duration = DuoModeCheckHelper.isDuoMode(world) ? 60 : 100;
+                miniBoss.yunos$breakReinforcement(duration, source);
+            }
+        }
+
+        return amount;
+    }
+
+    @Inject(method = "modifyAppliedDamage", at = @At("RETURN"), cancellable = true)
+    private void yunosbosses$applyMiniBossReinforcement(DamageSource source, float amount, CallbackInfoReturnable<Float> cir) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (entity instanceof YunosMiniBossEntity miniBoss && miniBoss.yunos$isMiniBoss()) {
+            float modified = BossCombatHelper.applyMiniBossReinforcementAndCap(miniBoss, entity, source, cir.getReturnValue());
+            cir.setReturnValue(modified);
+        }
     }
 
     @Inject(method = "damage", at = @At("RETURN"))
