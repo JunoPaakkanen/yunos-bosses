@@ -31,6 +31,7 @@ public class ModItems {
     public static final Item BASIC_MAGICAL_STAFF = registerItem("basic_magical_staff", settings -> new StaffItem(settings, 1, 1), new Item.Settings().maxCount(1));
     public static final Item UBEL_STAFF = registerItem("ubel_staff", settings -> new StaffItem(settings, 1.4F, 1), new Item.Settings().maxCount(1));
     public static final Item METHODE_STAFF = registerItem("methode_staff", settings -> new StaffItem(settings, 1.2F, 1.2F), new Item.Settings().maxCount(1));
+    public static final Item FERN_STAFF = registerItem("fern_staff", settings -> new StaffItem(settings, 1, 1.1F), new Item.Settings().maxCount(1));
 
     // Armor Items
     public static final Item KIMONO = registerItem("kimono", settings -> new KimonoItem(settings.armor(ModArmorMaterials.KIMONO_ARMOR_MATERIAL, EquipmentType.CHESTPLATE)), new Item.Settings());
@@ -39,6 +40,7 @@ public class ModItems {
     public static final Item UBEL_SPAWN_EGG = registerItem("ubel_spawn_egg", settings -> new SpawnEggItem(ModEntities.UBEL, settings), new Item.Settings());
     public static final Item METHODE_SPAWN_EGG = registerItem("methode_spawn_egg", settings -> new SpawnEggItem(ModEntities.METHODE, settings), new Item.Settings());
     public static final Item NAOYA_SPAWN_EGG = registerItem("naoya_spawn_egg", settings -> new SpawnEggItem(ModEntities.NAOYA, settings), new Item.Settings());
+    public static final Item FERN_SPAWN_EGG = registerItem("fern_spawn_egg", settings -> new SpawnEggItem(ModEntities.FERN, settings), new Item.Settings());
     public static final Item USELESS_CHICKEN_SPAWN_EGG = registerItem("useless_chicken_spawn_egg", settings -> new SpawnEggItem(ModEntities.USELESS_CHICKEN, settings), new Item.Settings());
 
     // Helper method to register item
@@ -56,6 +58,7 @@ public class ModItems {
             entries.add(BASIC_MAGICAL_STAFF);
             entries.add(UBEL_STAFF);
             entries.add(METHODE_STAFF);
+            entries.add(FERN_STAFF);
             entries.add(KIMONO);
         });
 
@@ -64,6 +67,7 @@ public class ModItems {
             entries.add(UBEL_SPAWN_EGG);
             entries.add(METHODE_SPAWN_EGG);
             entries.add(NAOYA_SPAWN_EGG);
+            entries.add(FERN_SPAWN_EGG);
             entries.add(USELESS_CHICKEN_SPAWN_EGG);
         });
 

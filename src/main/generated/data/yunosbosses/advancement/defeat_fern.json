@@ -1,0 +1,38 @@
+{
+  "parent": "yunosbosses:root",
+  "criteria": {
+    "defeat_fern": {
+      "conditions": {
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "yunosbosses:fern"
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:player_killed_entity"
+    }
+  },
+  "display": {
+    "description": {
+      "translate": "advancements.yunosbosses.fern.description"
+    },
+    "frame": "challenge",
+    "icon": {
+      "count": 1,
+      "id": "yunosbosses:fern_staff"
+    },
+    "title": {
+      "translate": "advancements.yunosbosses.fern.title"
+    }
+  },
+  "requirements": [
+    [
+      "defeat_fern"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

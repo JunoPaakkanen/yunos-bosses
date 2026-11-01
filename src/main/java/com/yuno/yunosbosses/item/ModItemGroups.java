@@ -21,6 +21,7 @@ public class ModItemGroups {
                         entries.add(ModItems.BASIC_MAGICAL_STAFF);
                         entries.add(ModItems.UBEL_STAFF);
                         entries.add(ModItems.METHODE_STAFF);
+                        entries.add(ModItems.FERN_STAFF);
                         entries.add(ModItems.STRANGE_FRUIT);
                         // Add armor
                         entries.add(ModItems.KIMONO);
@@ -28,6 +29,7 @@ public class ModItemGroups {
                         entries.add(ModItems.UBEL_SPAWN_EGG);
                         entries.add(ModItems.METHODE_SPAWN_EGG);
                         entries.add(ModItems.NAOYA_SPAWN_EGG);
+                        entries.add(ModItems.FERN_SPAWN_EGG);
                         entries.add(ModItems.USELESS_CHICKEN_SPAWN_EGG);
                         // Add all blocks to the group
                         entries.add(ModBlocks.DOMAIN_FLOOR.asItem());

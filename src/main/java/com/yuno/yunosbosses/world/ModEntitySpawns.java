@@ -40,6 +40,12 @@ public class ModEntitySpawns {
                 Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
                 ModEntitySpawns::canBossSpawn
         );
+        SpawnRestriction.register(
+                ModEntities.FERN,
+                SpawnLocationTypes.ON_GROUND,
+                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
+                ModEntitySpawns::canBossSpawn
+        );
 
         // --- 2. NATURAL BIOME SPAWN INJECTIONS ---
         // Spawned as MONSTER group with group size 1 (solo boss)
@@ -85,6 +91,21 @@ public class ModEntitySpawns {
                 ),
                 SpawnGroup.MONSTER,
                 ModEntities.NAOYA,
+                1, // Rare spawn weight
+                1,
+                1
+        );
+
+        // FERN: Peaceful plains, forests, and birch forests
+        BiomeModifications.addSpawn(
+                BiomeSelectors.includeByKey(
+                        BiomeKeys.PLAINS,
+                        BiomeKeys.SUNFLOWER_PLAINS,
+                        BiomeKeys.FOREST,
+                        BiomeKeys.BIRCH_FOREST
+                ),
+                SpawnGroup.MONSTER,
+                ModEntities.FERN,
                 1, // Rare spawn weight
                 1,
                 1

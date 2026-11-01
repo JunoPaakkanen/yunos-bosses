@@ -97,6 +97,24 @@ public class ModAdvancementProvider extends FabricAdvancementProvider {
                         EntityPredicate.Builder.create().type(EntityTypePredicate.create(null, ModEntities.NAOYA))
                 ))
                 .build(consumer, "yunosbosses:defeat_naoya");
+
+        // --- FERN ADVANCEMENT ---
+        AdvancementEntry fernAdvancement = Advancement.Builder.create()
+                .parent(rootAdvancement)
+                .display(
+                        ModItems.FERN_STAFF.getDefaultStack(),
+                        Text.translatable("advancements.yunosbosses.fern.title"),
+                        Text.translatable("advancements.yunosbosses.fern.description"),
+                        null,
+                        AdvancementFrame.CHALLENGE,
+                        true,
+                        true,
+                        false
+                )
+                .criterion("defeat_fern", OnKilledCriterion.Conditions.createPlayerKilledEntity(
+                        EntityPredicate.Builder.create().type(EntityTypePredicate.create(null, ModEntities.FERN))
+                ))
+                .build(consumer, "yunosbosses:defeat_fern");
     }
 
 

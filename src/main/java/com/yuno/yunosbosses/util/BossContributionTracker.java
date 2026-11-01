@@ -152,6 +152,7 @@ public class BossContributionTracker {
             case "ubel" -> "Übel";
             case "methode" -> "Methode";
             case "naoya" -> "Naoya Zen'in";
+            case "fern" -> "Fern";
             default -> bossId.substring(0, 1).toUpperCase() + bossId.substring(1);
         };
     }
