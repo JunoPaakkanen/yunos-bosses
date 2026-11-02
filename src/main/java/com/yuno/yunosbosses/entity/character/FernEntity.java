@@ -38,6 +38,7 @@ public class FernEntity extends PathAwareEntity implements GeoEntity, YunosBossE
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private boolean difficultyInitialized = false;
     private int reinforcementBrokenTicks = 0;
+    private boolean alternateAttackAnim = false;
 
     private final ServerBossBar bossBar = new ServerBossBar(
             this.getDisplayName(),
@@ -137,11 +138,13 @@ public class FernEntity extends PathAwareEntity implements GeoEntity, YunosBossE
             }
             return state.setAndContinue(RawAnimation.begin().thenLoop("animation.fern.idle"));
         })
-        .triggerableAnim("attack", RawAnimation.begin().thenPlay("animation.fern.attack")));
+        .triggerableAnim("attack", RawAnimation.begin().thenPlay("animation.fern.attack"))
+        .triggerableAnim("attack2", RawAnimation.begin().thenPlay("animation.fern.attack2")));
     }
 
     public void triggerAttackAnim() {
-        this.triggerAnim("controller", "attack");
+        this.triggerAnim("controller", this.alternateAttackAnim ? "attack2" : "attack");
+        this.alternateAttackAnim = !this.alternateAttackAnim;
     }
 
     @Override

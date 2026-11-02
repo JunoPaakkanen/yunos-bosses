@@ -34,8 +34,8 @@ public class MethodeAttackGoal extends AbstractBossAttackGoal {
         // 1. Reactive Defensive Barrier (intercepts incoming projectiles within 12 blocks, 100-tick / 5-second cooldown)
         this.registerAbility(new DefensiveProjectileShieldAbility(12.0, 0, 100, () -> ModSpells.DEFENSIVE_MAGIC));
 
-        // 2. Point Blank Melee Staff Strike (0.0 to 3.5 blocks) - 14-tick windup, 16-tick recovery (matches 1.5s animation)
-        this.registerAbility(new MeleeAttackAbility(3.5, 14, 16, 9.0F));
+        // 2. Point Blank Melee Staff Strike (0.0 to 3.5 blocks) - 14-tick windup, 16-tick recovery
+        this.registerAbility(new MeleeAttackAbility(3.5, 14, 16, 10.0F));
 
         // 3. Medium Range Killing Magic Barrage (3.0 to 24.0 blocks) - 14-tick windup, 16-tick recovery
         this.registerAbility(new SpellCastAbility(3.0, 24.0, 14, 16, () -> ModSpells.KILLING_MAGIC_BARRAGE));
